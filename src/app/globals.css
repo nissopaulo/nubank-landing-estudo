@@ -68,6 +68,41 @@
 }
 
 @layer utilities {
+  /*
+   * Entrada do header.
+   *
+   * Feita em CSS, e não com Motion, por um motivo concreto: o Firefox e o Chrome
+   * divergem quando uma biblioteca de animação **remove** o `transform` no fim.
+   * O elemento sai do caminho de render composto e volta ao pintado, e os dois
+   * motores arredondam a posição de forma diferente — no Firefox o logo
+   * aparecia ~1px acima até o repaint seguinte. No Chrome era imperceptível, o
+   * que fez o bug parecer intermitente.
+   *
+   * `animation-fill-mode: both` resolve a causa, não o sintoma: o keyframe final
+   * (`transform: translateY(0px)`, `opacity: 1`) continua aplicado depois que a
+   * animação acaba. Nunca existe um instante em que o `transform` vira `none`,
+   * então não há o que os dois motores arredondem de formas diferentes. O mesmo
+   * código nos dois motores, sem caminho de render alternativo.
+   *
+   * O escalonamento sai de `--header-enter-delay`, posto em cada elemento. Os
+   * valores reproduzem a cascata que o Motion fazia por `staggerChildren`.
+   */
+  @keyframes header-enter {
+    from {
+      opacity: 0;
+      transform: translateY(-16px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0px);
+    }
+  }
+
+  .header-enter {
+    animation:
+      header-enter 0.7s var(--ease-out-expo) var(--header-enter-delay, 0s) both;
+  }
+
   .sr-only-focusable:not(:focus):not(:focus-within) {
     position: absolute;
     width: 1px;
@@ -199,6 +234,9 @@
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    /* O atraso também: sem ele, quem pede menos movimento ainda assistiria à
+       cascata do header, só que instantânea. */
+    animation-delay: 0.01ms !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }

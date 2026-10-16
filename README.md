@@ -177,7 +177,7 @@ movimento foi desenhado aqui:
 3. **Paralaxe de ponteiro** — deslocamento sutil na direção do cursor
    (apenas em dispositivos com ponteiro fino).
 4. **Header** — condensa e ganha fundo ao rolar; na entrada, logo, itens de nav
-   e CTAs descem em cascata com `revealFromTop`.
+   e CTAs descem em cascata (ver a seção da entrada em CSS, abaixo).
 5. **Texto** — reveal escalonado com `cubic-bezier(0.16, 1, 0.3, 1)`.
 
 ### O leque dos cards
@@ -222,6 +222,36 @@ A correção é estrutural: o reveal fica num wrapper `motion.*` e o elemento co
 a transition CSS é o filho, que o Motion não toca. É o que já fazem os itens da
 nav (transition no `<button>`) e os CTAs (transition no link dentro do
 `motion.span`).
+
+### A entrada do header é CSS, não Motion — e por quê
+
+O logo ficava ~1 px acima no fim da animação e depois descia. **No Firefox
+claramente, no Chrome quase imperceptível.** Essa diferença entre motores foi a
+pista decisiva.
+
+A causa: quando uma biblioteca de animação **remove** o `transform` no fim, o
+elemento sai do caminho de render composto e volta ao pintado. Os dois motores
+arredondam a posição de forma diferente, e no Firefox a troca aparecia como um
+deslocamento de um pixel.
+
+`will-change: transform` — a aposta óbvia — **não resolveu** (e custava uma
+camada viva à toa).
+
+A solução é não ter esse instante. A entrada do header é uma animação CSS com
+`animation-fill-mode: both`, então o keyframe final (`transform:
+translateY(0px)`, `opacity: 1`) **continua aplicado** depois que a animação
+acaba. Nunca existe um momento em que o `transform` vira `none`, então não há o
+que os motores arredondem de formas diferentes. O mesmo código nos dois, sem
+caminho de render alternativo.
+
+O Motion continua no componente, mas só para o `useScroll` que condensa o header
+ao rolar. A cascata saiu de `staggerChildren` e virou uma lista explícita de
+atrasos em `ENTER`, cada elemento com `--header-enter-delay`. Os valores são os
+mesmos que o Motion produzia.
+
+O logo também recebe `lg:translate-y-[0.5px]`: no `lg` a caixa tem 35 px (ímpar)
+centralizada numa linha de 40 px, então desce em 32,5 px. Descansar em pixel
+inteiro elimina a última chance de divergência entre motores.
 
 ### Movimento reduzido
 

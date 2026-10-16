@@ -1,20 +1,38 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import Image from "next/image";
 import { useState } from "react";
-import { motion, useMotionValueEvent, useScroll } from "motion/react";
+import { useMotionValueEvent, useScroll } from "motion/react";
 import { CaretDown } from "@phosphor-icons/react/dist/ssr/CaretDown";
 
 import { CtaLink } from "@/components/ui/CtaLink";
-import { revealFromTop, staggerContainer } from "@/lib/motion";
 
 /**
  * Cabeçalho da Hero.
  *
- * `initial={false}` no `<motion.header>` é deliberado: sem ele, trocar
- * `data-condensed` ao rolar re-dispararia a animação de entrada do header
- * inteiro. O reveal acontece no container interno, que só anima na montagem.
+ * A entrada é CSS (`.header-enter`, ver `globals.css`), não Motion. O motivo
+ * está documentado lá: o Firefox e o Chrome discordam quando uma biblioteca de
+ * animação remove o `transform` no fim, e o logo ficava ~1px acima no Firefox.
+ * Com `animation-fill-mode: both` o estado final nunca é removido, então não há
+ * arredondamento divergente. O Motion continua aqui só para o `useScroll` que
+ * condensa o header ao rolar.
+ *
+ * A cascata é uma lista de atrasos, não `staggerChildren` — é o mesmo escalonamento
+ * que o Motion produzia, escrito na mão para ficar explícito:
+ *   linha 0.07 · nav 0.05 · CTAs 0.06 · atrasos iniciais 0.12 / 0.04 / 0.05
  */
+const ENTER = {
+  logo: "0.12s",
+  nav: ["0.23s", "0.28s", "0.33s", "0.38s"],
+  ctaOutline: "0.31s",
+  ctaSolid: "0.37s",
+} as const;
+
+/** Aplica o atraso da entrada sem repetir a lista de classes. */
+const enter = (delay: string): CSSProperties => ({
+  "--header-enter-delay": delay,
+} as CSSProperties);
 
 /**
  * Itens de navegação da Hero.
@@ -38,47 +56,29 @@ export function SiteHeader() {
   const tone = condensed ? "text-nu-neutral-800" : "text-nu-action-surface";
 
   return (
-    <motion.header
+    <header
       data-condensed={condensed || undefined}
       className={`fixed inset-x-0 top-0 z-50 transition-[background-color,box-shadow,border-color] duration-300 ease-out
         group
         data-[condensed]:border-b data-[condensed]:border-nu-neutral-200 data-[condensed]:bg-white/85 data-[condensed]:shadow-sm data-[condensed]:backdrop-blur-xl
         ${tone}`}
-      initial={false}
     >
-      <motion.div
-        className="flex h-16 w-full items-center justify-between px-5 md:h-20 md:px-10 lg:h-25 lg:px-[200px] 2xl:px-[clamp(200px,10.4vw,320px)]"
-        variants={staggerContainer(0.07, 0.12)}
-        initial="hidden"
-        animate="visible"
-      >
+      <div className="flex h-16 w-full items-center justify-between px-5 md:h-20 md:px-10 lg:h-25 lg:px-[200px] 2xl:px-[clamp(200px,10.4vw,320px)]">
         <div className="flex items-center gap-8 md:gap-12">
           {/*
-            O reveal fica num `<motion.span>` e o `<a>` dentro é o elemento
-            "limpo".
+            `shrink-0` fica aqui, no wrapper, e não no `<a>`.
 
-            Isso não é cosmético. `transition-opacity` no MESMO elemento que o
-            Motion anima `opacity` faz os dois se atropelarem: o Motion escreve
-            `opacity` inline a cada quadro, cada escrita dispara a transition de
-            150ms do CSS, e o valor renderizado fica sempre atrás do valor do
-            Motion. No fim da animação o Motion remove o `opacity` inline, a
-            transition pega o computed de 1 e leva mais 150ms para assentar — o
-            logo continuava mudando depois da animação ter acabado.
+            O flex item da linha é este `<span>`; o `<a>` é um filho dele e não
+            encolhe por conta própria. Com o `shrink-0` só no `<a>`, era o span
+            que encolhia — e quando a linha aperta ele chega a largura zero e o
+            logo desaparece.
 
-            Era por isso que só o logo piscava: nos itens da nav o
-            `transition-opacity` está no `<button>` filho, e nos CTAs é
-            `transition-colors`, que não inclui `opacity`. O logo era o único
-            elemento com os dois ao mesmo tempo.
+            O `transition-opacity` do hover fica no `<a>`, separado do elemento
+            animado. No Motion os dois brigavam: cada escrita de `opacity` por
+            quadro disparava a transition de 150ms do CSS, e o valor renderizado
+            ficava sempre atrás. Separados, cada um no seu elemento.
           */}
-          {/*
-            `shrink-0` fica AQUI, no `motion.span`, e não no `<a>`.
-
-            O flex item da linha é o `motion.span`; o `<a>` é um filho dele e
-            não encolhe por conta própria. Com o `shrink-0` só no `<a>` (onde
-            estava antes deste wrapper), era o span que encolhia — e quando a
-            linha aperta, ele chega a largura zero e o logo desaparece.
-          */}
-          <motion.span variants={revealFromTop} className="shrink-0">
+          <span className="header-enter shrink-0" style={enter(ENTER.logo)}>
             <a
               href="#conteudo"
               className="rounded-sm transition-opacity hover:opacity-75 lg:translate-y-[0.5px]"
@@ -107,19 +107,11 @@ export function SiteHeader() {
                 só adicionaria uma requisição a `/_next/image` para re-encodar um
                 PNG que já é minúsculo.
 
-                `lg:translate-y-[0.5px]` no link: meia pixelada para alinhar o
-                logo na grade de pixels. No `lg` a caixa do logo tem 35px
-                (ímpar) e é centralizada numa linha de 40px, então ela
-                descansa em 32.5px — meio pixel. Em repouso, meio pixel é
-                invisível; mas no fim da animação o transform é removido e o
-                elemento sai do caminho de render composto para o pintado, e
-                os dois arredondam o meio pixel para lados diferentes. O logo
-                ficava ~1px acima até o repaint. Descansando em pixel inteiro
-                não há o que discordar.
-
-                Só no `lg`: em `base` e `md` as caixas já são pares e o centro
-                cai em pixel inteiro (21 e 26). É um `translate` CSS, não
-                transform, então não briga com o `y` do Motion no `span` pai.
+                `lg:translate-y-[0.5px]`: no `lg` a caixa do logo tem 35px
+                (ímpar) e é centralizada numa linha de 40px, então desce em
+                32.5px — meio pixel. Descansar em pixel inteiro evita divergência
+                de arredondamento entre os motores. Só no `lg`: em `base` e `md`
+                as caixas são pares e o centro já cai em pixel inteiro (21 e 26).
               */}
               <Image
                 src="/images/brand/nu-logo-light.png"
@@ -142,21 +134,12 @@ export function SiteHeader() {
                   group-data-[condensed]:block"
               />
             </a>
-          </motion.span>
+          </span>
 
-          {/*
-            Container próprio para os itens da nav: o escalonamento desce por
-            ramo da árvore, e os `<li>` estão dois níveis abaixo da linha. Sem
-            este container os quatro itens entram juntos, atrás do logo.
-          */}
-          <motion.nav
-            aria-label="Navegação principal"
-            className="hidden lg:block"
-            variants={staggerContainer(0.05, 0.04)}
-          >
+          <nav aria-label="Navegação principal" className="hidden lg:block">
             <ul className="flex items-center">
-              {NAV_ITEMS.map((item) => (
-                <motion.li key={item} variants={revealFromTop}>
+              {NAV_ITEMS.map((item, i) => (
+                <li key={item} className="header-enter" style={enter(ENTER.nav[i])}>
                   <button
                     type="button"
                     aria-disabled="true"
@@ -167,18 +150,16 @@ export function SiteHeader() {
                     <span className="sr-only">— menu ainda não implementado neste estudo</span>
                     <CaretDown size={20} weight="regular" aria-hidden="true" />
                   </button>
-                </motion.li>
+                </li>
               ))}
             </ul>
-          </motion.nav>
+          </nav>
         </div>
 
-        {/* Container próprio pelo mesmo motivo da nav: sem ele os dois CTAs
-            entram no mesmo instante, sem escalonamento entre eles. */}
-        <motion.div className="flex items-center gap-3" variants={staggerContainer(0.06, 0.05)}>
+        <div className="flex items-center gap-3">
           {/* No mobile fica só o CTA principal: o menu completo depende dos
               painéis que ainda não existem no design. */}
-          <motion.span variants={revealFromTop}>
+          <span className="header-enter" style={enter(ENTER.ctaOutline)}>
             <CtaLink
               variant="outline"
               href="https://www.nubank.com.br/"
@@ -198,12 +179,12 @@ export function SiteHeader() {
             >
               Login Empresas
             </CtaLink>
-          </motion.span>
+          </span>
 
           {/* Mesmo desvio no CTA sólido: ao condensar, fundo na cor da marca
               e texto branco. Branco sobre #820ad1 dá 7,2:1. Sobre o
               gradiente o botão continua claro — brand ali não passaria de AA. */}
-          <motion.span variants={revealFromTop}>
+          <span className="header-enter" style={enter(ENTER.ctaSolid)}>
             <CtaLink
               variant="solid"
               href="https://www.nubank.com.br/"
@@ -211,9 +192,9 @@ export function SiteHeader() {
             >
               Quero ser Nubank
             </CtaLink>
-          </motion.span>
-        </motion.div>
-      </motion.div>
-    </motion.header>
+          </span>
+        </div>
+      </div>
+    </header>
   );
 }

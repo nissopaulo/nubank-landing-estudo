@@ -548,3 +548,52 @@ inteiros.
 
 **Ainda não verificado:** se o resíduo de meio pixel some, depende de olho humano
 — é um frame.
+
+### 2026-10-16 — o resíduo era do Firefox; entrada do header virou CSS
+
+A pista que fechou o caso veio do usuário: **o problema acontecia no Firefox, no
+Chrome não.** Eu vinha investigando como se fosse universal, e era exatamente a
+coisa em que os dois motores divergem.
+
+**Por que os dois diferem.** Quando uma biblioteca de animação **remove** o
+`transform` no fim, o elemento sai do caminho de render composto e volta ao
+pintado. Chrome e Firefox arredondam essa transição de formas diferentes, e no
+Firefox o logo aparecia ~1px acima até o repaint seguinte. No Chrome era quase
+imperceptível — foi o que fez o bug parecer intermitente e me fazer perseguir a
+causa errada quatro vezes.
+
+**`will-change: transform` não resolveu**, e eu tinha verificado que a classe
+estava no HTML antes de concluir isso. Não era a camada composta.
+
+**A correção é não ter o instante.** A entrada do header passou a ser animação
+CSS com `animation-fill-mode: both`: o keyframe final (`transform:
+translateY(0px)`, `opacity: 1`) continua aplicado depois que a animação acaba.
+Nunca existe um momento em que o `transform` vira `none`, então não há o que os
+motores arredondem de formas diferentes. Mesmo código nos dois, sem caminho de
+render alternativo.
+
+O que mudou em `SiteHeader`:
+
+- `<motion.header>` → `<header>`; os `motion.div`/`.nav`/`.li`/`.span` da entrada
+  viraram elementos comuns com a classe `header-enter`.
+- A cascata saiu de `staggerChildren` e virou a lista `ENTER`, com cada elemento
+  recebendo `--header-enter-delay`. Valores idênticos aos que o Motion gerava
+  (logo 0.12 · nav 0.23/0.28/0.33/0.38 · CTAs 0.31/0.37).
+- `revealFromTop` saiu de `lib/motion.ts`: ficou órfã, só o header usava.
+  `staggerContainer` continua, usada pela Hero.
+- `globals.css` ganhou `@keyframes header-enter` e a utilitária `.header-enter`,
+  e o bloco de movimento reduzido ganhou `animation-delay: 0.01ms !important`
+  (sem isso, quem pede menos movimento ainda assistiria à cascata, só que
+  instantânea).
+- Mantido o `lg:translate-y-[0.5px]` no logo, para o repouso cair em pixel
+  inteiro no `lg`.
+
+O Motion continua no componente só para o `useScroll` que condensa o header ao
+rolar.
+
+**Verificado:** sem `transform` inline no HTML servido (Motion fora do caminho da
+entrada), keyframe no CSS compilado, e screenshot do header completo no estado
+final.
+
+**Não verificado:** o comportamento no Firefox — não tenho Firefox aqui. Depende
+do usuário confirmar.
