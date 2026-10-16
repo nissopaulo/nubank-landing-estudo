@@ -71,6 +71,7 @@ src/
       NoiseOverlay.tsx grão de textura sobre a página inteira
     ui/
       CtaLink.tsx      botão/link de CTA
+      NuLogo.tsx       logo da marca (SVG inline, `currentColor`)
     motion-provider.tsx MotionConfig reducedMotion="user"
   lib/
     hero-cards.ts      geometria dos cards lida do Figma
@@ -171,12 +172,38 @@ de layout, não um valor do design** — ajuste em `globals.css` à vontade.
 O Figma **não define animação** (`get_motion_context` retorna vazio), então o
 movimento foi desenhado aqui:
 
-1. **Entrada** — cards sobem e assentam a rotação, em cascata.
+1. **Entrada em leque** — os cards partem de baixo e giram até a rotação do
+   design, em cascata da esquerda para a direita (ver abaixo).
 2. **Parallax de rolagem** — a camada de cards desliza mais devagar que a página.
 3. **Paralaxe de ponteiro** — deslocamento sutil na direção do cursor
    (apenas em dispositivos com ponteiro fino).
-4. **Header** — condensa e ganha fundo ao rolar.
+4. **Header** — condensa e ganha fundo ao rolar; na entrada, logo, itens de nav
+   e CTAs descem em cascata com `revealFromTop`.
 5. **Texto** — reveal escalonado com `cubic-bezier(0.16, 1, 0.3, 1)`.
+
+### O leque dos cards
+
+Os cards **não surgem**: já estão renderizados, opacos e no tamanho final. No
+primeiro frame estão em `translateY(150%)`, abaixo da borda inferior da Hero, de
+onde o `overflow-clip` da seção os recorta. A única animação deles é o leque:
+cada card sai 18° fora da rotação do design, com pivô em `50% 78%`, e assenta
+nela girando — da esquerda para a direita.
+
+Três decisões:
+
+- **Sem `opacity` e sem `scale`.** Um fade faria o card *surgir* em vez de
+  *chegar*. Ele nasce sólido; quem o traz para dentro da tela é o giro.
+- **`y` em porcentagem da própria altura do card**, não em pixel. A geometria da
+  composição é toda proporcional (`cqw` + `aspect-ratio`), então um pixel fixo
+  desalinharia em outras larguras. 150% é folgado: em 16:9 um card precisa de
+  34% a 58% do próprio tamanho para passar da borda, e viewport mais alta que
+  16:9 exige mais.
+- **Pivô perto da base.** Com pivô no centro o card só gira no lugar; perto da
+  base ele bascula, e é o bascular que lê como leque abrindo.
+
+Os valores estão em `FAN` (`lib/motion.ts`) e na cascata em `FAN_CASCADE`
+(`lib/hero-cards.ts`), esta ordenada pela posição horizontal do card — não pelo
+índice do array, para que a ordem visual seja a ordem da animação.
 
 ### Movimento reduzido
 
@@ -310,14 +337,23 @@ redirecionadores — esta página não tem função de cadastro.
   cards por valores absolutos. Em vez de copiar isso, convertemos para
   unidades de container, o que mantém a composição proporcional em qualquer
   largura.
+- **Logo da marca** (`src/components/ui/NuLogo.tsx`) é o **único path SVG copiado
+  para dentro do código**, e é um desvio consciente. O original continua em
+  `public/images/brand/nu-logo.svg` e os quatro `path` são os mesmos, com
+  `fill="white"` trocado por `currentColor`.
+  Ele **não** usa `mask-image` sobre o arquivo de `/public`, que era a
+  abordagem anterior. A máscara é rasterizada dentro do contexto de empilhamento
+  do ancestral — e o ancestral do logo é animado (transform + opacity na entrada
+  do header). Quando essa camada era recomposta, a máscara não estava resolvida
+  naquele frame e o elemento aparecia como o `background-color: currentColor`
+  **sem a máscara**: um retângulo branco no lugar do logo. `will-change` não
+  resolveu, porque o gatilho é a recomposição do ancestral, não o elemento. Com
+  o SVG inline não existe máscara, nem requisição, nem rasterização ambígua.
 - **Assets**: os SVGs e as artes foram exportados do Figma e salvos em
-  `public/`. Nenhum path foi copiado para dentro do código. Os PNGs dos cartões
-  foram convertidos para WebP (4.370 KB → 341 KB, **−92,2%**).
+  `public/`. Os PNGs dos cartões foram convertidos para WebP (4.370 KB → 341 KB,
+  **−92,2%**).
 - **Ícone do app** (`src/app/icon.svg`) é um quadrado placeholder na cor da
   marca. O definitivo deve ser exportado do Figma.
-- **Logo da marca** usa `mask-image` sobre o SVG original para acompanhar a cor
-  do texto quando o header muda de transparente para sólido. Nenhum path foi
-  copiado para dentro do código.
 - **Contraste de botões**: `leading-normal` do Tailwind vale 1,5 e deixaria os
   CTAs com 44 px; o Figma usa a altura natural do Montserrat, então usamos
   `leading-[1.25]` (40 px).

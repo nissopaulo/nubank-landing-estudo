@@ -68,41 +68,6 @@
 }
 
 @layer utilities {
-  /*
-   * Ícone SVG colorido pelo texto corrente.
-   *
-   * Usamos a máscara em vez de <img> porque os SVGs do Figma são brancos
-   * (fill="white") e precisam acompanhar a cor do texto quando o header
-   * passa de transparente para sólido. A máscara consome o arquivo original
-   * de /public — nenhum path foi copiado para dentro do código.
-   */
-  .nu-icon {
-    display: inline-block;
-    flex: none;
-    background-color: currentColor;
-    -webkit-mask-image: var(--nu-icon-src);
-    mask-image: var(--nu-icon-src);
-    -webkit-mask-size: contain;
-    mask-size: contain;
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    mask-position: center;
-
-    /*
-     * Promove o ícone a uma camada própria.
-     *
-     * Sem isso, animar o ancestral (o reveal do header) faz o navegador
-     * rasterizar a máscara de novo a cada quadro. No fim da animação o Motion
-     * remove a transform, e essa última re-rasterização chegava um instante
-     * depois do paint — o logo piscava e voltava.
-     *
-     * Com a camada própria, a máscara é rasterizada uma vez e as transformações
-     * do ancestral movem o resultado pronto, sem repintar a máscara.
-     */
-    will-change: transform, opacity;
-  }
-
   .sr-only-focusable:not(:focus):not(:focus-within) {
     position: absolute;
     width: 1px;

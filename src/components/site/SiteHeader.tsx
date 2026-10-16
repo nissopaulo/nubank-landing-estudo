@@ -1,11 +1,11 @@
 "use client";
 
-import type { CSSProperties } from "react";
 import { useState } from "react";
 import { motion, useMotionValueEvent, useScroll } from "motion/react";
 import { CaretDown } from "@phosphor-icons/react/dist/ssr/CaretDown";
 
 import { CtaLink } from "@/components/ui/CtaLink";
+import { NuLogo } from "@/components/ui/NuLogo";
 import { revealFromTop, staggerContainer } from "@/lib/motion";
 
 /**
@@ -26,10 +26,6 @@ import { revealFromTop, staggerContainer } from "@/lib/motion";
  * desenhar os painéis no Figma, basta preencher `NAV_PANELS`.
  */
 const NAV_ITEMS = ["Para Você", "Para seu negócio", "Segurança", "Saiba Mais"];
-
-const icon = (src: string): CSSProperties => ({
-  ["--nu-icon-src" as string]: `url(${src})`,
-});
 
 export function SiteHeader() {
   const [condensed, setCondensed] = useState(false);
@@ -63,11 +59,7 @@ export function SiteHeader() {
             aria-label="Ir para o início da página"
             variants={revealFromTop}
           >
-            <span
-              className="nu-icon block h-[22px] w-10 md:h-[28px] md:w-[52px] lg:h-[35px] lg:w-16"
-              style={icon("/images/brand/nu-logo.svg")}
-              aria-hidden="true"
-            />
+            <NuLogo className="block h-[22px] w-10 md:h-[28px] md:w-[52px] lg:h-[35px] lg:w-16" />
             <span className="sr-only">Nubank</span>
           </motion.a>
 

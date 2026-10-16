@@ -390,3 +390,52 @@ não deve voltar sem o usuário pedir.
 
 Verificado por screenshot do primeiro frame em produção: cards invisíveis e
 header invisível, que é o estado inicial correto.
+
+### 2026-10-16 — leque definitivo (sem surgir) e o piscar do logo, resolvido
+
+As duas interpretações anteriores da animação dos cards estavam erradas na
+direção — esta é a correta.
+
+**Cards: escondidos abaixo da seção, não por opacity.** O usuário foi claro: os
+cards precisam **já estar renderizados** e **literalmente escondidos embaixo da
+seção**, e a **única** animação é o leque. Estado final:
+`initial={{ rotate: FAN.from, y: FAN.y }}` → `animate={{ rotate: 0, y: 0 }}`, com
+`FAN.y = "150%"`.
+
+Sem `opacity` e sem `scale` — é isso que produzia o "surgir". O card nasce sólido
+e do tamanho final; o que o esconde é estar em `translateY(150%)`, abaixo da
+borda inferior da Hero, de onde o `overflow-clip` da seção recorta. O leque o
+traz para dentro da tela.
+
+`y` é **porcentagem da própria altura do card**, não pixel: a geometria da
+composição é toda proporcional (`cqw` + `aspect-ratio`). 150% é folgado porque em
+16:9 um card precisa de 34% a 58% do próprio tamanho para passar da borda, e
+viewport mais alta que 16:9 exige mais.
+
+Verificado no HTML do servidor: `transform:translateY(150%) rotate(-18deg)` sem
+`opacity` — é exatamente o que distingue "escondido por posição" de "escondido
+por fade". Frame 0 em produção, sem cards visíveis.
+
+**Logo: a máscara foi eliminada, não remendada.** O piscar era um **retângulo
+branco**, não o logo sumindo: `.nu-icon` tinha `background-color: currentColor` e
+`mask-image` sobre o SVG de `/public`; quando a máscara não estava resolvida
+naquele frame, o elemento aparecia com o fundo cru e sem a forma.
+
+Duas tentativas anteriores falharam, por motivos diferentes:
+1. `will-change: transform, opacity` — não resolveu, porque o gatilho é a
+   recomposição do **ancestral** animado (transform + opacity na entrada do
+   header), não o elemento.
+2. E nem chegou a ser testado de verdade: o `next dev` servia CSS desatualizado
+   (já registrado acima como a segunda vez que isso acontece).
+
+Solução: `src/components/ui/NuLogo.tsx` com o SVG **inline** e
+`fill="currentColor"`. Sem máscara, sem requisição, sem rasterização ambígua. A
+utilitária `.nu-icon` e o helper `icon()` foram removidos — não sobrou uso.
+
+**É o único path SVG dentro do código, e é um desvio consciente da convenção.** O
+original segue em `public/images/brand/nu-logo.svg`, e os quatro `path` são os
+mesmos com `fill="white"` trocado por `currentColor`. Documentado no README e no
+próprio componente. O `preserveAspectRatio="none"` do original foi descartado: o
+`width="64" height="34.91"` com o CSS esticando para 64×35 dá proporção
+praticamente igual, e o padrão `meet` evita a distorção que o `none` produziria
+em larguras diferentes da original.

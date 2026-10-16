@@ -74,11 +74,17 @@ export const revealFromTop: Variants = {
  * dá uma rotação diferente a cada card (-38° a +52°), somar um deslocamento
  * constante é o que faz o leque parecer fechado no início e aberto no fim.
  *
- * Só a rotação e o fade: sem `y` e sem `scale`. O card já nasce no tamanho e
- * na posição finais — ele não chega, ele *aparece*. Um deslocamento vertical
- * faria a entrada voltar a ler como "surgir", que foi o que se pediu para tirar
- * na primeira revisão. O `opacity` fica, porque o card precisa começar
- * escondido; ele é revelado pelo giro, e não por um efeito separado.
+ * `y` é o detalhe que define a animação. O card **nasce renderizado, opaco e
+ * no tamanho final**, mas em `y` abaixo da Hero, de onde o `overflow-clip` da
+ * seção o esconde. O leque o traz para dentro da tela. Sem `opacity` e sem
+ * `scale`: um fade faria o card *surgir* em vez de *chegar*, que foi
+ * justamente o que se pediu para tirar.
+ *
+ * O deslocamento é em porcentagem **da própria altura do card**, que resolve
+ * pela cadeia de alturas do slot (o slot tem `aspect-ratio`). 150% é folgado
+ * de propósito: em 16:9 um card precisa de 34% a 58% do próprio tamanho para
+ * passar da borda inferior da Hero, e viewport mais alta que 16:9 exige mais
+ * ainda. Com 100% bastaria em 1920×1080 e vazaria em telas altas.
  *
  * `origin` fica perto da base de propósito: com o pivô no centro o card
  * apenas gira no lugar; perto da base ele bascula, e é o bascular que lê como
@@ -87,6 +93,8 @@ export const revealFromTop: Variants = {
 export const FAN = {
   /** Ângulo inicial, em graus, somado à rotação final do card. */
   from: -18,
+  /** Quanto o card começa abaixo da Hero, em % da altura dele. */
+  y: "150%",
   /** Ponto de rotação — perto da base, para o card bascular. */
   origin: "50% 78%",
 } as const;
