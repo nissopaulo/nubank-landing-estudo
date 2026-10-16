@@ -71,6 +71,61 @@ provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
    como asset ou componente.
 10. **Escopo de portfólio, não de produção.** Sem backend, sem analytics, sem
     requisições a terceiros. CTAs são links redirecionadores para nubank.com.br.
+11. **Storybook adiado até o design system existir no Figma** (decisão do
+    usuário, 2026-10-16). Motivos: os tokens já têm casa autoritativa — o
+    `@theme` do `globals.css` — e o Storybook *renderiza* token, não o armazena,
+    então viria a ser um segundo lugar para manter em sincronia. Além disso o
+    catálogo de hoje seria reescrito quando os componentes definitivos chegarem.
+    Quando chegar, há três atritos já identificados: (a) `next/font/google` não
+    roda no Storybook e `--font-nu-montserrat` ficaria indefinido — a saída é
+    auto-hospedar a Montserrat como `@font-face` puro, o que remove também a
+    consulta ao Google no build; (b) Tailwind v4 exige `@tailwindcss/vite` no
+    `.storybook/main.ts`; (c) os componentes são `"use client"` com Motion e
+    `initial={{opacity:0}}`, então toda story abre invisível e precisa de
+    decorator global.
+12. **O design system no Figma vai usar Variables, não só styles** (combinado em
+    2026-10-16). É o que permite ler as variables pela MCP (`get_variable_defs`)
+    e diferenciá-las contra o `@theme` — a verificação de deriva mais direta que
+    existe, e mais barata que Storybook. Componentes como **variants** de
+    `state`/`size`, não cópias diferentes.
+
+---
+
+## Mapeamento Figma → código
+
+Lido de `get_variable_defs` no nó `14:446` em 2026-10-16: **15 variables**.
+Treze viraram token; duas são alias do mesmo valor.
+
+| Variable no Figma | Hex | Token no `globals.css` |
+|---|---|---|
+| `Purple/950` | `#2e1065` | `--color-nu-purple-950` |
+| `Purple/800` | `#6a08ad` | `--color-nu-purple-800` |
+| `Purple/600` | `#9b2fe8` | `--color-nu-purple-600` |
+| `Purple/400` | `#c084fc` | `--color-nu-purple-400` |
+| `Neutral/100` | `#f3f4f6` | `--color-nu-neutral-100` |
+| `Neutral/200` | `#e5e7eb` | `--color-nu-neutral-200` |
+| `Neutral/300` | `#d1d5db` | `--color-nu-neutral-300` |
+| `Neutral/400` | `#9ca3af` | `--color-nu-neutral-400` |
+| `Neutral/800` | `#1c1c1e` | `--color-nu-neutral-800` |
+| `Text/text-primary` | `#111111` | `--color-nu-text-primary` |
+| `Action/action-secondary` | `#f3e8ff` | `--color-nu-action-surface` |
+| `Action/action-primary-text` | `#ffffff` | `--color-nu-action-text` |
+| `Action/action-secondary-text` **ou** `Text/text-brand` | `#820ad1` | `--color-nu-brand` |
+| — (não é variable) | `#d8b4fe` | `--color-nu-hero-stop-3` |
+
+**Três pontos para resolver ao criar o design system:**
+
+1. **`#820ad1` tem dois nomes no Figma** — `Action/action-secondary-text` e
+   `Text/text-brand`. Consolidar em um só quando o DS for criado.
+2. **Três tokens foram renomeados** em relação ao Figma (`action-secondary` →
+   `action-surface`, `action-primary-text` → `action-text`, `action-secondary-text`
+   → `brand`). A renomeação foi boa — `surface`/`text` descrevem melhor o papel
+   — mas significa que a comparação automática entre os dois lados não pode ser
+   por igualdade de nome. Vale decidir: manter a tabela acima como mapa
+   explícito, ou renomear também no Figma.
+3. **`#d8b4fe` foi lido direto do gradiente** do nó `14:460`, não de variable.
+   Se o DS for criado, vale promovê-lo a variable para que nada mais dependa de
+   leitura manual.
 
 ---
 
@@ -84,6 +139,8 @@ provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
 | 4 | Exportar do Figma o ícone do app definitivo (hoje é um quadrado placeholder) | `src/app/icon.svg` |
 | 5 | Revisar texto do rodapé com o usuário (a parte mobile dos cards saiu da lista) | — |
 | 6 | Limpar comentário desatualizado em `HeroSection.tsx` — ainda cita `Neutral/200`, 2,74:1 e "ainda não atinge 4.5:1". O estado real é branco puro a 5,52:1, passando AA | `src/components/hero/HeroSection.tsx` |
+| 7 | Regra de ESLint proibindo hex literal fora do `globals.css`. Motivo: o gradiente de `HeroSection.tsx:27` tem quatro hex hardcoded no JSX, três deles já existentes como token — e isso passou por lint e revisão. É a única trava de deriva que dá para instalar **antes** do design system existir. Prioridade baixa por decisão do usuário (ver Storybook) | `eslint.config.mjs` |
+| 8 | Montar o catálogo de componentes (Storybook ou equivalente) **depois** que o design system existir — ver decisão 11 | — |
 
 **No Figma hoje só existe o frame `Hero Section`** (mais os 4 frames soltos de
 arte dos cartões). Não há design das seções seguintes — por isso os itens 1 e 2
@@ -154,3 +211,22 @@ de código que dá para fazer sem esperar o Figma.
   em mobile até esse design existir — nada de criar breakpoints, refinar o CSS
   de tela estreita ou auditar celular. Registrado como decisão 7 e como item de
   "Antes de sugerir código".
+
+### 2026-10-16 — Storybook discutido e adiado
+
+Perguntou-se se um Storybook evitaria deriva de tokens. **Resposta: não agora**,
+e o usuário concordou em esperar o design system do Figma. Ver decisão 11 para
+o raciocínio completo e para os três atritos já mapeados, para não ter que
+rediscutar do zero quando a hora chegar.
+
+Fechou-se também o combinado de que **o DS no Figma vai usar Variables** em
+Collections, com componentes em variants de `state`/`size` — é o que habilita a
+comparação automática Figma ↔ `@theme` (decisão 12).
+
+Leitura de `get_variable_defs` no nó `14:446` registrada em **Mapeamento
+Figma → código**, com três pendências para quando o DS existir: consolidar o
+`#820ad1` que tem dois nomes, decidir entre mapa explícito e renomear os
+tokens no Figma, e promover `#d8b4fe` a variable.
+
+**Próximo passo inalterado:** desenhar os painéis dos submenus da navegação,
+depois o design system. O DS é a dependência do item 8.
