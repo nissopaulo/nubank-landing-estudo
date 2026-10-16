@@ -123,17 +123,19 @@
    *    recebe grão — era um requisito explícito. Ao condensar, o `backdrop-blur`
    *    ainda borra o que estiver atrás, mas o branco a 85% já dissolve o resto.
    *
-   * A opacidade é baixa de propósito: 3% move os canais em ±1,5%, o que aparece
-   * como textura sem competir com o texto. Ajuste com a custom property sem
-   * tocar no resto. Para ajustar por componente:
-   *   style={{ "--nu-grain-opacity": 0.05 }}
+   * A opacidade é baixa de propósito: 8% move os canais em ±4%, o que aparece
+   * como textura sem competir com o texto. Os 3% iniciais passavam limpos —
+   * ~1,5% de deslocamento é limiar de percepção em área grande e chapada, e na
+   * tela não dava para notar que o efeito existia. Ajuste com a custom property
+   * sem tocar no resto. Para ajustar por componente:
+   *   style={{ "--nu-grain-opacity": 0.12 }}
    */
   .nu-grain {
     position: fixed;
     inset: 0;
     pointer-events: none;
     z-index: 40;
-    opacity: var(--nu-grain-opacity, 0.03);
+    opacity: var(--nu-grain-opacity, 0.08);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E");
     background-repeat: repeat;
   }
