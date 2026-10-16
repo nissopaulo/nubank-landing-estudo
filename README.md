@@ -159,23 +159,33 @@ Em `lib/hero-cards.ts` isso vira custom properties:
 
 ### Sombra dos cards
 
-`.card-art` tem `filter: drop-shadow(0 10px 16px purple-950 / 0.7)`.
+`.card-art` usa **duas sombras empilhadas**:
 
-- **`drop-shadow`, não `box-shadow`.** As artes em WebP têm canal alfa e os
-  cantos arredondados do Figma, então `drop-shadow` segue a silhueta real do
-  cartão. Um `box-shadow` ali seria retangular, porque a caixa do slot é maior
-  que a arte.
+```css
+filter:
+  drop-shadow(0 1px 2px var(--color-nu-purple-950) / 0.45)
+  drop-shadow(0 14px 28px var(--color-nu-purple-950) / 0.55);
+```
+
+- **`drop-shadow`, não `box-shadow`.** As artes em WebP têm canal alfa (chunk
+  `VP8X`, flag `ALPHA`) e os cantos arredondados do Figma, então `drop-shadow`
+  segue a silhueta real. Um `box-shadow` ali seria retangular, porque a caixa
+  do slot é maior que a arte.
+- **Duas camadas**, que é a técnica padrão de elevação: a de **contato**
+  (1px/2px) define a borda e separa um card do outro onde se sobrepõem; a de
+  **difusão** (14px/28px) cria a sensação de altura. Sombra única e suave não
+  separa nada — é difusa demais para marcar a borda.
 - **No `.card-art`, não na `<img>`.** O deslocamento é aplicado no espaço local
   do elemento, antes da rotação — então a sombra sai inclinada junto com o card
   em vez de destacada dele.
 - **Roxo `950`, não preto**, para não sujar o gradiente.
 
-Intensidade calibrada por comparação lado a lado, com o card na posição e no
-tamanho **reais** da Hero. O detalhe que faz a diferença: `drop-shadow` espalha
-a energia da sombra pelo raio de desfoque, então o valor é a opacidade da *cor*,
-não o pico que chega na tela — blur largo exige opacidade bem maior do que o
-instinto sugere. E medir sobre o roxo escuro do topo da Hero dá um número que
-não transfere para a parte clara do gradiente, onde os cards ficam de verdade.
+> Esta parte custou três calibrações. Duas mediram a sombra de difusão sozinha,
+> e uma mediu no lugar errado (topo do gradiente, onde os cards não ficam). O
+> que resolveu foi a técnica de duas camadas, não um número maior. E, antes de
+> calibrar, confirme que o efeito **aplica**: um `drop-shadow(0 0 25px red)` na
+> página real prova isso em um build — foi ele que mostrou que o filtro e o
+> token estavam certos e o que faltava era estrutura, não intensidade.
 
 ### Mobile
 

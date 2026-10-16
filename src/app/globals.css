@@ -189,41 +189,31 @@
 .card-art {
   rotate: var(--card-rot);
   /*
-   * Sombra de profundidade. `drop-shadow` e não `box-shadow`: as artes em WebP
-   * têm canal alfa e os cantos arredondados do Figma, então `drop-shadow`
-   * segue a silhueta real do cartão. Um `box-shadow` aqui seria retangular,
-   * porque a caixa do slot é maior que a arte.
+   * Sombra de profundidade dos cards.
    *
-   * Fica no `.card-art` (e não na imagem) para que a sombra gire junto com o
+   * `drop-shadow`, não `box-shadow`: as artes em WebP têm canal alfa (chunks
+   * `VP8X` com a flag `ALPHA`) e os cantos arredondados do Figma, então
+   * `drop-shadow` segue a silhueta real. Um `box-shadow` no `.card-art` seria
+   * retangular, porque a caixa do slot é maior que a arte.
+   *
+   * DUAS sombras empilhadas, que é a técnica padrão de elevação:
+   *   - a de CONTATO é apertada (1px/2px) e define a borda, separando um card
+   *     do outro onde eles se sobrepõem;
+   *   - a de DIFUSÃO é larga (14px/28px) e cria a sensação de altura.
+   *
+   * Uma sombra única e suave não separa nada — é difusa demais para marcar a
+   * borda, e era por isso que ela simplesmente não aparecia. Medir só a sombra
+   * de difusão foi o erro: a de contato é a que dá leitura.
+   *
+   * Fica no `.card-art` (e não na `<img>`) para que a sombra gire junto com o
    * card: o deslocamento é aplicado no espaço local do elemento, antes da
    * rotação, e sai inclinado com a arte em vez de destacado dela.
    *
-   * A cor é o roxo mais escuro da paleta, em vez de preto, para a sombra não
-   * sujar o gradiente.
-   *
-   * Intensidade calibrada por comparação lado a lado, com o card na posição e
-   * no tamanho REAIS da Hero (Chrome headless). Duas calibrações anteriores
-   * erraram, e vale registrar por quê:
-   *
-   * 1. A primeira (0.20 / 26px) partiu do chute de "bem de leve". O chute
-   *    ignorava que `drop-shadow` espalha a energia da sombra pelo raio de
-   *    desfoque: o valor é a opacidade da *cor*, não o pico que chega na tela.
-   *    Com blur largo o pico fica muito abaixo e a sombra evapora.
-   * 2. A segunda (0.50 / 20px) melhorou o pico, mas foi medida com o card no
-   *    topo da regua, contra o roxo escuro. Na posição real os cards ficam no
-   *    fim da Hero, sobre a parte clara do gradiente — e é ali que a sombra
-   *    precisa aparecer. Medir no contexto errado dá um número que não
-   *    transfere.
-   *
-   * Confirmado depois com um `drop-shadow(0 0 25px red)` na página real: o
-   * filtro aplica e segue a silhueta do card normalmente. O que faltava era
-   * intensidade, não mecanismo.
-   *
-   * 0.70 é onde a separação entre os cards que se sobrepõem fica legível sem
-   * virar drama. Sombra fechada lê como "objeto suspenso"; larga e forte lê como
-   * brilho.
+   * Cor roxo `950`, não preto, para não sujar o gradiente.
    */
-  filter: drop-shadow(0 10px 16px var(--color-nu-purple-950) / 0.7);
+  filter:
+    drop-shadow(0 1px 2px var(--color-nu-purple-950) / 0.45)
+    drop-shadow(0 14px 28px var(--color-nu-purple-950) / 0.55);
 }
 
 @media (max-width: 1023px) {

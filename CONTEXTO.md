@@ -643,3 +643,55 @@ a composição crescer muito.
 **Fluxo "pode commitar"** registrado na seção própria deste arquivo: tipos, lint,
 build (obrigatório, por causa da Vercel), commit com mensagem longa e
 `git commit -F` em vez de `-m` múltiplos, que o PowerShell embaralha.
+
+### 2026-10-16 — sombra dos cards: duas camadas, depois de três calibrações erradas
+
+A sombra foi calibrada três vezes e as três primeiras falharam. O registro importa
+mais que o número final.
+
+**Erro 1 — chute sem base.** `0.20` com 26px de blur, do instinto de "bem de
+leve". Ignorava que `drop-shadow` espalha a energia da sombra pelo raio de
+desfoque: o valor é a opacidade da *cor*, não o pico que chega na tela.
+
+**Erro 2 — não resolveu.** Subi para `0.50` e ajustei o blur; continuou
+imperceptível.
+
+**Erro 3 — medi no lugar errado.** Ao refazer a régua, posicionei o card no topo
+do gradiente, contra o roxo escuro. Na composição real os cards ficam no fim da
+Hero, sobre a parte clara. Número medido no contexto errado não transfere.
+
+**O que resolveu não foi um número maior, foi estrutura:** DUAS sombras
+empilhadas, a técnica padrão de elevação.
+
+```
+drop-shadow(0 1px 2px  purple-950 / .45)   <- contato: define a borda
+drop-shadow(0 14px 28px purple-950 / .55)  <- difusão: cria a altura
+```
+
+As três calibrações mediram **só a sombra de difusão**. E difusão sozinha é
+justamente o que não separa nada: larga demais para marcar a borda. Quem dá
+leitura num card sobreposto é a de contato.
+
+**Antes de recalibrar, confirmar que o efeito APLICA.** Um
+`drop-shadow(0 0 25px red)` na página real acendeu todos os cards — filtro,
+token e silhueta estavam certos, e o que faltava era estrutura. Isso poupou
+duas calibrações inúteis e evitou mexer na rastreabilidade do token.
+
+**Firefox:** está instalado na máquina, e foi testado. Duas hipóteses minhas
+caíram antes de chegar na causa:
+
+1. "`filter` junto com a propriedade `rotate` no mesmo elemento é bug do
+   Firefox" — **falso**. Testei as três combinações (rotate no pai, filter
+   sozinho, rotate e filter juntos): o Firefox renderiza as três normalmente.
+2. "`will-change: transform` no filho quebra o filtro do pai" — **falso**.
+   Testei a cadeia real completa (slot com `translate` → `.card-art` com
+   `rotate` + `filter` → div com `will-change` → `img`): renderiza.
+
+Também confirmei que o **dev server** servia o CSS certo, então não era a
+armadilha de CSS velho dessa vez. Continuar checando antes de culpar o código.
+
+**Método para capturar o Firefox:** `firefox --headless --profile <dir>
+--screenshot`. Limitação: fotografa no load, então a entrada dos cards (≈2s, em
+rAF) ainda não terminou — para ver o estado final no Firefox não há método
+aqui. O que resolve é isolar a pergunta numa página de teste, e foi assim que as
+duas hipóteses caíram.
