@@ -50,14 +50,21 @@ provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
 6. **Cards em `cqw` + `aspect-ratio`**, nunca pixel absoluto: escala sem distorcer
    em proporção diferente de 16:9. A bbox do card já é rotacionada, então a arte
    usa `height: <fração>%`.
-7. **Composição mobile dos cards é decisão de layout, não do design.** O Figma só
-   define 1920×1080; abaixo de 1024 px os quatro cards ficam ilegíveis, então o
-   CSS troca para dois maiores e mais baixos.
+7. **Desktop first; mobile está adiado por decisão do usuário (2026-10-16).** O
+   Figma só tem 1920×1080 e o usuário vai desenhar a versão mobile lá. Até lá,
+   **não investir em mobile**: não criar breakpoints, não refinar o CSS de
+   telas estreitas, não auditar o layout em celular. Decisões e medidas devem
+   ser tomadas no desktop e valem como referência; o comportamento em telas
+   estreitas é considerado não projetado, não um bug a corrigir.
+7a. **Composição mobile dos cards é decisão de layout, não do design.** Abaixo de
+   1024 px os quatro cards ficam ilegíveis, então o CSS troca para dois maiores
+   e mais baixos. É o que existe — não melhorar agora.
 7b. **Desvio consciente: cards 160 px mais abaixo.** `mt-40` em `.card-art`
    baixa a arte dentro da bbox. É decisão do usuário, não do Figma — a tabela de
    fidelidade do README (y 842,24 / 693,43 / 705,61 / 814,86) **não** descreve
    mais o que está na tela. `mt-40` é px fixo e vale para todos os breakpoints,
-   enquanto a geometria dos slots é `cqw`/%; conferir o resultado no mobile.
+   enquanto a geometria dos slots é `cqw`/%; o efeito no mobile não foi
+   avaliado e fica pendente para quando o design mobile existir.
 8. **Movimento é autoria nossa.** `get_motion_context` do Figma retorna vazio —
    entrada em cascata, parallax de rolagem e ponteiro, header que condensa.
 9. **Nenhum path de SVG copiado para dentro do código.** Logo e ícones entram
@@ -73,9 +80,9 @@ provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
 |---|---|---|
 | 1 | **Desenhar no Figma os painéis dos submenus da navegação.** É o próximo passo combinado. | `SiteHeader.tsx` |
 | 2 | Desenhar no Figma as seções `Porque a Nu`, `Cartões`, `Diferenciais` | `SiteFooter.tsx` (`PendingSections`) |
-| 3 | Menu mobile (depende do nº 1) | `SiteHeader.tsx` |
+| 3 | Menu mobile (depende do nº 1) — **adiado**, só depois que o design mobile existir | `SiteHeader.tsx` |
 | 4 | Exportar do Figma o ícone do app definitivo (hoje é um quadrado placeholder) | `src/app/icon.svg` |
-| 5 | Revisar texto do rodapé e a composição mobile dos cards com o usuário | — |
+| 5 | Revisar texto do rodapé com o usuário (a parte mobile dos cards saiu da lista) | — |
 | 6 | Limpar comentário desatualizado em `HeroSection.tsx` — ainda cita `Neutral/200`, 2,74:1 e "ainda não atinge 4.5:1". O estado real é branco puro a 5,52:1, passando AA | `src/components/hero/HeroSection.tsx` |
 
 **No Figma hoje só existe o frame `Hero Section`** (mais os 4 frames soltos de
@@ -90,6 +97,10 @@ bloqueiam o resto.
   nome da variável). `README.md > Fidelidade medida contra o Figma` é o padrão.
 - Não quebrar as garantias já pagas: contraste AA medido, sem hydration mismatch,
   sem `aria-disabled` silencioso, sem conteúdo inventado.
+- **Trabalhar e julgar no desktop (≥1024 px).** Não propor breakpoint novo, nem
+  "aproveitar para já tratar o mobile", nem auditar tela estreita — a menos que
+  o usuário peça. Medidas, espaçamentos e decisões de layout são tomadas no
+  frame de 1920×1080 do Figma.
 
 ---
 
@@ -133,10 +144,13 @@ de código que dá para fazer sem esperar o Figma.
 
 - **Ajuste do usuário:** `mt-40` em `.card-art` (`CardsShowcase.tsx:94`) para
   baixar a arte dos cards dentro da bbox. Lint e tipos passam.
-  ⚠️ `mt-40` são 160 px **fixos**, aplicados também abaixo de 1024 px — onde os
-  slots usam `top: 82%/86%` da altura da Hero. 160 px ali é ~43% da largura de
-  um celular e pode empurrar os cards para fora da dobra. **Conferir no mobile**;
-  se estiver ruim, a correção é `lg:mt-40` (só no desktop).
+  `mt-40` são 160 px **fixos**, contra uma geometria de slots em `cqw`/%. No
+  mobile não foi avaliado — e não precisa ser agora: ver decisão 7.
 - **Memória do projeto criada:** `CONTEXTO.md` na raiz + ponteiro no `AGENTS.md`
   instructing o agente a lê-lo no início de cada sessão. Passa a ser o lugar
   onde registrar decisões, pendências e histórico de sessão.
+- **Escopo definido pelo usuário: desktop primeiro, mobile adiado.** Ele vai
+  desenhar a versão mobile no Figma. Passa a valer a regra de que não se investe
+  em mobile até esse design existir — nada de criar breakpoints, refinar o CSS
+  de tela estreita ou auditar celular. Registrado como decisão 7 e como item de
+  "Antes de sugerir código".
