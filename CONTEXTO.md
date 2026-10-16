@@ -695,3 +695,46 @@ armadilha de CSS velho dessa vez. Continuar checando antes de culpar o código.
 rAF) ainda não terminou — para ver o estado final no Firefox não há método
 aqui. O que resolve é isolar a pergunta numa página de teste, e foi assim que as
 duas hipóteses caíram.
+
+### 2026-10-16 — a sombra dos cards é VALOR DO FIGMA, e eu errei quatro vezes
+
+O usuário mandou o CSS do card do Figma:
+
+```css
+border-radius: 15.461px;
+background: linear-gradient(202deg, #EEECE9 0%, #BFB299 50.14%, #8F7F64 100%);
+box-shadow: -8.226px 10.968px 18.281px 0 rgba(0, 0, 0, 0.10);
+```
+
+**Eu vinha afirmando, em três commits, que o Figma não tinha sombra nos cards.
+Estava errado.** Eu tinha lido o design context procurando `boxShadow` e não
+encontrei — mas não procurei direito, e o valor estava lá o tempo todo.
+
+Quatro tentativas de intuir o número (0.20/26px → 0.50/20px → 0.70/10/16px →
+duas camadas), todas baseadas em "bem de leve" e em réguas renderizadas por
+mim. **A lição que importa não é de CSS: é de método.** Quando um valor existe no
+design, ele se lê no design — não se estima, não se calibra por comparação
+visual. Eu gastei quatro commits calibrando por intuição o que era uma leitura.
+
+Segunda lição, que já estava valendo: antes de calibrar, confirmar que o efeito
+**aplica**. O `drop-shadow(0 0 25px red)` na página real provou em um build que
+filtro e token estavam certos — e o que faltava era estrutura, não intensidade.
+Sem aquele teste eu continuava mexendo em número.
+
+**Implementação.** `box-shadow` na `<img>`, não no `.card-art`: a caixa do
+`.card-art` é a do *slot*, maior que a arte (o slot tem o bounding box já
+rotacionado), e a sombra sairia errada em volta do cartão. A `<img>` tem
+exatamente o retângulo da arte — a largura vem da proporção intrínseca do WebP e
+a altura do `artHeightPct`.
+
+`box-shadow` em vez de `drop-shadow` porque o `drop-shadow` seguiria o alfa, que
+aqui é o arredondamento de `15.461px` gravado na arte — e a diferença é
+desprezível, já que a sombra é deslocada 8/11px e borrada em 18px.
+
+**Achado de operação, pela terceira vez:** o `next dev` (:3000) servia uma
+versão atrasada da regra enquanto o build de produção já tinha a nova. Antes de
+suspectar do código, conferir o CSS servido nos dois ports.
+
+**Pendente de confirmação:** o `next dev` do usuário precisa ser reiniciado, e
+falta o retorno sobre Firefox na entrada do header (que agora é CSS puro com
+`animation-fill-mode: both`).

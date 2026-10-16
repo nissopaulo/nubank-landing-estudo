@@ -188,32 +188,32 @@
 
 .card-art {
   rotate: var(--card-rot);
-  /*
-   * Sombra de profundidade dos cards.
-   *
-   * `drop-shadow`, não `box-shadow`: as artes em WebP têm canal alfa (chunks
-   * `VP8X` com a flag `ALPHA`) e os cantos arredondados do Figma, então
-   * `drop-shadow` segue a silhueta real. Um `box-shadow` no `.card-art` seria
-   * retangular, porque a caixa do slot é maior que a arte.
-   *
-   * DUAS sombras empilhadas, que é a técnica padrão de elevação:
-   *   - a de CONTATO é apertada (1px/2px) e define a borda, separando um card
-   *     do outro onde eles se sobrepõem;
-   *   - a de DIFUSÃO é larga (14px/28px) e cria a sensação de altura.
-   *
-   * Uma sombra única e suave não separa nada — é difusa demais para marcar a
-   * borda, e era por isso que ela simplesmente não aparecia. Medir só a sombra
-   * de difusão foi o erro: a de contato é a que dá leitura.
-   *
-   * Fica no `.card-art` (e não na `<img>`) para que a sombra gire junto com o
-   * card: o deslocamento é aplicado no espaço local do elemento, antes da
-   * rotação, e sai inclinado com a arte em vez de destacado dela.
-   *
-   * Cor roxo `950`, não preto, para não sujar o gradiente.
-   */
-  filter:
-    drop-shadow(0 2px 4px var(--color-nu-purple-950) / 0.5)
-    drop-shadow(0 18px 36px var(--color-nu-purple-950) / 0.7);
+}
+
+/*
+ * Sombra do card — os MESMOS valores do Figma, lidos do style do card
+ * `nu-card-croma`:
+ *
+ *   border-radius: 15.461px
+ *   box-shadow: -8.226px 10.968px 18.281px 0 rgba(0, 0, 0, 0.10)
+ *
+ * Fica na `<img>`, e não no `.card-art`. A caixa do `.card-art` é a do SLOT,
+ * que é maior que a arte do card (o slot tem o bounding box já rotacionado), e
+ * uma sombra retangular daquele tamanho apareceria errada em volta do cartão.
+ * A `<img>` tem exatamente o retângulo da arte — a largura sai da proporção
+ * intrínseca do WebP e a altura vem do `artHeightPct`.
+ *
+ * `box-shadow` em vez de `drop-shadow`: o `drop-shadow` segue o canal alfa,
+ * que aqui é o do arredondamento de 15.461px gravado na arte. A diferença é
+ * desprezível aqui porque a sombra do design é deslocada 8px na horizontal e
+ * 11px na vertical e borrada em 18px — os cantos da sombra ficam longe o
+ * bastante da arte para o arredondamento não aparecer.
+ *
+ * E o deslocamento é por elemento: a rotação do card está no `.card-art`, e a
+ * sombra sai girada junto, como no design.
+ */
+.card-shadow {
+  box-shadow: -8.226px 10.968px 18.281px 0 rgb(0 0 0 / 0.1);
 }
 
 @media (max-width: 1023px) {

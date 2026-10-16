@@ -159,33 +159,38 @@ Em `lib/hero-cards.ts` isso vira custom properties:
 
 ### Sombra dos cards
 
-`.card-art` usa **duas sombras empilhadas**:
+Os valores vêm do style do card no Figma (`nu-card-croma`), lidos direto:
 
 ```css
-filter:
-  drop-shadow(0 1px 2px var(--color-nu-purple-950) / 0.45)
-  drop-shadow(0 14px 28px var(--color-nu-purple-950) / 0.55);
+.card-shadow {
+  box-shadow: -8.226px 10.968px 18.281px 0 rgb(0 0 0 / 0.1);
+}
 ```
 
-- **`drop-shadow`, não `box-shadow`.** As artes em WebP têm canal alfa (chunk
-  `VP8X`, flag `ALPHA`) e os cantos arredondados do Figma, então `drop-shadow`
-  segue a silhueta real. Um `box-shadow` ali seria retangular, porque a caixa
-  do slot é maior que a arte.
-- **Duas camadas**, que é a técnica padrão de elevação: a de **contato**
-  (1px/2px) define a borda e separa um card do outro onde se sobrepõem; a de
-  **difusão** (14px/28px) cria a sensação de altura. Sombra única e suave não
-  separa nada — é difusa demais para marcar a borda.
-- **No `.card-art`, não na `<img>`.** O deslocamento é aplicado no espaço local
-  do elemento, antes da rotação — então a sombra sai inclinada junto com o card
-  em vez de destacada dele.
-- **Roxo `950`, não preto**, para não sujar o gradiente.
+- **Na `<img>`, não no `.card-art`.** A caixa do `.card-art` é a do *slot*, que
+  é maior que a arte do card (o slot tem o bounding box já rotacionado) — uma
+  sombra naquele tamanho apareceria errada em volta do cartão. A `<img>` tem
+  exatamente o retângulo da arte: a largura sai da proporção intrínseca do WebP
+  e a altura vem do `artHeightPct`.
+- **`box-shadow` em vez de `drop-shadow`.** O `drop-shadow` segue o canal alfa,
+  que aqui é o do arredondamento de `15.461px` gravado na arte. A diferença é
+  desprezível: a sombra do design é deslocada 8px na horizontal, 11px na
+  vertical e borrada em 18px, então os cantos da sombra ficam longe o bastante da
+  arte para o arredondamento não aparecer.
+- **O deslocamento acompanha o card.** A rotação está no `.card-art`, e a sombra
+  da `<img>` sai girada junto, como no design.
 
-> Esta parte custou três calibrações. Duas mediram a sombra de difusão sozinha,
-> e uma mediu no lugar errado (topo do gradiente, onde os cards não ficam). O
-> que resolveu foi a técnica de duas camadas, não um número maior. E, antes de
-> calibrar, confirme que o efeito **aplica**: um `drop-shadow(0 0 25px red)` na
-> página real prova isso em um build — foi ele que mostrou que o filtro e o
-> token estavam certos e o que faltava era estrutura, não intensidade.
+> **Esta parte custou quatro commits e um equívoco meu.** Eu venho afirmando que
+> o Figma *não* tem sombra nos cards — está errado, tem, e é essa. Tive quatro
+> tentativas de intuir o valor (chute de "bem de leve", depois calibração por
+> régua, depois duas camadas de `drop-shadow`) e errei em todas, porque estava
+> **calibrando por intuição um valor que estava à mão o tempo todo**. Quando um
+> valor existe no design, ele se lê no design.
+>
+> A segunda lição: antes de calibrar, confirmar que o efeito **aplica** — um
+> `drop-shadow(0 0 25px red)` na página real prova isso em um build. Sem isso eu
+> ajustava número sobre número sem saber se o problema era intensidade ou
+> mecanismo.
 
 ### Mobile
 

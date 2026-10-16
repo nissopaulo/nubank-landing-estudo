@@ -129,7 +129,7 @@ export function CardsShowcase() {
                 // Tailwind resolveria contra o pai de largura automática e
                 // inflaria a arte. A fração vem de `artWidthPct`.
                 sizes="(min-width: 1440px) 340px, (min-width: 1024px) 280px, 60vw"
-                className="w-auto max-w-none"
+                className="card-shadow w-auto max-w-none"
                 // Altura em % da caixa: a caixa tem altura definida pelo
                 // aspect-ratio, então a fração resolve sem dependência do
                 // carregamento da imagem (evita 0x0 e o lazy-load travado).
