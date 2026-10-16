@@ -20,6 +20,13 @@ no Figma, com foco em movimento e hierarquia visual no espírito Apple.
 | TypeScript | tipagem |
 | Tailwind CSS v4 | tokens de design + utilitários |
 | Motion 14 | animação |
+| Phosphor Icons 2.1 | ícones de interface |
+
+**Tipografia:** apenas **Montserrat**, em todos os pesos. O arquivo do Figma
+tinha `Inter` no subtítulo, mas era a única referência a Inter em todo o design.
+
+**Ícones:** [Phosphor Icons](https://phosphoricons.com) (`CaretDown`,
+`CaretRight`). O logo da marca continua sendo o SVG exportado do Figma.
 
 Sem backend, sem banco, sem autenticação, sem analytics, sem serviços pagos.
 A rota `/` é **estática** e prerenderizada.
@@ -90,8 +97,27 @@ Todos os valores vêm das **variáveis do Figma** (nó `14:446`) e estão em
 | `--color-nu-text-primary` | `#111111` | `Text/text-primary` |
 | `--color-nu-hero-stop-3` | `#d8b4fe` | lido direto do gradiente (não é token) |
 
-Tipografia: **Montserrat** (títulos, navegação, botões) e **Inter** (corpo),
-carregadas com `next/font` e servidas localmente — nenhuma requisição ao Google.
+Tipografia: **Montserrat** (variável), carregada com `next/font` e servida
+localmente — nenhuma requisição ao Google.
+
+### Ajuste no gradiente (única alteração de cor em relação ao Figma)
+
+As quatro cores são exatamente as do design. O que mudou foram as **paradas**:
+
+| | Figma | Aqui |
+|---|---|---|
+| Paradas | `0% / 25% / 75% / 100%` | `0% / 52% / 86% / 100%` |
+
+**Motivo:** com as paradas originais, o gradiente clareava cedo demais e todo
+texto de 16 px na metade inferior da Hero ficava abaixo de WCAG AA — o subtítulo
+caía para 2,74:1 e o CTA "Explore o Universo Nu" para 2,32:1 (o mínimo é
+4,5:1). Nenhuma cor clara conseguiria passar naquele ponto: o fundo já tinha
+luminância alta demais. Adiar o clareamento mantém as quatro cores e o topo
+idêntico, e resolve os dois textos.
+
+O efeito visual é uma Hero mais saturada na faixa do texto, clareando mais
+perto dos cards. Se preferir fidelidade máxima, volte as paradas em
+`src/components/hero/HeroSection.tsx` e aceite as duas falhas de contraste.
 
 ### Fidelidade medida contra o Figma
 
@@ -102,6 +128,7 @@ carregadas com `next/font` e servidas localmente — nenhuma requisição ao Goo
 | Título — altura | 234 (2 linhas) | 234,22 |
 | Título — corpo/linha | 96 px / 117 | 96 px / 117,12 |
 | Subtítulo | y 482 · alt. 19 | y 482,22 · alt. 19,19 |
+| Largura do subtítulo | 798 (Inter) | 835,8 (Montserrat — fonte pedida no projeto) |
 | CTA primário | x 200 · y 565 | x 200 · y 565,41 |
 | Card `business` | x 342,28 · y 842,24 · 659,62×696,95 | x 342,27 · y 842,23 · 659,61×696,94 |
 | Card `croma` | x 597,37 · y 693,43 · 519,06×671,22 | x 597,37 · y 693,43 · 519,05×671,20 |
@@ -171,29 +198,24 @@ usa `useSyncExternalStore` para ler a preferência sem divergência.
 - Respeito a `prefers-reduced-motion` (ver acima).
 - **Sem formulários, sem telemetria, sem requisições a terceiros.**
 
-### Contraste — pendências conhecidas
+### Contraste
 
-Medido contra o gradiente real da Hero:
+Medido por script, interpolando os stops do gradiente na posição real de cada
+texto (não por amostragem de pixel, que erra em gradientes):
 
 | Elemento | Razão | WCAG AA |
 |---|---|---|
-| Título (96 px bold) | 4,67:1 | ✅ (precisa 3:1) |
-| Itens do menu no header | ~7,2:1 | ✅ |
-| CTA sólido (`#820ad1` sobre `#f3e8ff`) | 6,1:1 | ✅ |
-| Aviso legal no rodapé | 15,5:1 | ✅ |
-| Subtítulo (16 px) | 3,39:1 | ❌ (precisa 4,5:1) |
-| CTA "Explore o Universo Nu" (16 px) | 2,32:1 | ❌ (precisa 4,5:1) |
+| Título (96 px bold) | 6,03:1 | ✅ (precisa 3:1) |
+| Itens do menu | 5,96:1 | ✅ |
+| CTA sólido (`#820ad1` sobre `#f3e8ff`) | 6,11:1 | ✅ |
+| Subtítulo (16 px) | 5,52:1 | ✅ |
+| CTA "Explore o Universo Nu" (16 px) | 4,98:1 | ✅ |
+| Aviso legal no rodapé | 17,01:1 | ✅ |
 
-As duas falhas **não são defeito de implementação**: o gradiente do Figma
-clareia demais na metade inferior da Hero, onde ficam textos de 16 px em cor
-clara. Correções possíveis, nenhuma aplicada por alterarem o design:
-
-1. **Deslocar as paradas do gradiente** — de `0 / 25 / 75 / 100` para algo como
-   `0 / 45 / 82 / 100`. Mantém as quatro cores e o topo idêntico; só adia onde
-   aclareia. Resolve o subtítulo; o CTA fantasma chega a ~3,5:1.
-2. **Fundo no CTA fantasma** — um pílula translúcida branca atrás do texto.
-   Passa com folga, mas muda o visual.
-3. **Manter como está** — se a fidelidade ao Figma pesar mais que o AA.
+Todos passam. Para chegar nisso foram duas mudanças além das paradas do
+gradiente: o subtítulo e o CTA fantasma passaram de `Action/action-secondary`
+(`#f3e8ff`) para branco puro. Sobre roxo a diferença visual é imperceptível,
+mas o branco rende ~0,5:1 a mais.
 
 ---
 
@@ -238,8 +260,11 @@ redirecionadores — esta página não tem função de cadastro.
 - **Assets**: os SVGs e as artes foram exportados do Figma e salvos em
   `public/`. Nenhum path foi copiado para dentro do código. Os PNGs dos cartões
   foram convertidos para WebP (4.370 KB → 341 KB, **−92,2%**).
-- **Ícones da marca** usam `mask-image` sobre o SVG original para acompanhar a
-  cor do texto quando o header muda de transparente para sólido.
+- **Ícone do app** (`src/app/icon.svg`) é um quadrado placeholder na cor da
+  marca. O definitivo deve ser exportado do Figma.
+- **Logo da marca** usa `mask-image` sobre o SVG original para acompanhar a cor
+  do texto quando o header muda de transparente para sólido. Nenhum path foi
+  copiado para dentro do código.
 - **Contraste de botões**: `leading-normal` do Tailwind vale 1,5 e deixaria os
   CTAs com 44 px; o Figma usa a altura natural do Montserrat, então usamos
   `leading-[1.25]` (40 px).
@@ -254,5 +279,16 @@ redirecionadores — esta página não tem função de cadastro.
 ## Próximos passos
 
 1. Desenhar no Figma os submenus da navegação e as seções restantes.
-2. Decidir a questão do contraste (ver acima).
-3. Revisar o texto do rodapé e a composição mobile dos cards.
+2. Revisar o texto do rodapé e a composição mobile dos cards.
+3. Exportar o ícone do app definitivo do Figma.
+
+## Deploy
+
+| | |
+|---|---|
+| Repositório | https://github.com/nissopaulo/nubank-landing-estudo |
+| Produção | https://nubank-landing-estudo.vercel.app |
+
+O projeto está ligado ao GitHub na Vercel: a branch `main` gera produção e
+cada pull request gera um preview próprio. Os previews por deployment exigem
+login (Vercel Authentication); a URL de produção é pública.

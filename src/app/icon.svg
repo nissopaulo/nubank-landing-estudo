@@ -1,0 +1,11 @@
+<!--
+  Placeholder: quadrado na cor da marca.
+
+  O ícone definitivo deve ser exportado do Figma e placed aqui. Não incluí o
+  logótipo porque este arquivo vira um favicon isolado — para usar o asset real
+  seria preciso incorporation de paths, e a regra do projeto é não extrair
+  paths de dentro dos arquivos exportados.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <rect width="32" height="32" rx="8" fill="#820ad1" />
+</svg>

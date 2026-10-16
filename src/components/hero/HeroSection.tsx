@@ -1,15 +1,11 @@
 "use client";
 
 import { motion } from "motion/react";
+import { CaretRight } from "@phosphor-icons/react/dist/ssr/CaretRight";
 
 import { CardsShowcase } from "@/components/hero/CardsShowcase";
 import { CtaLink } from "@/components/ui/CtaLink";
 import { DURATION, EASE_OUT_EXPO, revealUp, staggerContainer } from "@/lib/motion";
-
-/** Caret do Figma é um "caret down" girado -90° para apontar à direita. */
-const CARET_RIGHT: React.CSSProperties = {
-  ["--nu-icon-src" as string]: "url(/images/brand/caret-right.svg)",
-};
 
 /**
  * Hero Section — Figma node 14:446 (1920x1080).
@@ -28,7 +24,7 @@ export function HeroSection() {
       id="conteudo"
       aria-labelledby="hero-titulo"
       className="hero relative isolate flex min-h-[100svh] flex-col overflow-clip pt-20 md:pt-24 lg:pt-[124px]
-        bg-[linear-gradient(180deg,#820ad1_0%,#9b2fe8_25%,#d8b4fe_75%,#f3e8ff_100%)]
+        bg-[linear-gradient(180deg,#820ad1_0%,#9b2fe8_52%,#d8b4fe_86%,#f3e8ff_100%)]
         [container-type:inline-size]"
     >
       <CardsShowcase />
@@ -82,7 +78,7 @@ export function HeroSection() {
             */}
             <CtaLink variant="ghost" href="#proximas-secoes">
               Explore o Universo Nu
-              <span className="nu-icon size-5 -rotate-90" style={CARET_RIGHT} aria-hidden="true" />
+              <CaretRight size={20} weight="regular" aria-hidden="true" />
             </CtaLink>
           </motion.div>
         </div>

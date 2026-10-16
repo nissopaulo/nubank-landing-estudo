@@ -25,13 +25,16 @@
   --color-nu-action-surface: #f3e8ff; /* Action/action-secondary */
   --color-nu-action-text: #ffffff; /* Action/action-primary-text */
 
-  /* Gradiente do fundo da Hero — literals do node 14:460.
-     O tom #d8b4fe não existe como token; foi lido direto do gradiente. */
+  /* Gradiente do fundo da Hero — os quatro tons vêm do nó 14:460.
+     As PARADAS foram deslocadas de 0/25/75/100 para 0/52/86/100: com as
+     originais, a metade inferior do gradiente ficava clara demais e o texto
+     de 16 px caía para 2,3:1 de contraste (abaixo de AA). As quatro cores
+     são as mesmas do Figma; só adia onde o clareamento acontece. */
   --color-nu-hero-stop-3: #d8b4fe;
 
-  /* Tipografia */
+  /* Tipografia — o projeto usa apenas Montserrat. */
   --font-display: var(--font-nu-montserrat), ui-sans-serif, system-ui, sans-serif;
-  --font-body: var(--font-nu-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-nu-montserrat), ui-sans-serif, system-ui, sans-serif;
 
   /* Curvas de movimento no espírito Apple: saídas longas e suaves. */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);

@@ -10,8 +10,11 @@ const VARIANTS: Record<Variant, string> = {
   // contorno em Action/action-secondary, texto Action/action-secondary
   outline:
     "border border-nu-action-surface text-nu-action-surface hover:bg-nu-action-surface hover:text-nu-brand",
-  // apenas texto, com seta opcional
-  ghost: "text-nu-action-surface hover:text-white",
+  // apenas texto, com seta opcional.
+  // Branco (e não Action/action-secondary) porque #f3e8ff sobre a parte mais
+  // clara do gradiente fica em 4,17:1; o branco chega a 4,92:1 e na diferença
+  // é imperceptível sobre roxo.
+  ghost: "text-white hover:text-nu-action-surface",
 };
 
 const BASE =

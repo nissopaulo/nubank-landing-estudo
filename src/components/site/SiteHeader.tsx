@@ -3,6 +3,7 @@
 import type { CSSProperties } from "react";
 import { useState } from "react";
 import { motion, useMotionValueEvent, useScroll } from "motion/react";
+import { CaretDown } from "@phosphor-icons/react/dist/ssr/CaretDown";
 
 import { CtaLink } from "@/components/ui/CtaLink";
 import { DURATION, EASE_OUT_EXPO } from "@/lib/motion";
@@ -68,11 +69,7 @@ export function SiteHeader() {
                   >
                     {item}
                     <span className="sr-only">— menu ainda não implementado neste estudo</span>
-                    <span
-                      className="nu-icon size-5"
-                      style={icon("/images/brand/caret-down.svg")}
-                      aria-hidden="true"
-                    />
+                    <CaretDown size={20} weight="regular" aria-hidden="true" />
                   </button>
                 </li>
               ))}

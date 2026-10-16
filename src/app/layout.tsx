@@ -1,16 +1,14 @@
 import type { Metadata } from "next";
-import { Inter, Montserrat } from "next/font/google";
+import { Montserrat } from "next/font/google";
 import { MotionProvider } from "@/components/motion-provider";
 import "./globals.css";
 
+/**
+ * O projeto usa apenas a Montserrat. O arquivo do Figma usava Inter no
+ * subtítulo, mas essa foi a única referência a Inter em todo o design.
+ */
 const montserrat = Montserrat({
   variable: "--font-nu-montserrat",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const inter = Inter({
-  variable: "--font-nu-inter",
   subsets: ["latin"],
   display: "swap",
 });
@@ -26,7 +24,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="pt-BR"
       data-scroll-behavior="smooth"
-      className={`${montserrat.variable} ${inter.variable} h-full antialiased`}
+      className={`${montserrat.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-white">
         <MotionProvider>{children}</MotionProvider>
