@@ -101,6 +101,42 @@
     white-space: nowrap;
     border-width: 0;
   }
+
+  /*
+   * Grão de textura sobre toda a página.
+   *
+   * DESVIO AUTORAL — não existe no Figma. O `bg` da Hero (nó 14:460) é
+   * gradiente puro, sem camada de ruído, sem blend mode e sem filtro; o que
+   * parece grão no Figma é o dithering do viewer ao renderizar um gradiente
+   * tão suave. A textura foi adicionada por decisão do usuário para dar
+   * profundidade, e a partir daqui vale como convenção da landing page.
+   *
+   * Três escolhas:
+   *
+   * 1. `feTurbulence` em data URI, não um PNG. Zero requisições, zero bytes no
+   *    repositório e escala sem perda. O tile é pequeno (180px) e repetido, então
+   *    o navegador rasteriza uma vez em vez de gerar ruído para a viewport toda.
+   * 2. Sem `mix-blend-mode`. Os modos usuais (`overlay`, `soft-light`) são
+   *    neutros em cinza-médio: sobre branco não fariam nada, e metade da página
+   *    é branca. Sem blend, o mesmo tile escurece o branco e clareia o roxo.
+   * 3. `z-index: 40`, abaixo do header (`z-50`). O header pinta por cima e nunca
+   *    recebe grão — era um requisito explícito. Ao condensar, o `backdrop-blur`
+   *    ainda borra o que estiver atrás, mas o branco a 85% já dissolve o resto.
+   *
+   * A opacidade é baixa de propósito: 3% move os canais em ±1,5%, o que aparece
+   * como textura sem competir com o texto. Ajuste com a custom property sem
+   * tocar no resto. Para ajustar por componente:
+   *   style={{ "--nu-grain-opacity": 0.05 }}
+   */
+  .nu-grain {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 40;
+    opacity: var(--nu-grain-opacity, 0.03);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+  }
 }
 
 /**

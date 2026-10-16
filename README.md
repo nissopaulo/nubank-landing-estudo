@@ -68,6 +68,7 @@ src/
     site/
       SiteHeader.tsx   cabeçalho fixo, condensa ao rolar
       SiteFooter.tsx   rodapé + aviso legal + seções pendentes
+      NoiseOverlay.tsx grão de textura sobre a página inteira
     ui/
       CtaLink.tsx      botão/link de CTA
     motion-provider.tsx MotionConfig reducedMotion="user"
@@ -185,6 +186,34 @@ com `useReducedMotion()` dentro dos componentes: esse hook devolve `false` no
 servidor e o valor real no cliente, e como o resultado vira HTML (`initial`,
 condições de render), quebraria a hidratação. `lib/use-prefers-reduced-motion.ts`
 usa `useSyncExternalStore` para ler a preferência sem divergência.
+
+### Textura (grão)
+
+Uma camada de ruído sutil cobre a página inteira, para dar textura e
+profundidade. **É um desvio autoral:** o `bg` da Hero no Figma (nó `14:460`) é
+gradiente puro — sem camada de ruído, sem blend mode, sem filtro. O que parece
+grão no Figma é o dithering do próprio viewer ao renderizar um gradiente tão
+suave. A partir daqui a textura é convenção da landing page.
+
+Três decisões:
+
+- **`feTurbulence` inline, não um PNG.** Zero requisições, zero bytes no
+  repositório, escala sem perda. O tile é de 180 px e se repete, então o
+  navegador rasteriza uma vez em vez de gerar ruído para a viewport inteira.
+- **Sem `mix-blend-mode`.** Os modos usuais (`overlay`, `soft-light`) são
+  neutros em cinza-médio: sobre branco não fariam nada, e boa parte da página é
+  branca. Sem blend, o mesmo tile escurece o branco e clareia o roxo.
+- **Abaixo do header.** Fica em `z-index: 40` contra os `z-50` do header, que
+  por isso nunca recebe grão — inclusive ao rolar.
+
+A opacidade é 3%: move os canais em ±1,5%, o que aparece como textura sem
+competir com o texto. Para alterar só num trecho, use a custom property em vez
+de editar a classe:
+
+```tsx
+<NoiseOverlay />                              {/* página inteira */}
+<div style={{ "--nu-grain-opacity": 0.05 }} /> {/* mais presente */}
+```
 
 ---
 

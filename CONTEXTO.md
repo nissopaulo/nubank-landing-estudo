@@ -97,6 +97,18 @@ provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
     `#820ad1` 7,21:1 · hover `#6a08ad` 9,33:1 · brand sobre o pior caso do
     header (`#ecdaf8`) 5,48:1. Detalhes em `README.md > CTAs da header no
     estado condensado`.
+14. **Grão de textura na página inteira, exceto no header.** Decisão do usuário
+    (2026-10-16), e **vale como convenção daqui em diante** — toda seção nova
+    nasce com textura. Desvio autoral: o Figma **não tem** ruído (o `bg`, nó
+    `14:460`, é gradiente puro; o que parece grão é dithering do viewer).
+    Implementado como `.nu-grain` (`globals.css`) + `NoiseOverlay`, um
+    `feTurbulence` inline em data URI — zero requisições, zero bytes no repo.
+    Três escolhas registradas no CSS: sem `mix-blend-mode` (porque `overlay` e
+    `soft-light` são neutros em cinza-médio e a metade da página é branca), tile
+    de 180 px repetido (rasteriza uma vez), e `z-index: 40` contra os `z-50` do
+    header — requisito explícito de que o header nunca receberia grão, nem ao
+    rolar. Opacidade 3% (moves os canais em ±1,5%), ajustável pela custom
+    property `--nu-grain-opacity`.
 
 ---
 
@@ -257,3 +269,18 @@ novas passam: pior caso 5,48:1, mínimo AA 4,5:1. Lint e tipos OK.
 
 Estado transparente do header, como no Figma, segue intocado — o comportamento
 de condensar em si também foi aprovado como está.
+
+### 2026-10-16 — grão de textura na página inteira
+
+O usuário pediu um ruído bem leve sobre a LP inteira, por textura e
+profundidade, **exceto no header ao rolar**. Vira decisão 14 e convenção para
+as seções que ainda vão existir.
+
+Antes de implementar, conferi o Figma: **não há noise lá.** O `bg` (14:460) é
+gradiente puro, sem camada de ruído, sem blend mode, sem filtro — confirmado
+tanto pelo `get_design_context` quanto pelo render, que sai liso. Provavelmente
+o que aparece como grão é o dithering do viewer sobre um gradiente muito suave.
+Ficou registrado como desvio autoral, não como valor lido do design.
+
+`NoiseOverlay` é componente de servidor de propósito: sem estado e sem efeito,
+entra no HTML estático sem custo de hidratação. Lint e tipos OK.
