@@ -738,3 +738,17 @@ suspectar do código, conferir o CSS servido nos dois ports.
 **Pendente de confirmação:** o `next dev` do usuário precisa ser reiniciado, e
 falta o retorno sobre Firefox na entrada do header (que agora é CSS puro com
 `animation-fill-mode: both`).
+
+### 2026-10-16 — confirmado no navegador
+
+Usuário: *"Ficou perfeito"*, depois de reiniciar o `next dev` com `.next` limpo.
+Sombra dos cards resolvida com o valor do Figma.
+
+Também confirmado de passagem: a entrada do header em CSS puro funcionou — é o
+que o usuário vinha reclamando no Firefox, e foi exatamente por isso que virou
+`animation-fill-mode: both`.
+
+**Operação, quando o dev server ficar suspecto:** matar os três processos
+(`next dev`, `start-server` e o worker do Turbopack) e **remover `.next`**. Foi
+o que resolveu, depois de três incidentes de CSS velho — a recompilação
+incremental não dá conta.
