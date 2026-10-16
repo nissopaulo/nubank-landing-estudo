@@ -1,0 +1,13 @@
+# Normaliza quebras de linha no repositório para evitar diffs ruidosos
+# em máquinas diferentes.
+* text=auto eol=lf
+
+# Assets binários: nunca devem ser tratados como texto.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary

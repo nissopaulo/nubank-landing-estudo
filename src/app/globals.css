@@ -1,0 +1,171 @@
+@import "tailwindcss";
+
+/**
+ * Design tokens — extraídos das variáveis do Figma (node 14:446).
+ * Fonte: https://www.figma.com/design/16kp2jwaILwDfp44uYuNkP
+ * Todos os valores abaixo são literais do arquivo de design.
+ */
+@theme {
+  /* Purple */
+  --color-nu-purple-950: #2e1065;
+  --color-nu-purple-800: #6a08ad;
+  --color-nu-purple-600: #9b2fe8;
+  --color-nu-purple-400: #c084fc;
+  --color-nu-brand: #820ad1; /* Action/action-secondary-text + Text/text-brand */
+
+  /* Neutral */
+  --color-nu-neutral-100: #f3f4f6;
+  --color-nu-neutral-200: #e5e7eb;
+  --color-nu-neutral-300: #d1d5db;
+  --color-nu-neutral-400: #9ca3af;
+  --color-nu-neutral-800: #1c1c1e;
+  --color-nu-text-primary: #111111; /* Text/text-primary */
+
+  /* Action */
+  --color-nu-action-surface: #f3e8ff; /* Action/action-secondary */
+  --color-nu-action-text: #ffffff; /* Action/action-primary-text */
+
+  /* Gradiente do fundo da Hero — literals do node 14:460.
+     O tom #d8b4fe não existe como token; foi lido direto do gradiente. */
+  --color-nu-hero-stop-3: #d8b4fe;
+
+  /* Tipografia */
+  --font-display: var(--font-nu-montserrat), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-nu-inter), ui-sans-serif, system-ui, sans-serif;
+
+  /* Curvas de movimento no espírito Apple: saídas longas e suaves. */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: #ffffff;
+    color: var(--color-nu-text-primary);
+    font-family: var(--font-body);
+  }
+
+  /*
+   * Foco visível e consistente. Nunca removemos o outline — só o estilizamos.
+   * O anel branco sobre o gradiente roxo garante contraste em toda a Hero.
+   */
+  :focus-visible {
+    outline: 3px solid #ffffff;
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  /* Setas de rolagem / âncoras */
+  :target {
+    scroll-margin-top: 6rem;
+  }
+}
+
+@layer utilities {
+  /*
+   * Ícone SVG colorido pelo texto corrente.
+   *
+   * Usamos a máscara em vez de <img> porque os SVGs do Figma são brancos
+   * (fill="white") e precisam acompanhar a cor do texto quando o header
+   * passa de transparente para sólido. A máscara consome o arquivo original
+   * de /public — nenhum path foi copiado para dentro do código.
+   */
+  .nu-icon {
+    display: inline-block;
+    flex: none;
+    background-color: currentColor;
+    -webkit-mask-image: var(--nu-icon-src);
+    mask-image: var(--nu-icon-src);
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+  }
+
+  .sr-only-focusable:not(:focus):not(:focus-within) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+}
+
+/**
+ * Composição de cards da Hero.
+ *
+ * A geometria do desktop vem do Figma e é injetada como custom properties
+ * (ver `lib/hero-cards.ts`). As variantes abaixo existem porque o Figma só
+ * define o frame de 1920x1080 — em telas estreitas os quatro cards, com as
+ * rotações originais, ficam sobrepostos e ilegíveis. Essa composição mobile
+ * é uma decisão de layout, não um valor do design: ajuste à vontade.
+ */
+.card-slot {
+  left: var(--card-cx);
+  top: var(--card-cy);
+  width: var(--card-w);
+  /* Define a altura da cadeia — sem isso a imagem cai no tamanho natural. */
+  aspect-ratio: var(--card-aspect);
+}
+
+.card-art {
+  rotate: var(--card-rot);
+}
+
+@media (max-width: 1023px) {
+  /*
+   * Aqui sobrescrevemos as PROPRIEDADES (`left`, `top`, `width`), não as
+   * custom properties: estas vêm do atributo `style` inline, que vence
+   * qualquer regra de stylesheet. O seletor de atributo dá a especificidade
+   * necessária para vencer `.card-slot`.
+   *
+   * No mobile o eixo vertical passa a ser relativo à ALTURA da Hero (em %),
+   * enquanto o horizontal continua em cqw: assim a composição acompanha a
+   * altura da tela do celular em vez de subir junto com a largura.
+   */
+  .card-slot[data-card="croma"] {
+    left: 34cqw;
+    top: 82%;
+    width: 64cqw;
+  }
+
+  .card-slot[data-card="roxo"] {
+    left: 64cqw;
+    top: 86%;
+    width: 74cqw;
+  }
+
+  .card-slot[data-card="business"],
+  .card-slot[data-card="ultraviolet"] {
+    display: none;
+  }
+}
+
+/**
+ * Respeito à preferência do sistema por movimento reduzido.
+ * O Motion também é desativado via JS (hook useReducedMotion), mas esta
+ * rede de segurança cobre animações que escapem do JS (ex.: scroll-behavior).
+ */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
