@@ -88,6 +88,19 @@
     mask-repeat: no-repeat;
     -webkit-mask-position: center;
     mask-position: center;
+
+    /*
+     * Promove o ícone a uma camada própria.
+     *
+     * Sem isso, animar o ancestral (o reveal do header) faz o navegador
+     * rasterizar a máscara de novo a cada quadro. No fim da animação o Motion
+     * remove a transform, e essa última re-rasterização chegava um instante
+     * depois do paint — o logo piscava e voltava.
+     *
+     * Com a camada própria, a máscara é rasterizada uma vez e as transformações
+     * do ancestral movem o resultado pronto, sem repintar a máscara.
+     */
+    will-change: transform, opacity;
   }
 
   .sr-only-focusable:not(:focus):not(:focus-within) {

@@ -336,3 +336,27 @@ verificado por screenshot: `--virtual-time-budget` não dirige bem animações e
 rAF e produz frames inconsistentes (t=700 mostrou menos que t=1.000; t=2.200 veio
 sem título nem cards). O que não fecha visualmente precisa de olho humano no
 localhost.
+
+### 2026-10-16 — leque sem fade, e o piscar do logo
+
+**Cards não "surgem" mais.** Tiram-se `opacity` e `scale` do estado inicial: o
+card já está na Hero no primeiro frame, opaco e do tamanho final, só 18° fora
+do lugar. O giro é o que o revela. Com fade, os cards apareciam durante o
+leque. `FAN.y` caiu de 26 para 10px pelo mesmo motivo — deslocamento grande
+devolve a leitura de "o card chega". Verificado por screenshot do primeiro
+frame: os quatro cards já estão visíveis e tiltados, com o header ainda
+invisível (que é o esperado da entrada dele).
+
+**O logo da Nu piscava no fim da animação** — bug introduzido pela cascata do
+header. Causa: o logo é desenhado com `mask-image`, e animar o ancestral faz o
+navegador rasterizar a máscara a cada quadro. No fim o Motion remove a
+transform, e essa última re-rasterização chegava depois do paint.
+
+Correção: `will-change: transform, opacity` em `.nu-icon`, que promove o
+ícone a uma camada própria. A máscara passa a ser rasterizada uma vez, e as
+transformações do ancestral movem o resultado pronto. Só o logo usa `.nu-icon`
+— os carets são Phosphor desde `1c94c4a` — então o custo de manter a camada é
+de um elemento só.
+
+**Não verificado:** o piscar é de um frame só e não aparece em screenshot
+estático. Precisa de olho humano.
