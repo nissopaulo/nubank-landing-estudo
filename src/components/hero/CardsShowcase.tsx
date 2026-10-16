@@ -91,7 +91,7 @@ export function CardsShowcase() {
         >
           {/* Rotação final: fica no HTML do servidor, então não há "flash"
               de card torto antes da hidratação. */}
-          <div className="card-art flex size-full items-center justify-center">
+          <div className="card-art mt-40 flex size-full items-center justify-center">
             <motion.div
               /*
                * `size-full` é obrigatório: sem altura definida neste
