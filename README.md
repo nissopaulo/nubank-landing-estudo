@@ -159,7 +159,7 @@ Em `lib/hero-cards.ts` isso vira custom properties:
 
 ### Sombra dos cards
 
-`.card-art` tem `filter: drop-shadow(0 14px 26px purple-950 / 0.2)`.
+`.card-art` tem `filter: drop-shadow(0 10px 16px purple-950 / 0.7)`.
 
 - **`drop-shadow`, não `box-shadow`.** As artes em WebP têm canal alfa e os
   cantos arredondados do Figma, então `drop-shadow` segue a silhueta real do
@@ -170,9 +170,12 @@ Em `lib/hero-cards.ts` isso vira custom properties:
   em vez de destacada dele.
 - **Roxo `950`, não preto**, para não sujar o gradiente.
 
-Intensidade calibrada por comparação lado a lado (sem sombra / `0.16` / `0.20`)
-renderizada em Chrome headless: `0.2` é onde aparece como profundidade sem virar
-destaque.
+Intensidade calibrada por comparação lado a lado, com o card na posição e no
+tamanho **reais** da Hero. O detalhe que faz a diferença: `drop-shadow` espalha
+a energia da sombra pelo raio de desfoque, então o valor é a opacidade da *cor*,
+não o pico que chega na tela — blur largo exige opacidade bem maior do que o
+instinto sugere. E medir sobre o roxo escuro do topo da Hero dá um número que
+não transfere para a parte clara do gradiente, onde os cards ficam de verdade.
 
 ### Mobile
 

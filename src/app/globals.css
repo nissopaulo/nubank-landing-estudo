@@ -201,17 +201,29 @@
    * A cor é o roxo mais escuro da paleta, em vez de preto, para a sombra não
    * sujar o gradiente.
    *
-   * Intensidade calibrada por comparação lado a lado sobre o gradiente real da
-   * Hero (Chrome headless). A primeira tentativa, `0.20` com 26px de blur, foi
-   * imperceptível — e a razão é física, não de gosto: `drop-shadow` espalha a
-   * energia da sombra pelo raio de desfoque. O `0.20` é a opacidade da *cor*,
-   * não o pico que chega na tela; com blur largo o pico fica muito abaixo e a
-   * sombra evapora.
+   * Intensidade calibrada por comparação lado a lado, com o card na posição e
+   * no tamanho REAIS da Hero (Chrome headless). Duas calibrações anteriores
+   * erraram, e vale registrar por quê:
    *
-   * Por isso o caminho aqui é blur MENOR com opacidade MAIOR. Sombra fechada lê
-   * como "objeto suspenso"; sombra larga e forte lê como brilho.
+   * 1. A primeira (0.20 / 26px) partiu do chute de "bem de leve". O chute
+   *    ignorava que `drop-shadow` espalha a energia da sombra pelo raio de
+   *    desfoque: o valor é a opacidade da *cor*, não o pico que chega na tela.
+   *    Com blur largo o pico fica muito abaixo e a sombra evapora.
+   * 2. A segunda (0.50 / 20px) melhorou o pico, mas foi medida com o card no
+   *    topo da regua, contra o roxo escuro. Na posição real os cards ficam no
+   *    fim da Hero, sobre a parte clara do gradiente — e é ali que a sombra
+   *    precisa aparecer. Medir no contexto errado dá um número que não
+   *    transfere.
+   *
+   * Confirmado depois com um `drop-shadow(0 0 25px red)` na página real: o
+   * filtro aplica e segue a silhueta do card normalmente. O que faltava era
+   * intensidade, não mecanismo.
+   *
+   * 0.70 é onde a separação entre os cards que se sobrepõem fica legível sem
+   * virar drama. Sombra fechada lê como "objeto suspenso"; larga e forte lê como
+   * brilho.
    */
-  filter: drop-shadow(0 12px 20px var(--color-nu-purple-950) / 0.5);
+  filter: drop-shadow(0 10px 16px var(--color-nu-purple-950) / 0.7);
 }
 
 @media (max-width: 1023px) {
