@@ -71,7 +71,6 @@ src/
       NoiseOverlay.tsx grão de textura sobre a página inteira
     ui/
       CtaLink.tsx      botão/link de CTA
-      NuLogo.tsx       logo da marca (SVG inline, `currentColor`)
     motion-provider.tsx MotionConfig reducedMotion="user"
   lib/
     hero-cards.ts      geometria dos cards lida do Figma
@@ -337,18 +336,29 @@ redirecionadores — esta página não tem função de cadastro.
   cards por valores absolutos. Em vez de copiar isso, convertemos para
   unidades de container, o que mantém a composição proporcional em qualquer
   largura.
-- **Logo da marca** (`src/components/ui/NuLogo.tsx`) é o **único path SVG copiado
-  para dentro do código**, e é um desvio consciente. O original continua em
-  `public/images/brand/nu-logo.svg` e os quatro `path` são os mesmos, com
-  `fill="white"` trocado por `currentColor`.
-  Ele **não** usa `mask-image` sobre o arquivo de `/public`, que era a
-  abordagem anterior. A máscara é rasterizada dentro do contexto de empilhamento
-  do ancestral — e o ancestral do logo é animado (transform + opacity na entrada
-  do header). Quando essa camada era recomposta, a máscara não estava resolvida
-  naquele frame e o elemento aparecia como o `background-color: currentColor`
-  **sem a máscara**: um retângulo branco no lugar do logo. `will-change` não
-  resolveu, porque o gatilho é a recomposição do ancestral, não o elemento. Com
-  o SVG inline não existe máscara, nem requisição, nem rasterização ambígua.
+- **Logo da marca** é rasterizada em dois PNGs a partir do SVG do Figma:
+  `nu-logo-light.png` (`#f3e8ff`, header transparente) e `nu-logo-dark.png`
+  (`#1c1c1e`, header sólido). As duas cores são exatamente as que o logo tinha
+  como `currentColor` nos dois estados, então a aparência não muda.
+
+  As duas imagens ficam no DOM e o CSS troca a visibilidade com
+  `group-data-[condensed]`. Trocar o `src` no scroll faria o logo piscar
+  enquanto o novo arquivo decodifica.
+
+  Isso é o desvio consciente de uma convenção do projeto, e a tentativa tem
+  história. A primeira abordagem era `mask-image` sobre o SVG de `/public`, para
+  acompanhar `currentColor`; a segunda foi o SVG inline com
+  `fill="currentColor"`. **As duas piscavam** no fim da animação de entrada do
+  header. O ancestral do logo é animado (transform + opacity), e tanto a
+  máscara quanto o vetor são rasterizados de novo quando essa camada é
+  recomposta — o frame chega sem a forma desenhada. Com `will-change` no
+  elemento não resolveu, porque o gatilho é o ancestral, não o logo. Um PNG já
+  rasterizado não passa por esse caminho: a camada carrega os pixels prontos.
+
+  O SVG original continua em `public/images/brand/nu-logo.svg` como fonte, e é
+  de onde os PNGs saem. Para regerar em outro tamanho, basta renderizar o SVG em
+  Chrome headless com `--default-background-color=00000000` e `--window-size`
+  nas dimensões desejadas.
 - **Assets**: os SVGs e as artes foram exportados do Figma e salvos em
   `public/`. Os PNGs dos cartões foram convertidos para WebP (4.370 KB → 341 KB,
   **−92,2%**).

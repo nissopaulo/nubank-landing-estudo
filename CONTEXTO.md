@@ -439,3 +439,33 @@ próprio componente. O `preserveAspectRatio="none"` do original foi descartado: 
 `width="64" height="34.91"` com o CSS esticando para 64×35 dá proporção
 praticamente igual, e o padrão `meet` evita a distorção que o `none` produziria
 em larguras diferentes da original.
+
+### 2026-10-16 — logo em PNG (duas cores)
+
+O SVG inline **também** piscava. A hipótese de que a máscara era o problema
+estava errada: o ancestral do logo é animado (transform + opacity na entrada do
+header), e **tanto a máscara quanto o vetor** são rasterizados de novo quando
+essa camada é recomposta. O frame chega antes da forma desenhada.
+
+Solução: rasterizar. `nu-logo-light.png` (`#f3e8ff`) e `nu-logo-dark.png`
+(`#1c1c1e`), 256×140 RGBA (4x do tamanho de exibição, para densidade alta),
+gerados renderizando o SVG do Figma em Chrome headless com
+`--default-background-color=00000000` e `--window-size=256,140`. Um PNG já
+rasterizado não passa pelo caminho de rasterização de vetor na recomposição.
+
+As duas cores são **exatamente** as que o logo tinha como `currentColor` nos dois
+estados do header, então a aparência é idêntica. As duas imagens ficam no DOM e
+o CSS troca a visibilidade por `group-data-[condensed]` — trocar `src` no scroll
+piscaria enquanto o novo arquivo decodifica.
+
+`src/components/ui/NuLogo.tsx` foi removido: não sobrou uso. O SVG original
+continua em `public/` como fonte dos PNGs, e o README traz o comando para
+regerar.
+
+**Não verificado:** se o piscar some é o mesmo tipo de coisa que não aparece em
+screenshot estático. A hipótese é mais forte agora — não há vetor nem máscara no
+caminho de rasterização — mas continua sendo hipótese até alguém olhar.
+
+**Nota de método:** converter SVG→PNG com Chrome headless dispensou pedir o
+arquivo ao usuário. Vale lembrar para a próxima: antes de oferecer trabalho
+manual, checar se a ferramenta local resolve.

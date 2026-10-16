@@ -1,11 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { motion, useMotionValueEvent, useScroll } from "motion/react";
 import { CaretDown } from "@phosphor-icons/react/dist/ssr/CaretDown";
 
 import { CtaLink } from "@/components/ui/CtaLink";
-import { NuLogo } from "@/components/ui/NuLogo";
 import { revealFromTop, staggerContainer } from "@/lib/motion";
 
 /**
@@ -59,7 +59,43 @@ export function SiteHeader() {
             aria-label="Ir para o início da página"
             variants={revealFromTop}
           >
-            <NuLogo className="block h-[22px] w-10 md:h-[28px] md:w-[52px] lg:h-[35px] lg:w-16" />
+            {/*
+              Logo em PNG, nas duas cores em que ela aparece. O header passa
+              de transparente (logo clara, #f3e8ff) para sólido ao rolar (logo
+              escura, #1c1c1e), e um arquivo só não teria as duas — era isso que
+              o SVG resolvia via `mask-image` + `currentColor`, ou seja via
+              rasterização de máscara dentro de um ancestral animado.
+
+              Em vez de trocar o `src` no scroll, que piscaria enquanto o novo
+              arquivo decodifica, os dois ficam no DOM e o CSS troca a
+              visibilidade com `group-data-[condensed]`: a virada é instantânea e
+              usa o mesmo mecanismo das outras trocas de cor do header.
+
+              `alt` vazio: o link já tem `aria-label` e há um `sr-only` com o
+              nome da marca logo abaixo — a imagem é decorativa.
+
+              `unoptimized` como nos cards: são 5 KB, e passar pelo otimizador
+              só adicionaria uma requisição a `/_next/image` para re-encodar um
+              PNG que já é minúsculo.
+            */}
+            <Image
+              src="/images/brand/nu-logo-light.png"
+              alt=""
+              width={64}
+              height={35}
+              unoptimized
+              className="block h-[22px] w-10 md:h-[28px] md:w-[52px] lg:h-[35px] lg:w-16
+                group-data-[condensed]:hidden"
+            />
+            <Image
+              src="/images/brand/nu-logo-dark.png"
+              alt=""
+              width={64}
+              height={35}
+              unoptimized
+              className="hidden h-[22px] w-10 md:h-[28px] md:w-[52px] lg:h-[35px] lg:w-16
+                group-data-[condensed]:block"
+            />
             <span className="sr-only">Nubank</span>
           </motion.a>
 
