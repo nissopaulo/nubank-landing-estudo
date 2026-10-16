@@ -53,51 +53,74 @@ export function SiteHeader() {
         animate="visible"
       >
         <div className="flex items-center gap-8 md:gap-12">
-          <motion.a
-            href="#conteudo"
-            className="shrink-0 rounded-sm transition-opacity hover:opacity-75"
-            aria-label="Ir para o início da página"
-            variants={revealFromTop}
-          >
-            {/*
-              Logo em PNG, nas duas cores em que ela aparece. O header passa
-              de transparente (logo clara, #f3e8ff) para sólido ao rolar (logo
-              escura, #1c1c1e), e um arquivo só não teria as duas — era isso que
-              o SVG resolvia via `mask-image` + `currentColor`, ou seja via
-              rasterização de máscara dentro de um ancestral animado.
+          {/*
+            O reveal fica num `<motion.span>` e o `<a>` dentro é o elemento
+            "limpo".
 
-              Em vez de trocar o `src` no scroll, que piscaria enquanto o novo
-              arquivo decodifica, os dois ficam no DOM e o CSS troca a
-              visibilidade com `group-data-[condensed]`: a virada é instantânea e
-              usa o mesmo mecanismo das outras trocas de cor do header.
+            Isso não é cosmético. `transition-opacity` no MESMO elemento que o
+            Motion anima `opacity` faz os dois se atropelarem: o Motion escreve
+            `opacity` inline a cada quadro, cada escrita dispara a transition de
+            150ms do CSS, e o valor renderizado fica sempre atrás do valor do
+            Motion. No fim da animação o Motion remove o `opacity` inline, a
+            transition pega o computed de 1 e leva mais 150ms para assentar — o
+            logo continuava mudando depois da animação ter acabado.
 
-              `alt` vazio: o link já tem `aria-label` e há um `sr-only` com o
-              nome da marca logo abaixo — a imagem é decorativa.
+            Era por isso que só o logo piscava: nos itens da nav o
+            `transition-opacity` está no `<button>` filho, e nos CTAs é
+            `transition-colors`, que não inclui `opacity`. O logo era o único
+            elemento com os dois ao mesmo tempo.
+          */}
+          <motion.span variants={revealFromTop}>
+            <a
+              href="#conteudo"
+              className="shrink-0 rounded-sm transition-opacity hover:opacity-75"
+              aria-label="Ir para o início da página — Nubank"
+            >
+              {/*
+                Logo em PNG, nas duas cores em que ela aparece. O header passa
+                de transparente (logo clara, #f3e8ff) para sólido ao rolar
+                (logo escura, #1c1c1e), e um arquivo só não teria as duas.
 
-              `unoptimized` como nos cards: são 5 KB, e passar pelo otimizador
-              só adicionaria uma requisição a `/_next/image` para re-encodar um
-              PNG que já é minúsculo.
-            */}
-            <Image
-              src="/images/brand/nu-logo-light.png"
-              alt=""
-              width={64}
-              height={35}
-              unoptimized
-              className="block h-[22px] w-10 md:h-[28px] md:w-[52px] lg:h-[35px] lg:w-16
-                group-data-[condensed]:hidden"
-            />
-            <Image
-              src="/images/brand/nu-logo-dark.png"
-              alt=""
-              width={64}
-              height={35}
-              unoptimized
-              className="hidden h-[22px] w-10 md:h-[28px] md:w-[52px] lg:h-[35px] lg:w-16
-                group-data-[condensed]:block"
-            />
-            <span className="sr-only">Nubank</span>
-          </motion.a>
+                As duas imagens ficam no DOM e o CSS troca a visibilidade com
+                `group-data-[condensed]`: a virada é instantânea e usa o mesmo
+                mecanismo das outras trocas de cor do header. Trocar o `src` no
+                scroll piscaria enquanto o novo arquivo decodifica.
+
+                `alt` vazio: o link tem `aria-label`, então a imagem é decorativa
+                e o nome acessível não depende dela. Por isso o antigo
+                `sr-only` com "Nubank" foi removido — o `aria-label` sempre
+                teve precedência sobre ele, então ele nunca era anunciado.
+
+                `priority`: o logo está acima da dobra, e com `loading="lazy"`
+                padrão ele podia terminar de decodificar bem depois da animação
+                de entrada — mais um repaint no meio do efeito.
+
+                `unoptimized` como nos cards: são 5 KB, e passar pelo otimizador
+                só adicionaria uma requisição a `/_next/image` para re-encodar um
+                PNG que já é minúsculo.
+              */}
+              <Image
+                src="/images/brand/nu-logo-light.png"
+                alt=""
+                width={64}
+                height={35}
+                priority
+                unoptimized
+                className="block h-[22px] w-10 md:h-[28px] md:w-[52px] lg:h-[35px] lg:w-16
+                  group-data-[condensed]:hidden"
+              />
+              <Image
+                src="/images/brand/nu-logo-dark.png"
+                alt=""
+                width={64}
+                height={35}
+                priority
+                unoptimized
+                className="hidden h-[22px] w-10 md:h-[28px] md:w-[52px] lg:h-[35px] lg:w-16
+                  group-data-[condensed]:block"
+              />
+            </a>
+          </motion.span>
 
           {/*
             Container próprio para os itens da nav: o escalonamento desce por

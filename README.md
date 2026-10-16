@@ -204,6 +204,25 @@ Os valores estão em `FAN` (`lib/motion.ts`) e na cascata em `FAN_CASCADE`
 (`lib/hero-cards.ts`), esta ordenada pela posição horizontal do card — não pelo
 índice do array, para que a ordem visual seja a ordem da animação.
 
+### Regra: nunca misturar `opacity` do Motion com transition de CSS
+
+O Motion escreve `opacity` inline a cada quadro. Se o **mesmo** elemento também
+tiver `transition-opacity`, cada uma dessas escritas dispara a transition de
+150 ms do CSS e o valor renderizado fica sempre atrás do valor do Motion. No fim
+da animação o Motion remove o `opacity` inline, a transition pega o computed de
+1 e leva mais 150 ms para assentar — o elemento continua mudando depois da
+animação ter acabado.
+
+O sintoma aparece como um piscar no fim do reveal, e é fácil culpar o asset: no
+logo da marca ele foi perseguido por `mask-image`, depois por SVG inline e depois
+por PNG, três vezes, até a causa aparecer. **Se um elemento animando por Motion
+parece piscando, suspeite do conflito de `opacity` antes da imagem.**
+
+A correção é estrutural: o reveal fica num wrapper `motion.*` e o elemento com
+a transition CSS é o filho, que o Motion não toca. É o que já fazem os itens da
+nav (transition no `<button>`) e os CTAs (transition no link dentro do
+`motion.span`).
+
 ### Movimento reduzido
 
 Quem tem `prefers-reduced-motion` ativo no sistema não vê nenhum

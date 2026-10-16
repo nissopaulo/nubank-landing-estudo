@@ -469,3 +469,48 @@ caminho de rasterização — mas continua sendo hipótese até alguém olhar.
 **Nota de método:** converter SVG→PNG com Chrome headless dispensou pedir o
 arquivo ao usuário. Vale lembrar para a próxima: antes de oferecer trabalho
 manual, checar se a ferramenta local resolve.
+
+### 2026-10-16 — a causa do piscar: `opacity` do Motion × transition de CSS
+
+O PNG também piscou. Três assets depois (máscara → SVG inline → PNG), a hipótese
+estava errada três vezes: **não era a imagem.**
+
+**Como se chegou lá.** Primeiro, uma sonda de geometria no componente
+(`DebugProbe`, temporária, já removida) mediu `getBoundingClientRect()` do logo e
+dos ancestrais ao longo da animação. Em t=0:
+
+```
+img top=16.5 h=35.0 | li top=4.0 h=60.0 | linha h=100.0 | dif centro img-li=0.0
+```
+
+`16.5` é `32.5 − 16`, ou seja o `translateY(-16)` inicial — e `dif centro` = 0
+confirma que logo e nav estavam alinhados ao milímetro. **Não era layout
+shift.** Isso eliminou de uma vez toda a família de hipóteses de layout.
+
+Depois, comparar estruturalmente os itens do header mostrou a diferença real:
+
+| Elemento | Motion anima | transition CSS | Conflito |
+|---|---|---|---|
+| logo | `<motion.a>` | `transition-opacity` **no mesmo elemento** | **sim** |
+| nav | `<motion.li>` | no `<button>` filho | não |
+| CTAs | `<motion.span>` | `transition-colors` (não inclui opacity) | não |
+
+O logo era o único elemento com `opacity` animado por Motion **e** transition de
+CSS no mesmo lugar. A mecânica: o Motion escreve `opacity` inline a cada quadro,
+cada escrita dispara a transition de 150 ms, e o valor renderizado fica sempre
+atrás do do Motion. No fim o Motion remove o `opacity` inline e a transition leva
+mais 150 ms para assentar — o logo continua mudando depois da animação acabar.
+
+Correção estrutural: o reveal foi para um `<motion.span>` e o `<a>` com
+`transition-opacity` virou filho, o elemento que o Motion não toca. É o padrão
+que a nav e os CTAs já usavam.
+
+Aproveitei para: `priority` nas duas imagens (o `loading="lazy"` padrão podia
+terminar a decodificação bem depois da animação, mais um repaint no meio do
+efeito) e remoção do `<span class="sr-only">Nubank</span>`, que era redundante —
+o `aria-label` do link sempre teve precedência sobre ele, então nunca era
+anunciado.
+
+**Lição registrada no README como regra:** se um elemento animando por Motion
+parece piscando, suspeite do conflito de `opacity` antes da imagem. Foram três
+commits trocando o asset antes de olhar a transition.
