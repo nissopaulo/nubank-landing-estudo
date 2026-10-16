@@ -163,6 +163,24 @@ Treze viraram token; duas são alias do mesmo valor.
    leitura manual.
 
 ---
+## Fluxo pedido pelo usuário: "Pode commitar"
+
+Sempre que ele disser **"pode commitar"**, executar esta sequência inteira, sem
+esperar confirmação adicional:
+
+1. `npx tsc --noEmit` — tem que passar.
+2. `npm run lint` — tem que passar.
+3. `npm run build` — **obrigatório**. O pedido explícito foi build para não haver
+   problema na Vercel, então nunca commitar sem build limpo.
+4. `git add -A` e `git commit` com mensagem longa e explicativa, descrevendo o
+   *porquê* de cada decisão — é o padrão do repositório, não só o *o quê*.
+5. Responder com o resumo do que foi feito e o hash do commit.
+
+**Mensagem de commit com vários `-m` quebra no PowerShell**: ele insere quebra
+de linha entre os argumentos e o resultado sai com parágrafos vazios no meio.
+Escrever a mensagem num arquivo e usar `git commit -F <arquivo>`.
+
+---
 
 ## Em aberto
 
@@ -597,3 +615,31 @@ final.
 
 **Não verificado:** o comportamento no Firefox — não tenho Firefox aqui. Depende
 do usuário confirmar.
+
+### 2026-10-16 — sombra nos cards + fluxo "pode commitar"
+
+**Sombra.** `filter: drop-shadow(0 14px 26px var(--color-nu-purple-950) / 0.2)`
+em `.card-art`.
+
+Escolhas:
+
+- `drop-shadow`, não `box-shadow`: as quatro artes em WebP têm canal alfa
+  (confirmado nos chunks `VP8X`, flag `ALPHA`) e os cantos arredondados do
+  Figma. `drop-shadow` segue a silhueta real; um `box-shadow` no `.card-art`
+  seria retangular, porque a caixa do slot é maior que a arte.
+- No `.card-art` e não na `<img>`: o deslocamento é aplicado no espaço local do
+  elemento, antes da rotação, então a sombra sai inclinada junto com o card em
+  vez de destacada dele.
+- Cor `purple-950` em vez de preto, para não sujar o gradiente.
+- Intensidade calibrada por comparação visual lado a lado (sem sombra / .16 /
+  .20) renderizada em Chrome headless. .20 é onde aparece como profundidade sem
+  virar destaque.
+
+**Nota de custo:** `filter` no elemento que o leque anima significa
+re-rasterização por quadro durante a entrada dos cards. São quatro cartões e uma
+animação única, então o custo é irrelevante — mas é o tipo de coisa que pesa se
+a composição crescer muito.
+
+**Fluxo "pode commitar"** registrado na seção própria deste arquivo: tipos, lint,
+build (obrigatório, por causa da Vercel), commit com mensagem longa e
+`git commit -F` em vez de `-m` múltiplos, que o PowerShell embaralha.

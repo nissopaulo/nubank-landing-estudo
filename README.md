@@ -157,6 +157,23 @@ Em `lib/hero-cards.ts` isso vira custom properties:
 - A arte usa `height: <fração>%`: a caixa já está rotacionada, então a fração
   é `<altura da arte> / <altura da bbox>`.
 
+### Sombra dos cards
+
+`.card-art` tem `filter: drop-shadow(0 14px 26px purple-950 / 0.2)`.
+
+- **`drop-shadow`, não `box-shadow`.** As artes em WebP têm canal alfa e os
+  cantos arredondados do Figma, então `drop-shadow` segue a silhueta real do
+  cartão. Um `box-shadow` ali seria retangular, porque a caixa do slot é maior
+  que a arte.
+- **No `.card-art`, não na `<img>`.** O deslocamento é aplicado no espaço local
+  do elemento, antes da rotação — então a sombra sai inclinada junto com o card
+  em vez de destacada dele.
+- **Roxo `950`, não preto**, para não sujar o gradiente.
+
+Intensidade calibrada por comparação lado a lado (sem sombra / `0.16` / `0.20`)
+renderizada em Chrome headless: `0.2` é onde aparece como profundidade sem virar
+destaque.
+
 ### Mobile
 
 O Figma só define 1920×1080. Abaixo de 1024 px, os quatro cartões com as

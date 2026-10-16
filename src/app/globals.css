@@ -188,6 +188,21 @@
 
 .card-art {
   rotate: var(--card-rot);
+  /*
+   * Sombra de profundidade. `drop-shadow` e não `box-shadow`: as artes em WebP
+   * têm canal alfa e os cantos arredondados do Figma, então `drop-shadow`
+   * segue a silhueta real do cartão. Um `box-shadow` aqui seria retangular,
+   * porque a caixa do slot é maior que a arte.
+   *
+   * Fica no `.card-art` (e não na imagem) para que a sombra gire junto com o
+   * card: o deslocamento é aplicado no espaço local do elemento, antes da
+   * rotação, e sai inclinado com a arte em vez de destacado dela.
+   *
+   * A cor é o roxo mais escuro da paleta, em vez de preto, para a sombra não
+   * sujar o gradiente. Opacidade baixa de propósito — é profundidade, não
+   * destaque.
+   */
+  filter: drop-shadow(0 14px 26px var(--color-nu-purple-950) / 0.2);
 }
 
 @media (max-width: 1023px) {
