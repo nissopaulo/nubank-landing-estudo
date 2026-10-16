@@ -123,19 +123,34 @@
    *    recebe grão — era um requisito explícito. Ao condensar, o `backdrop-blur`
    *    ainda borra o que estiver atrás, mas o branco a 85% já dissolve o resto.
    *
-   * A opacidade é baixa de propósito: 8% move os canais em ±4%, o que aparece
-   * como textura sem competir com o texto. Os 3% iniciais passavam limpos —
-   * ~1,5% de deslocamento é limiar de percepção em área grande e chapada, e na
-   * tela não dava para notar que o efeito existia. Ajuste com a custom property
-   * sem tocar no resto. Para ajustar por componente:
-   *   style={{ "--nu-grain-opacity": 0.12 }}
+   * A opacidade NÃO é livre: 0.12 é o teto. O grão é desenhado por cima do texto,
+   então ele escurece os glifos. Medindo o tile real em canvas (180x180) ele vai
+   de 116 a 236 — ±60 níveis, bem mais forte do que parece. Aplicando isso sobre o
+   texto branco da Hero e comparando com o gradiente na altura de cada texto:
+*
+   *   grão   título(3:1)  subtítulo(4,5:1)  CTA fantasma(4,5:1)  menu(4,5:1)
+   *   ----   -----------   ---------------   -------------------   ----------
+   *   0.00      6.43 ✅        5.56 ✅           5.25 ✅            7.04 ✅
+   *   0.08      5.84 ✅        5.05 ✅           4.77 ✅            6.39 ✅
+   *   0.12      5.56 ✅        4.80 ✅           4.54 ✅            6.08 ✅   <-- teto
+   *   0.18      5.15 ✅        4.45 ✗            4.20 ✗            5.64 ✅
+   *   0.25      4.70 ✅        4.06 ✗            3.84 ✗            5.14 ✅
+   *
+   * Acima de 0.12 os dois textos de 16 px reprovam em AA. Para passar disso sem
+   * baixar a opacidade, o grão teria de ficar DEBAIXO do texto (por seção, e não
+   * como camada de página inteira) — aí ele texturiza a superfície sem tocar
+   * nos glifos. Pendência conhecida, não feita.
+   *
+   * 0.03 era invisível em área chapada e foi a primeira tentativa. Ajuste por
+   * componente sem tocar no resto:
+   *   style={{ "--nu-grain-opacity": 0.25 }}
    */
   .nu-grain {
     position: fixed;
     inset: 0;
     pointer-events: none;
     z-index: 40;
-    opacity: var(--nu-grain-opacity, 0.08);
+    opacity: var(--nu-grain-opacity, 0.12);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E");
     background-repeat: repeat;
   }

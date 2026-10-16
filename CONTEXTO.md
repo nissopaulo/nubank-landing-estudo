@@ -110,6 +110,20 @@ provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
     rolar. Opacidade 3% (moves os canais em ±1,5%), ajustável pela custom
     property `--nu-grain-opacity`.
 
+    **Teto de opacidade: 0.12.** O grão fica por cima do texto e escurece os
+    glifos. Medindo o tile real em canvas ele vai de 116 a 236 (±60 níveis),
+    bem mais forte do que aparenta. Aplicado sobre o texto branco da Hero e
+    comparado com o gradiente na altura de cada texto: a 0.18 o subtítulo cai
+    para 4,45:1 e o CTA fantasma para 4,20:1 — ambos abaixo de AA. A 0.12
+    passam (4,80 e 4,54). Tabela completa no `globals.css`. O 0.03 inicial era
+    invisível; o 0.08 nunca chegou a ser servido pelo dev server, o que levou a
+    concluir cedo demais que o efeito não funcionava.
+
+    **Pendência conhecida:** para passar de 0.12 sem perder intensidade, o grão
+    teria de ser por seção e ficar *abaixo* do texto, em vez de ser uma camada
+    de página inteira por cima de tudo. Aí texturiza a superfície sem tocar nos
+    glifos. É a solução correta, mas muda a arquitetura e não foi feita.
+
 ---
 
 ## Mapeamento Figma → código
