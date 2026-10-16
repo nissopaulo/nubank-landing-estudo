@@ -74,9 +74,11 @@ export const revealFromTop: Variants = {
  * dá uma rotação diferente a cada card (-38° a +52°), somar um deslocamento
  * constante é o que faz o leque parecer fechado no início e aberto no fim.
  *
- * Sem `opacity` e sem `scale` de propósito: os cards já estão na Hero no
- * primeiro frame, só fora do lugar. Eles são revelados pelo giro, não por um
- * fade — um fade lia como "surgir", que é exatamente o que se queria evitar.
+ * Só a rotação e o fade: sem `y` e sem `scale`. O card já nasce no tamanho e
+ * na posição finais — ele não chega, ele *aparece*. Um deslocamento vertical
+ * faria a entrada voltar a ler como "surgir", que foi o que se pediu para tirar
+ * na primeira revisão. O `opacity` fica, porque o card precisa começar
+ * escondido; ele é revelado pelo giro, e não por um efeito separado.
  *
  * `origin` fica perto da base de propósito: com o pivô no centro o card
  * apenas gira no lugar; perto da base ele bascula, e é o bascular que lê como
@@ -85,9 +87,6 @@ export const revealFromTop: Variants = {
 export const FAN = {
   /** Ângulo inicial, em graus, somado à rotação final do card. */
   from: -18,
-  /** Quanto o card sobe ao entrar, em px. Pequeno de propósito: o movimento
-   *  é o giro; um deslocamento grande voltaria a parecer que o card chega. */
-  y: 10,
   /** Ponto de rotação — perto da base, para o card bascular. */
   origin: "50% 78%",
 } as const;

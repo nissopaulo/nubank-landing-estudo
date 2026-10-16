@@ -106,13 +106,13 @@ export function CardsShowcase() {
               className="flex size-full items-center justify-center will-change-transform"
               style={{ transformOrigin: FAN.origin }}
               /*
-               * Sem `opacity` no estado inicial, de propósito: o card já está
-               * na Hero no primeiro frame, opaco e do tamanho final, só fora
-               * do lugar. O que o revela é o giro. Com fade, os cards "surgiam"
-               * durante o leque, que era o que não se queria.
+               * Só `opacity` e `rotate`. Sem `y` e sem `scale`: o card já
+               * nasce no tamanho e na posição do design, então ele não chega —
+               * aparece. O `opacity` fica porque o card precisa começar
+               * escondido, e é o giro do leque que o traz à vista.
                */
-              initial={{ rotate: FAN.from, y: FAN.y }}
-              animate={{ rotate: 0, y: 0 }}
+              initial={{ opacity: 0, rotate: FAN.from }}
+              animate={{ opacity: 1, rotate: 0 }}
               transition={{
                 duration: DURATION.slow * 1.25,
                 ease: EASE_OUT_EXPO,

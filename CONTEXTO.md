@@ -360,3 +360,33 @@ de um elemento só.
 
 **Não verificado:** o piscar é de um frame só e não aparece em screenshot
 estático. Precisa de olho humano.
+
+### 2026-10-16 — o dev server serviu CSS desatualizado (segunda vez)
+
+Depois de aplicar `will-change` em `.nu-icon`, o usuário continuou vendo o
+piscar. Causa: **o CSS servido pelo `next dev` não continha a declaração.** A
+única ocorrência de `will-change` no CSS servido era a classe utilitária do
+Tailwind vinda de `CardsShowcase`, e a regra `.nu-icon` servida tinha
+`-webkit-mask-image` duplicado — resíduo de merge do dev server. No build de
+produção a declaração está presente normalmente.
+
+Ou seja: o fix estava certo no código, mas **nunca chegou ao navegador dele**.
+É a segunda vez que isso acontece (a primeira foi a opacidade do grão, 0.03 em
+vez de 0.08). Antes de investigar qualquer coisa que "não funciona no
+navegador", conferir o CSS servido: `curl` na página, pegar o `href` do `.css` e
+procurar a regra. Produção é determinístico, dev não é.
+
+### 2026-10-16 — cards escondidos no início, revelados só pelo giro
+
+O usuário esclareceu o que queria, e a leitura anterior estava errada: os cards
+**devem** começar escondidos e aparecer durante o leque. O que ele não queria
+era o card *chegar* — subir e crescer.
+
+Estado final: `initial={{ opacity: 0, rotate: FAN.from }}` e
+`animate={{ opacity: 1, rotate: 0 }}`. Sem `y`, sem `scale`. O card nasce no
+tamanho e na posição do design, invisível; o giro de 18° é o que o traz à
+vista. `FAN.y` saiu do objeto — não sobrou ajuste de deslocamento vertical, e
+não deve voltar sem o usuário pedir.
+
+Verificado por screenshot do primeiro frame em produção: cards invisíveis e
+header invisível, que é o estado inicial correto.
