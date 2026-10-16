@@ -88,8 +88,14 @@ export function SiteHeader() {
              * da base do CtaLink é um utilitário de display sem variante e,
              * no Tailwind, utilitários base vencem utilitários base. Usando
              * uma variante, ela é emitida depois e o `hidden` passa a valer.
+             *
+             * Ao condensar, contorno e texto vão para a cor da marca. O Figma
+             * mantém `Action/action-secondary` (#f3e8ff) nos dois estados —
+             * sobre o gradiente roxo quase não se distingue, mas sobre o branco
+             * do header condensado some. Brand sobre branco dá 7,2:1 (AA pede
+             * 4,5:1). Desvio consciente: ver CONTEXTO.md > Decisão 13.
              */
-            className="max-sm:hidden group-data-[condensed]:border-nu-neutral-800 group-data-[condensed]:text-nu-neutral-800 group-data-[condensed]:hover:bg-nu-neutral-800 group-data-[condensed]:hover:text-white"
+            className="max-sm:hidden group-data-[condensed]:border-nu-brand group-data-[condensed]:text-nu-brand group-data-[condensed]:hover:bg-nu-brand group-data-[condensed]:hover:text-white group-data-[condensed]:active:bg-nu-purple-800"
           >
             Login Empresas
           </CtaLink>
@@ -99,7 +105,14 @@ export function SiteHeader() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: DURATION.base, ease: EASE_OUT_EXPO, delay: 0.12 }}
           >
-            <CtaLink variant="solid" href="https://www.nubank.com.br/">
+            {/* Mesmo desvio no CTA sólido: ao condensar, fundo na cor da marca
+                e texto branco. Branco sobre #820ad1 dá 7,2:1. Sobre o
+                gradiente o botão continua claro — brand ali não passaria de AA. */}
+            <CtaLink
+              variant="solid"
+              href="https://www.nubank.com.br/"
+              className="group-data-[condensed]:bg-nu-brand group-data-[condensed]:text-white group-data-[condensed]:hover:bg-nu-purple-800 group-data-[condensed]:active:bg-nu-purple-950"
+            >
               Quero ser Nubank
             </CtaLink>
           </motion.span>

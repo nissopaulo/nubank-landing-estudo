@@ -217,6 +217,30 @@ gradiente: o subtítulo e o CTA fantasma passaram de `Action/action-secondary`
 (`#f3e8ff`) para branco puro. Sobre roxo a diferença visual é imperceptível,
 mas o branco rende ~0,5:1 a mais.
 
+### CTAs da header no estado condensado
+
+Desvio consciente do design. Sobre o gradiente os dois botões seguem o Figma
+(`#f3e8ff`). **Ao condensar**, sobre o branco do header, eles passam para a cor
+da marca:
+
+| | Transparente (sobre o gradiente) | Condensado |
+|---|---|---|
+| `Login Empresas` | borda + texto `#f3e8ff` | borda + texto `#820ad1` |
+| `Quero ser Nubank` | fundo `#f3e8ff`, texto `#820ad1` | fundo `#820ad1`, texto `#ffffff` |
+
+O motivo é que `#f3e8ff` sobre branco praticamente desaparece. Medido:
+
+| Elemento | Razão | AA |
+|---|---|---|
+| `Quero ser Nubank` — texto branco sobre `#820ad1` | 7,21:1 | ✅ |
+| `Quero ser Nubank` — hover, branco sobre `#6a08ad` | 9,33:1 | ✅ |
+| `Login Empresas` — brand sobre o pior caso do header | 5,48:1 | ✅ |
+| `Login Empresas` — brand sobre branco puro | 7,21:1 | ✅ |
+
+O pior caso do texto do outline (5,48:1) considera `bg-white/85` do header
+composto sobre a cor mais escura que passa por trás dele (`#ecdaf8`). Em
+folha branca cheia o valor é 7,21:1.
+
 ---
 
 ## Conteúdo provisório

@@ -88,6 +88,15 @@ provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
     e diferenciá-las contra o `@theme` — a verificação de deriva mais direta que
     existe, e mais barata que Storybook. Componentes como **variants** de
     `state`/`size`, não cópias diferentes.
+13. **CTAs da header passam para a cor da marca quando o header condensa.**
+    Decisão do usuário (2026-10-16) a partir de screenshot do estado condensado.
+    Desvio do Figma, que mantém `Action/action-secondary` (`#f3e8ff`) nos dois
+    estados — mas `#f3e8ff` sobre o branco do header praticamente desaparece.
+    Aplicado **só no estado condensado**: no estado transparente sobre o
+    gradiente roxo, brand não passaria de AA. Contrastes medidos: branco sobre
+    `#820ad1` 7,21:1 · hover `#6a08ad` 9,33:1 · brand sobre o pior caso do
+    header (`#ecdaf8`) 5,48:1. Detalhes em `README.md > CTAs da header no
+    estado condensado`.
 
 ---
 
@@ -230,3 +239,21 @@ tokens no Figma, e promover `#d8b4fe` a variable.
 
 **Próximo passo inalterado:** desenhar os painéis dos submenus da navegação,
 depois o design system. O DS é a dependência do item 8.
+
+### 2026-10-16 — CTAs da header na cor da marca ao condensar
+
+A partir de um screenshot do header condensado, o usuário pediu mais destaque:
+`Quero ser Nubank` com fundo na cor da marca e texto branco, `Login Empresas`
+com borda e texto na cor da marca.
+
+**O Figma discorda nos dois casos** — lá os dois botões usam
+`Action/action-secondary` (`#f3e8ff`) nos dois estados. Então isto é desvio
+deliberado, não correção de fidelidade, e ficou documentado como tal em
+`README.md` e como decisão 13.
+
+Aplicado apenas no estado condensado (`group-data-[condensed]:`), porque sobre
+o gradiente roxo a cor da marca reprovaria em AA. Todas as combinações
+novas passam: pior caso 5,48:1, mínimo AA 4,5:1. Lint e tipos OK.
+
+Estado transparente do header, como no Figma, segue intocado — o comportamento
+de condensar em si também foi aprovado como está.
