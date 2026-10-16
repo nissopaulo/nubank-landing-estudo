@@ -56,6 +56,13 @@ export const staggerContainer = (stagger = 0.08, delayChildren = 0): Variants =>
 /**
  * Reveal que desce do topo — usado no header, que ocupa a borda superior da
  * tela. Sobe (`revealUp`) parece errado num elemento que vem do céu.
+ *
+ * `y` é 16px, um número par de propósito. O logo do header descansa em 32.5px
+ * (35px de caixa centrada numa linha de 60px), ou seja, em meio pixel. Com uma
+ * curva `EASE_OUT_EXPO` a cauda é tão lenta que o último pixel chega dozens de
+ * ms depois do penúltimo; em meio pixel isso aparece como o elemento "quase
+ * parado" e depois um salto. Deixar o deslocamento par mantém o trajeto em
+ * pixels inteiros e o salto some.
  */
 export const revealFromTop: Variants = {
   hidden: { opacity: 0, y: -16 },

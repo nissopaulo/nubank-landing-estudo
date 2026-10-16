@@ -514,3 +514,37 @@ anunciado.
 **Lição registrada no README como regra:** se um elemento animando por Motion
 parece piscando, suspeite do conflito de `opacity` antes da imagem. Foram três
 commits trocando o asset antes de olhar a transition.
+
+### 2026-10-16 — `shrink-0` no elemento errado, e o resíduo de meio pixel
+
+Piscar resolvido. Restava o logo "1 pixel acima e depois desce".
+
+**A sonda de geometria pagou de novo.** Numa janela estreita (1250px) ela mediu
+`a.h = 0.000` e o logo não aparecia no render. Causa: ao mover o reveal do
+`<motion.a>` para um `<motion.span>` wrapper, o `shrink-0` ficou no `<a>` — que
+deixou de ser o flex item. O flex item passou a ser o span, que encolhia
+livremente e chegava a largura zero, sumindo com o logo.
+
+**`shrink-0` foi para o `motion.span`.** Bug meu, introduzido em `7ea0219`, e
+invisível para quem olha o cabeçalho em desktop largo. Depois da correção a
+sonda mede `a.h = 35.000` e geometria estável em todas as amostras.
+
+**O resíduo de 1px.** A sonda também revelou que o logo descansa em `32.500` —
+meio pixel — porque a caixa tem 35px (ímpar) numa linha de 60px. Os itens da nav
+descansam em pixel inteiro (`30.000`). Em meio pixel, o caminho de render
+composto (durante a animação, com transform) e o caminho pintado (depois, sem
+transform) não concordam no arredondamento, e o logo aparecia meio pixel acima
+por um frame antes de assentar.
+
+Correção: `will-change-transform` permanente no `motion.span` do logo, para que
+o caminho de render seja o mesmo antes e depois da animação. Custo: uma camada de
+64×35 mantida viva — irrelevante. Documentado no próprio componente, porque
+`will-change` permanente costuma ser questionado em review e aqui é uma exceção
+justificada.
+
+Também documentei em `revealFromTop` que o `y: -16` é par de propósito: a cauda
+do `EASE_OUT_EXPO` é lenta, e um deslocamento par mantém o trajeto em pixels
+inteiros.
+
+**Ainda não verificado:** se o resíduo de meio pixel some, depende de olho humano
+— é um frame.

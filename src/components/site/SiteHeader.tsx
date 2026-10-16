@@ -70,10 +70,28 @@ export function SiteHeader() {
             `transition-colors`, que não inclui `opacity`. O logo era o único
             elemento com os dois ao mesmo tempo.
           */}
-          <motion.span variants={revealFromTop}>
+          {/*
+            `shrink-0` fica AQUI, no `motion.span`, e não no `<a>`.
+
+            O flex item da linha é o `motion.span`; o `<a>` é um filho dele e
+            não encolhe por conta própria. Com o `shrink-0` só no `<a>` (onde
+            estava antes deste wrapper), era o span que encolhia — e quando a
+            linha aperta, ele chega a largura zero e o logo desaparece.
+
+            `will-change-transform` fica permanente, e é deliberado. A caixa do
+            logo tem 35px (ímpar) e descansa em 32.5px — meio pixel. Durante o
+            reveal ele vira camada composta; no fim o Motion remove a transform
+            e o elemento volta a ser pintado normalmente. Em meio pixel, esses
+            dois caminhos não concordam no arredondamento, e o logo aparecia
+            meio pixel acima por um frame antes de assentar. Mantendo a camada,
+            o caminho de render é o mesmo antes e depois da animação.
+
+            Custo: uma camada de 64x35 mantida viva. Irrelevante para uma tela.
+          */}
+          <motion.span variants={revealFromTop} className="shrink-0 will-change-transform">
             <a
               href="#conteudo"
-              className="shrink-0 rounded-sm transition-opacity hover:opacity-75"
+              className="rounded-sm transition-opacity hover:opacity-75"
               aria-label="Ir para o início da página — Nubank"
             >
               {/*
