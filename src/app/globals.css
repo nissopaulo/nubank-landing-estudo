@@ -199,10 +199,19 @@
    * rotação, e sai inclinado com a arte em vez de destacado dela.
    *
    * A cor é o roxo mais escuro da paleta, em vez de preto, para a sombra não
-   * sujar o gradiente. Opacidade baixa de propósito — é profundidade, não
-   * destaque.
+   * sujar o gradiente.
+   *
+   * Intensidade calibrada por comparação lado a lado sobre o gradiente real da
+   * Hero (Chrome headless). A primeira tentativa, `0.20` com 26px de blur, foi
+   * imperceptível — e a razão é física, não de gosto: `drop-shadow` espalha a
+   * energia da sombra pelo raio de desfoque. O `0.20` é a opacidade da *cor*,
+   * não o pico que chega na tela; com blur largo o pico fica muito abaixo e a
+   * sombra evapora.
+   *
+   * Por isso o caminho aqui é blur MENOR com opacidade MAIOR. Sombra fechada lê
+   * como "objeto suspenso"; sombra larga e forte lê como brilho.
    */
-  filter: drop-shadow(0 14px 26px var(--color-nu-purple-950) / 0.2);
+  filter: drop-shadow(0 12px 20px var(--color-nu-purple-950) / 0.5);
 }
 
 @media (max-width: 1023px) {
