@@ -48,7 +48,12 @@ export type HeroCard = {
   width: number;
   /** Rotação aplicada à arte, em graus. */
   rotate: number;
-  /** Atraso da entrada, em segundos. */
+  /**
+   * Atraso da entrada, em segundos.
+   *
+   * Não é informado aqui: sai de `FAN_CASCADE`, calculado pela posição
+   * horizontal para o leque abrir da esquerda para a direita.
+   */
   delay: number;
   /**
    * Carregar sem `loading="lazy"`.
@@ -72,7 +77,6 @@ function card(input: {
   /** `x`, `y`, `largura` e `altura` da caixa no canvas de 1920x1080. */
   box: { x: number; y: number; w: number; h: number };
   rotate: number;
-  delay: number;
   eager?: boolean;
 }): HeroCard {
   const { x, y, w, h } = input.box;
@@ -84,10 +88,12 @@ function card(input: {
     centerX: (x + w / 2) / 19.2,
     centerY: (y + h / 2) / 19.2,
     width: w / 19.2,
+    // Preenchido abaixo, a partir da posição horizontal — ver FAN_CASCADE.
+    delay: 0,
   };
 }
 
-export const HERO_CARDS: HeroCard[] = [
+const RAW_CARDS: HeroCard[] = [
   card({
     id: "business",
     src: "/images/cards/nu-card-business.webp",
@@ -95,7 +101,6 @@ export const HERO_CARDS: HeroCard[] = [
     label: "Nu Business, acabamento em tons de cinza",
     box: { x: 342.28, y: 842.24, w: 659.621, h: 696.953 },
     rotate: -38.08,
-    delay: 0.42,
   }),
   card({
     id: "croma",
@@ -104,7 +109,6 @@ export const HERO_CARDS: HeroCard[] = [
     label: "Nu Croma, acabamento em tons de areia",
     box: { x: 597.37, y: 693.43, w: 519.06, h: 671.222 },
     rotate: -15.58,
-    delay: 0.24,
     eager: true,
   }),
   card({
@@ -114,7 +118,6 @@ export const HERO_CARDS: HeroCard[] = [
     label: "Nu, edição roxa",
     box: { x: 738.84, y: 705.61, w: 616.579, h: 699.76 },
     rotate: 29.42,
-    delay: 0.12,
     eager: true,
   }),
   card({
@@ -124,9 +127,33 @@ export const HERO_CARDS: HeroCard[] = [
     label: "Nu Ultraviolet, edição escura",
     box: { x: 892.53, y: 814.86, w: 696.953, h: 659.621 },
     rotate: 51.92,
-    delay: 0.33,
   }),
 ];
+
+/**
+ * Cascata do leque: o atraso sai da posição horizontal do card, não do índice
+ * do array. Assim a ordem visual é a ordem da animação — da esquerda para a
+ * direita — e inserir um card no meio da lista não embaralha a sequência.
+ *
+ * Antes os atrasos eram fixos por card (0.42 / 0.24 / 0.12 / 0.33), uma ordem
+ * que não acompanhava a composição na tela.
+ */
+const FAN_CASCADE = {
+  /** Atraso do card mais à esquerda. */
+  startDelay: 0.3,
+  /** Intervalo entre cards vizinhos, em segundos. */
+  step: 0.085,
+} as const;
+
+/** Posição de cada card na ordem horizontal, da esquerda para a direita. */
+const RANK_BY_X = new Map(
+  [...RAW_CARDS].sort((a, b) => a.centerX - b.centerX).map((card, i) => [card.id, i]),
+);
+
+export const HERO_CARDS: HeroCard[] = RAW_CARDS.map((card) => ({
+  ...card,
+  delay: FAN_CASCADE.startDelay + (RANK_BY_X.get(card.id) ?? 0) * FAN_CASCADE.step,
+}));
 
 /**
  * Todos os cards são renderizados e ocultados por CSS nos breakpoints

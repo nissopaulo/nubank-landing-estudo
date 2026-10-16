@@ -52,3 +52,39 @@ export const staggerContainer = (stagger = 0.08, delayChildren = 0): Variants =>
     transition: { staggerChildren: stagger, delayChildren },
   },
 });
+
+/**
+ * Reveal que desce do topo — usado no header, que ocupa a borda superior da
+ * tela. Sobe (`revealUp`) parece errado num elemento que vem do céu.
+ */
+export const revealFromTop: Variants = {
+  hidden: { opacity: 0, y: -16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: DURATION.base, ease: EASE_OUT_EXPO },
+  },
+};
+
+/**
+ * Abertura em leque dos cards da Hero.
+ *
+ * Cada card sai com `from` graus a mais do que a rotação final do design e
+ * assenta nela, como uma folha de leque girando até o lugar. Como o Figma já
+ * dá uma rotação diferente a cada card (-38° a +52°), somar um deslocamento
+ * constante é o que faz o leque parecer fechado no início e aberto no fim.
+ *
+ * `origin` fica perto da base de propósito: com o pivô no centro o card
+ * apenas gira no lugar; perto da base ele bascula, e é o bascular que lê como
+ * leque abrindo.
+ */
+export const FAN = {
+  /** Ângulo inicial, em graus, somado à rotação final do card. */
+  from: -18,
+  /** Escala inicial. */
+  scaleFrom: 0.88,
+  /** Quanto o card sobe ao entrar, em px. */
+  yFrom: 26,
+  /** Ponto de rotação — perto da base, para o card bascular. */
+  origin: "50% 78%",
+} as const;

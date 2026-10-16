@@ -11,14 +11,16 @@ import {
 import { useRef } from "react";
 
 import { HERO_CARDS } from "@/lib/hero-cards";
-import { DURATION, EASE_OUT_EXPO } from "@/lib/motion";
+import { DURATION, EASE_OUT_EXPO, FAN } from "@/lib/motion";
 import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 
 /**
  * Composição de cards da Hero.
  *
- * Três camadas de movimento, todas desligadas sob `prefers-reduced-motion`:
- *  1. entrada — cards sobem e assentam a rotação, em cascata;
+ * Quatro camadas de movimento, todas desligadas sob `prefers-reduced-motion`:
+ *  1. entrada em leque — cada card parte 18° fora da rotação do design e
+ *     assenta nela, em cascata da esquerda para a direita (o atraso sai da
+ *     posição horizontal, ver `lib/hero-cards.ts`);
  *  2. parallax de rolagem — a camada desliza mais devagar que a página;
  *  3. paralaxe de ponteiro — deslocamento sutil na direção do cursor
  *     (apenas em dispositivos com ponteiro fino).
@@ -102,10 +104,16 @@ export function CardsShowcase() {
                * avaliar a interseção e disparar o lazy-load.
                */
               className="flex size-full items-center justify-center will-change-transform"
-              initial={{ opacity: 0, y: 150, rotate: 16, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, rotate: 0, scale: 1 }}
+              style={{ transformOrigin: FAN.origin }}
+              initial={{
+                opacity: 0,
+                rotate: FAN.from,
+                scale: FAN.scaleFrom,
+                y: FAN.yFrom,
+              }}
+              animate={{ opacity: 1, rotate: 0, scale: 1, y: 0 }}
               transition={{
-                duration: DURATION.slow * 1.2,
+                duration: DURATION.slow * 1.25,
                 ease: EASE_OUT_EXPO,
                 delay: card.delay,
               }}

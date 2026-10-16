@@ -298,3 +298,41 @@ Ficou registrado como desvio autoral, não como valor lido do design.
 
 `NoiseOverlay` é componente de servidor de propósito: sem estado e sem efeito,
 entra no HTML estático sem custo de hidratação. Lint e tipos OK.
+
+O usuário aprovou o resultado com o grão **por cima** do texto ("ainda é
+totalmente legível"). A pendência de mover o grão para baixo do texto fica
+aberta só como opção para intensidades acima de 0.12.
+
+### 2026-10-16 — entrada do header + leque nos cards
+
+Duas animações pedidas:
+
+1. **Header entra em cascata.** Estava estático na montagem; agora logo, itens
+   de nav e CTAs descem de 16px em `revealFromTop`, escalonados com
+   `staggerContainer`. `initial={false}` continua no `<motion.header>` — é o que
+   impede a animação de re-disparar quando `data-condensed` muda ao rolar; o
+   reveal fica no container interno, que só anima na montagem. A nav e o grupo
+   de CTAs ganharam containers próprios: o escalonamento desce por ramo da
+   árvore, e sem eles os filhos entram todos no mesmo instante.
+2. **Cards abrem em leque, da esquerda para a direita.** Cada card sai 18° fora
+   da rotação do design e assenta nela, com pivô em `50% 78%` — é o bascular a
+   partir da base que lê como leque abrindo. O `transformOrigin` perto da base
+   importa: com pivô no centro o card apenas gira no lugar.
+
+O atraso dos cards deixou de ser hardcoded por card (0.42 / 0.24 / 0.12 / 0.33,
+ordem que não acompanhava a tela) e passou a ser derivado da posição
+horizontal: `FAN_CASCADE` em `hero-cards.ts` ordena por `centerX` e aplica
+`startDelay + rank × step`. Assim a ordem visual é a ordem da animação, e
+inserir um card no meio da lista não embaralha a cascata.
+
+Os valores ficaram concentrados para ajuste rápido: `FAN` (ângulo, escala, y,
+origem) em `lib/motion.ts`; `FAN_CASCADE` (atraso inicial e passo) em
+`lib/hero-cards.ts`.
+
+**Limite da verificação:** o escalonamento do header foi confirmado por
+screenshots headless em 450ms, 1.000ms e 1.800ms (logo → dois itens de nav →
+header inteiro com um card aparecendo). O estado final assentado **não** foi
+verificado por screenshot: `--virtual-time-budget` não dirige bem animações em
+rAF e produz frames inconsistentes (t=700 mostrou menos que t=1.000; t=2.200 veio
+sem título nem cards). O que não fecha visualmente precisa de olho humano no
+localhost.
