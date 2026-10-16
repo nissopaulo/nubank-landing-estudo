@@ -77,21 +77,11 @@ export function SiteHeader() {
             não encolhe por conta própria. Com o `shrink-0` só no `<a>` (onde
             estava antes deste wrapper), era o span que encolhia — e quando a
             linha aperta, ele chega a largura zero e o logo desaparece.
-
-            `will-change-transform` fica permanente, e é deliberado. A caixa do
-            logo tem 35px (ímpar) e descansa em 32.5px — meio pixel. Durante o
-            reveal ele vira camada composta; no fim o Motion remove a transform
-            e o elemento volta a ser pintado normalmente. Em meio pixel, esses
-            dois caminhos não concordam no arredondamento, e o logo aparecia
-            meio pixel acima por um frame antes de assentar. Mantendo a camada,
-            o caminho de render é o mesmo antes e depois da animação.
-
-            Custo: uma camada de 64x35 mantida viva. Irrelevante para uma tela.
           */}
-          <motion.span variants={revealFromTop} className="shrink-0 will-change-transform">
+          <motion.span variants={revealFromTop} className="shrink-0">
             <a
               href="#conteudo"
-              className="rounded-sm transition-opacity hover:opacity-75"
+              className="rounded-sm transition-opacity hover:opacity-75 lg:translate-y-[0.5px]"
               aria-label="Ir para o início da página — Nubank"
             >
               {/*
@@ -116,6 +106,20 @@ export function SiteHeader() {
                 `unoptimized` como nos cards: são 5 KB, e passar pelo otimizador
                 só adicionaria uma requisição a `/_next/image` para re-encodar um
                 PNG que já é minúsculo.
+
+                `lg:translate-y-[0.5px]` no link: meia pixelada para alinhar o
+                logo na grade de pixels. No `lg` a caixa do logo tem 35px
+                (ímpar) e é centralizada numa linha de 40px, então ela
+                descansa em 32.5px — meio pixel. Em repouso, meio pixel é
+                invisível; mas no fim da animação o transform é removido e o
+                elemento sai do caminho de render composto para o pintado, e
+                os dois arredondam o meio pixel para lados diferentes. O logo
+                ficava ~1px acima até o repaint. Descansando em pixel inteiro
+                não há o que discordar.
+
+                Só no `lg`: em `base` e `md` as caixas já são pares e o centro
+                cai em pixel inteiro (21 e 26). É um `translate` CSS, não
+                transform, então não briga com o `y` do Motion no `span` pai.
               */}
               <Image
                 src="/images/brand/nu-logo-light.png"
