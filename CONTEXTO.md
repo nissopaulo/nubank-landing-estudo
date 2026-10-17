@@ -20,12 +20,11 @@
 
 Duas telas implementadas e funcionando. A **Hero**, com header fixo, cards em
 parallax e rodapé. Abaixo dela a **Ecossystem Section**, carrossel de pilares —
-com **dois pilares desenhados** (Nubank e Croma) e os outros dois recolhidos e
-sem clique, porque os frames `77:40` e `80:77` do Figma seguem ocultos e ainda
-na estrutura antiga que este projeto descartou. Clicar num pilar desenhado
-reequilibra a linha de cards inteira, com transição. Entre as duas telas e o
-rodapé existe um bloco **"Em construção"** que é provisório e existe só para o
-CTA "Explore o Universo Nu" ter destino.
+**completa: os quatro desenhados** (frames `52:3` Nubank, `76:3` Croma, `77:40`
+Ultravioleta, `80:77` Empresas), os quatro clicáveis, e nenhum `PROVISÓRIO`
+sobrando. Clicar num pilar reequilibra a linha de cards inteira, com transição.
+Entre as duas telas e o rodapé existe um bloco **"Em construção"** que é
+provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
 
 | | |
 |---|---|
@@ -912,17 +911,12 @@ de "desabilitado" vem da superfície, não da cor do texto.
 (mesmo procedimento das artes dos cartões) e estão preservados em
 `%TEMP%\opencode\peoples-png-originais`.
 
-**A pessoa sobe de baixo para cima** com `personRise`, em `lib/motion.ts`. O
-deslocamento é % da altura da própria imagem e o que esconde é a posição, não
+**A pessoa sobe de baixo para cima** — *(registro desta sessão; o `exit` passou a
+rodar quando o Croma entrou, em 2026-10-17)*. Com `personRise`, em `lib/motion.ts`.
+O deslocamento é % da altura da própria imagem e o que esconde é a posição, não
 `opacity` — o HTML do servidor já sai com `transform: translateY(100%)`, então
-não há flash antes da hidratação. 100% basta aqui (a pessoa tem 843px e a
-janela de recorte tem 595px) onde os cards da Hero precisam de 150%. O caminho
-de saída, que desce e some, **ainda não roda** — só existe um pilar — e é a
-única parte da animação que precisa de olho humano.
-
-**Próximo passo:** o usuário redesenha os três pilares no Figma. Aí entra um
-`useState` com o índice e um `onClick` no botão; o `key` do `AnimatePresence` já
-está lá e é ele que faz a troca reaproveitar a animação.
+não há flash antes da hidratação. 100% basta aqui (a pessoa tem 843px e a janela
+de recorte tem 595px) onde os cards da Hero precisam de 150%.
 
 ### 2026-10-17 — cor da descrição e a interação do CTA
 
@@ -1320,3 +1314,49 @@ ou ser anulada por `pointer-events` do ancestral. **Só o valor computado pelo
 navegador responde**, e comparar com o esperado derivado do atributo é o que fecha
 o teste. Vale para qualquer propriedade de aparência aparente, que é justamente
 o tipo de coisa em que "o CSS está certo" e "aparece certo" divergem.
+
+### 2026-10-17 — auditoria de fim da Ecossystem
+
+A seção ficou completa, então usei a sessão para caçar o que tinha sobrado das
+sessões anteriores. O que apareceu:
+
+**Duas referências desatualizadas no CONTEXTO.** O "Estado atual" ainda dizia
+"dois pilares desenhados", e a nota de pendência contava os frames ocultos do
+Figma. Corrigido. E o registro da sessão do "só Nubank" afirmava que o `exit` da
+pessoa **não rodava** e que o próximo passo era ligar o `useState` — as duas
+coisas já eram verdade na sessão seguinte.
+
+Ali é registro histórico e **não se reescreve**; o que fiz foi acrescentar uma
+ponte de uma linha, para quem ler não parar ali achando que o `exit` nunca roda.
+A seção "Estado atual" é a fonte da verdade, e ela estava errada.
+
+**Export morto em `motion.ts`: três.** `EASE_OUT_QUINT`, `springSoft` e
+`revealScale` estão exportados e nenhum componente os usa. **Mantive**, porque as
+seções `Porque a Nu`, `Cartões` e `Diferenciais` vão ser desenhadas agora, e
+reveal com escala e mola amortecida é o que costuma pedir nelas. Documentei o
+status no próprio arquivo, com a instrução de apagar se não forem usados — export
+morto sem explicação se confunde com esquecimento, e o lint não pega export não
+importado.
+
+**Utilitária órfã no CSS: zero, e isso é resultado do `source(none)`.** Cruzei as
+utilitárias do bundle com o texto de `src/` e o resultado é **0 órfãs** — nenhuma
+regra está mais sendo gerada a partir de documentação. O bundle caiu de 29.368
+para 26.892 bytes (−2.476, −8,4%) e de 379 para 357 chaves de regra. O ganho é
+duplo: o build parou de quebrar **e** parou de entregar peso que ninguém usa.
+
+Esse script deu falso positivo **três vezes**, todas por causa do extrator e nunca
+do CSS:
+
+1. Só lia `className="..."`, e as variantes do `CtaLink` vivem em mapa de objeto
+   → acusou 10 classes de hover/active como órfãs.
+2. Passou a tokenizar por espaço com um lexer de classe delicado → engoliu
+   `lg:mt-16`, `gap-[12px]` e companhia.
+3. A versão que funciona **não tokeniza**: pergunta se o nome gerado aparece como
+   substring em algum lugar do `src/`. É o que importa para "essa regra tem
+   dono?", e como o texto é concatenado de todo o `src/`, uma classe citada em
+   comentário também conta — o que só reduz falso positivo.
+
+É a terceira vez seguida que um verificador meu acusa erro onde o código está
+certo (as outras duas foram as fórmulas de geometria da Ecossystem). O padrão é
+o mesmo: **confiar na medida feita com heurística antes de confiar no número que
+ela imprime.**

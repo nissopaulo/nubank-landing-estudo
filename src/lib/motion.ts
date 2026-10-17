@@ -46,6 +46,19 @@ export const DURATION = {
   slow: 1.1,
 } as const;
 
+/**
+ * Vocabulário de movimento ainda sem uso — 2026-10-17.
+ *
+ * `EASE_OUT_QUINT`, `springSoft` e `revealScale` estão exportados e **nenhum
+ * componente os usa hoje**. Ficam de propósito: as seções `Porque a Nu`,
+ * `Cartões` e `Diferenciais` ainda vão ser desenhadas, e reveal com escala e
+ * mola amortecida são exatamente o que costuma pedir nelas.
+ *
+ * Estão aqui documentados como tal porque export morto sem explicação se confunde
+ * com esquecimento. **Se uma seção passar sem nenhum dos três, apague** — código
+ * que ninguém usa não é biblioteca, é dívida. O lint não pega export não
+ * importado, então essa revisão é manual.
+ */
 export const springSoft: Transition = {
   type: "spring",
   stiffness: 120,
