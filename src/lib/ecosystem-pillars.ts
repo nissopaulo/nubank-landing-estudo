@@ -3,15 +3,16 @@
  *
  * ## O que existe no Figma hoje
  *
- * Dois frames visíveis na estrutura nova: `Ecossystem Section - Nubank` (node
- * `52:3`) e `Ecossystem Section - Croma` (node `76:3`). Os outros dois —
- * `77:40` Ultraviolet e `80:77` Business — seguem ocultos e ainda na estrutura
- * antiga, a que este projeto descartou.
+ * Três frames visíveis na estrutura nova: `Ecossystem Section - Nubank` (node
+ * `52:3`), `Ecossystem Section - Croma` (node `76:3`) e `Ecossystem Section -
+ * Ultraviolet` (node `77:40`). O quarto — `80:77` Business — segue oculto e
+ * ainda na estrutura antiga, a que este projeto descartou.
  *
  * Todos os quatro pilares aparecem no carrossel desde o começo, porque é assim
  * que o design mostra: **os quatro cards existem sempre, na mesma ordem, e um
- * deles é o ativo**. No frame do Croma o ativo é o *segundo* card — o Nubank
- * recolhe. Por isso o componente tem quatro slots fixos em vez de "um card
+ * deles é o ativo**. E o ativo **não fica sempre no mesmo lugar**: no frame do
+ * Nubank ele é o primeiro card, no do Croma o segundo, no do Ultravioleta o
+ * terceiro. Por isso o componente tem quatro slots fixos em vez de "um card
  * ativo mais três botões", e a animação de troca é o rebalanceamento da linha.
  *
  * `active` ausente = pilar **ainda não desenhado**. Ele aparece recolhido, sem
@@ -128,10 +129,44 @@ export const PILLARS: Pillar[] = [
       personWidth: (973 / MAIN_W) * 100,
     },
   },
-  // PROVISÓRIO — Ultravioleta e Empresas ainda não foram redesenhados na
-  // estrutura nova; os frames `77:40` e `80:77` seguem ocultos na antiga.
-  // Ficam recolhidos e não-clicáveis até existirem.
-  { id: "ultravioleta", name: "Ultravioleta", person: "/images/peoples/ultraviolet-people.webp" },
+  {
+    id: "ultravioleta",
+    name: "Ultravioleta",
+    person: "/images/peoples/ultraviolet-people.webp",
+    active: {
+      /**
+       * Export do Figma em data URI, sem arredondar — mesmo motivo do Nubank:
+       * o `radialGradient` vem com `gradientTransform` em `matrix(...)` e o CSS
+       * não expressa. Aqui são **cinco** paradas, contra três no Nubank.
+       *
+       * As cinco cores são valores que já existem como token — `Purple/600`
+       * (#9b2fe8) na primeira e `Purple/950` (#2e1065) na última — mas isso não
+       * muda nada: as do meio são interpolações do gradiente, não paradas do
+       * design system, e virar token seria inventar cor.
+       */
+      gradient: `url("data:image/svg+xml;utf8,<svg viewBox='0 0 1163 339' xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none'><rect x='0' y='0' height='100%' width='100%' fill='url(%23grad)' opacity='1'/><defs><radialGradient id='grad' gradientUnits='userSpaceOnUse' cx='0' cy='0' r='10' gradientTransform='matrix(107.8 -13.9 4.0517 31.422 581.5 169.5)'><stop stop-color='rgba(155,47,232,1)' offset='0'/><stop stop-color='rgba(128,39,199,1)' offset='0.25'/><stop stop-color='rgba(101,32,167,1)' offset='0.5'/><stop stop-color='rgba(73,24,134,1)' offset='0.75'/><stop stop-color='rgba(46,16,101,1)' offset='1'/></radialGradient></defs></svg>")`,
+      /**
+       * Branco, e aqui ele funciona com folga — o oposto do Croma.
+       *
+       * Medido no render do frame, na faixa real da descrição: pior ponto
+       * **6,04:1**, melhor 10,72:1. Mesmo a parada mais clara do gradiente
+       * (#9b2fe8, offset 0) dá 5,30:1, então **todo** o card passa em texto
+       * pequeno, sem depender de onde o texto cai.
+       */
+      ink: "#ffffff",
+      desc: [
+        "Benefícios exclusivos, vantagens em viagens e",
+        "soluções premium para aproveitar mais cada conquista.",
+      ],
+      body: "O Nubank Ultravioleta oferece uma experiência financeira diferenciada para clientes de alta renda, combinando cartão premium, benefícios para viagens e soluções integradas de conta e investimentos. Com opções de cashback ou pontos, vantagens em compras internacionais e acesso a experiências exclusivas, a proposta é proporcionar mais flexibilidade, conveniência e possibilidades para aproveitar o seu dinheiro.",
+      cta: "Conheça o Ultravioleta",
+      personLeft: (551 / MAIN_W) * 100,
+      personWidth: (928 / MAIN_W) * 100,
+    },
+  },
+  // PROVISÓRIO — Empresas ainda não foi redesenhado na estrutura nova; o frame
+  // `80:77` segue oculto e ainda na antiga. Fica recolhido e não-clicável até
+  // existir.
   { id: "empresas", name: "Empresas", person: "/images/peoples/business-people.webp" },
 ];
 

@@ -248,9 +248,10 @@ de layout, não um valor do design** — ajuste em `globals.css` à vontade.
 
 ## Ecossystem Section
 
-Figma `Ecossystem Section - Nubank` (nó `52:3`) e `Ecossystem Section - Croma`
-(nó `76:3`), ambos 1920×919. Carrossel de pilares: um aberto por vez, o resto
-recolhido com o nome lido de baixo para cima. Clicar num pilar recolhido abre.
+Figma `Ecossystem Section - Nubank` (nó `52:3`), `Ecossystem Section - Croma`
+(nó `76:3`) e `Ecossystem Section - Ultraviolet` (nó `77:40`), todos 1920×919.
+Carrossel de pilares: um aberto por vez, o resto recolhido com o nome lido de baixo
+para cima. Clicar num pilar recolhido abre.
 
 ### Quatro slots fixos, não "um ativo e três botões"
 
@@ -269,23 +270,29 @@ ativo  calc(100% - 357px)  +  3 × 107 recolhidos  +  3 × 12 de gap  =  1520px
 
 1520 é a largura do `Main Content`, seja qual for o slot que estiver ativo.
 
-### Dois pilares desenhados, dois ainda não
+### Três pilares desenhados, um ainda não
 
-| Pilar | Frame | Estado |
-|---|---|---|
-| Nubank | `52:3` | desenhado, abre por padrão |
-| Croma | `76:3` | desenhado, clicável |
-| Ultravioleta | `77:40` | oculto, e ainda na estrutura antiga que este projeto descartou |
-| Empresas | `80:77` | idem |
+| Pilar | Frame | Slot | Estado |
+|---|---|---|---|
+| Nubank | `52:3` | 1 | desenhado, abre por padrão |
+| Croma | `76:3` | 2 | desenhado, clicável |
+| Ultravioleta | `77:40` | 3 | desenhado, clicável |
+| Empresas | `80:77` | 4 | oculto, e ainda na estrutura antiga que este projeto descartou |
 
-Os dois últimos aparecem recolhidos e **não são clicáveis**: `aria-disabled` com
+O único restante aparece recolhido e **não é clicável**: `aria-disabled` com
 aviso para leitor de tela, a mesma regra dos itens da navegação — um botão que não
-faz nada não existe em silêncio. **Nada foi inventado** para eles: nome e foto
+faz nada não existe em silêncio. **Nada foi inventado** para ele: nome e foto
 vieram do Figma e dos assets, e não há gradiente, descrição, parágrafo nem CTA
 porque ainda não existem no design.
 
 Na prática a ausência do bloco `active` no dado **é** o que torna o pilar não
 clicável — não existe flag separada para divergir do conteúdo.
+
+**O ativo não fica sempre no mesmo slot**, e é por isso que os quatro cards são
+fixos. O Figma mostra o Nubank no primeiro, o Croma no segundo e o Ultravioleta no
+terceiro — cada frame com os anteriores recolhidos à esquerda. Trocar de pilar
+rebalanceia a linha inteira, e o Exercício do slot 3 (ativo no meio, com cards
+recolhidos dos dois lados) é o único que testa os dois lados de uma vez.
 
 ### O gradiente do card ativo vai como SVG, não como CSS
 
@@ -309,26 +316,37 @@ do gradiente, que é a parte mais escura dele. Era a listra que surgia no
 Firefox. `background-size: 100% 100%` com `background-repeat: no-repeat` resolve,
 e os dois motores passam a bater dentro de 2,4 níveis.
 
-### Fidelidade medida nos dois estados
+### Fidelidade medida nos três estados
 
-Comparação pixel a pixel entre o render do frame e o build de produção, ambos
-normalizados na grade de 1920×919:
+Comparação entre o render do frame e o build de produção, ambos na grade de
+1920×919. Medido em coordenadas do `Main Content`, que é como o Figma declara:
 
-| Elemento | Figma `52:3` | Nosso | Figma `76:3` | Nosso |
-|---|---|---|---|---|
-| Título da seção | x 202,8 · y 117,6 · 520,8×122,4 | x 202 · y 117 · 521×123 | idem | idem |
-| Card ativo | x 200,4 · 1162,8 de largura | **x 200 · 1163** | x 319 · 1163 | **x 319 · 1163** |
-| Card recolhido 1 | x 1375,2 · 106,8 | **x 1375 · 107** | x 200 · 107 | **x 200 · 107** |
-| Card recolhido 2 | x 1494 · 106,8 | **x 1494 · 107** | x 1494 · 107 | **x 1494 · 107** |
-| Card recolhido 3 | x 1612,8 · 108 | **x 1613 · 107** | x 1612,8 · 105 | **x 1613 · 107** |
-| Botão do CTA | x 1496,4 · y 759,6 · 223,2×39,6 | x 1500 · y 759 · 220×40 | idem | idem |
-| Parágrafo | 3 linhas a partir de y 763 | 3 linhas a partir de y 762 | 3 linhas | 3 linhas |
+| | Nubank ativo `52:3` | Croma ativo `76:3` | Ultravioleta ativo `77:40` |
+|---|---|---|---|
+| Card ativo — Figma | x 0 · 1163 | x 119 · 1163 | x 238 · 1163 |
+| Card ativo — nosso | **x 0 · 1163** | **x 119 · 1163** | **x 238 · 1163** |
+| Recolhidos — Figma | 1175 · 1294 · 1413 | 0 · 1294 · 1413 | 0 · 119 · 1413 |
+| Recolhidos — nosso | **1175 · 1294 · 1413** | **0 · 1294 · 1413** | **0 · 119 · 1413** |
+| Soma da linha | 1520 | 1520 | 1520 |
+| Pessoa — Figma | left 210 · 1129 × 843 | left 414 · 973 × 648 | left 551 · 928 × 618 |
+| Pessoa — nosso | **210 · 1129 × 843** | **414 · 973 × 648** | **551 · 928 × 618** |
 
-O card ativo é detectado pela cor, e é por isso que dá para medir sem a pessoa
-atrapalhar: nenhum pixel da borda esquerda ou da direita do card tem ninguém
-sobre. No estado do Croma o primeiro card recolhido é o Nubank, em x 200 — que é a
-confirmação de que os slots ficam onde o design os põe, e não num "ativo" à
-frente.
+O `x 238` do Ultravioleta é `200 + 2 × 119` do frame: dois recolhidos de 107 e dois
+gaps de 12 antes dele. **Nenhum dos três deltas é de 1px** — a fórmula do
+`flex-basis` fecha para qualquer slot, que era a aposta da arquitetura de quatro
+slots fixos.
+
+**A geometria é medida no DOM** (`getBoundingClientRect`), não por cor de pixel.
+Classificar o card pela cor parece melhor e não funciona: a página tem grão em
+`opacity` fixo sobre tudo, então o branco de fundo fica entre ~215 e 255, e o
+card recolhido é #e5e7eb = 229 — **dentro** dessa faixa. Duas versões de um script
+de verificação mediram errado por isso antes de o DOM resolver a pergunta.
+
+O gradiente do Ultravioleta foi conferido à parte, desligando o grão com
+`--nu-grain-opacity: 0`: o erro residual contra o Figma passa a ser de **1 a 2
+níveis em 290px de card, com inclinação de 0,0006 níveis por px**. Inclinação
+praticamente nula é a assinatura de um offset uniforme — a textura autoral — e não
+de um gradiente errado, que daria erro crescendo de uma ponta à outra.
 
 A altura dos cards (339 px) **não é declarada no CSS**: ela sai da sobra do
 `Main Content` (595 px − título − gap de 100 px), com a linha em `flex-1` e os
@@ -365,6 +383,8 @@ no Croma, e é o que está implementado, como `--eco-ink` por card.
 | Descrição no card ativo (Nubank) | branco | 5,95:1 |
 | Nome no card ativo (Croma) | `Background/bg-brand` `#820ad1` | 4,98:1 sob o título |
 | Descrição no card ativo (Croma) | `Background/bg-brand` `#820ad1` | **3,48:1** ⚠️ |
+| Nome no card ativo (Ultravioleta) | branco | 6,04:1 no pior ponto do gradiente |
+| Descrição no card ativo (Ultravioleta) | branco | **6,04:1** ✅ |
 | Parágrafo ao lado do CTA | `Text/text-tertiary` `#6b7280` | 4,83:1 |
 | Rótulo do card recolhido | `Neutral/800` `#1c1c1e` | 13,74:1 sobre `#e5e7eb` |
 
@@ -395,6 +415,12 @@ sobre `#8f7f64` o texto precisaria ser bem mais claro que a própria marca, e a
 mesma tinta passaria a falhar no lado claro do gradiente. É uma falha do design, e
 a implementação segue o Figma. Se o Croma for para produção com texto pequeno,
 o caminho é mudar o desenho — não a cor no código.
+
+**O Ultravioleta é o oposto e não tem problema nenhum.** Mesmo branco, mesmo
+tamanho de texto, e o pior ponto do card dá **6,04:1** — e a medida mais forte é
+que **todo** o card passa: a parada mais clara do gradiente (#9b2fe8, offset 0)
+dá 5,30:1, então o resultado não depende de onde o texto cai. É o gradiente com
+cinco paradas que faz a diferença, e não a escolha de tinta.
 
 ### O CTA e a variante `brand`
 
@@ -439,11 +465,12 @@ caixa bate com a proporção do asset correspondente, o que confirma a leitura:
 |---|---|---|---|
 | Nubank | 1129 × 843 | 1,33929 | 2400×1792 = 1,33929 |
 | Croma | 973 × 648 | 1,50154 | 2400×1599 = 1,50094 |
+| Ultravioleta | 928 × 618 | 1,50162 | 2400×1599 = 1,50094 |
 
-O `top` é 0 nos dois, mas expressado de jeitos diferentes no Figma — o do Nubank
-é filho do `Main Content`, o do Croma é filho do `Content` com `top-[-256px]`, que
-desce exatamente o `gap` de 100 mais a altura do título. Convertido para a mesma
-referência, os dois são 0.
+O `top` é 0 nos três, mas expressado de jeitos diferentes no Figma — o do Nubank é
+filho do `Main Content`, o do Croma e o do Ultravioleta são filhos do `Content` com
+`top-[-256px]`, que desce exatamente o `gap` de 100 mais a altura do título.
+Convertido para a mesma referência, os três são 0.
 
 A janela de recorte é um `absolute inset-0 overflow-clip` **dentro** do
 `Main Content`, e não o próprio `Main Content`. O motivo está na seção do hover
@@ -820,11 +847,10 @@ com `PROVISÓRIO`:
 - **Menu mobile.** Ausente; depende dos painéis.
 - **Seções seguintes** (`Porque a Nu`, `Cartões`, `Diferenciais`) — hoje existe
   um bloco "Em construção" só para o CTA "Explore o Universo Nu" ter destino.
-- **Os dois pilares ainda não desenhados do Ecossystem** — Ultravioleta e
-  Empresas já existem no carrossel com nome e foto, mas os frames `77:40` e
-  `80:77` seguem ocultos e ainda na estrutura antiga que este projeto
-  descartou. Não há gradiente, descrição, parágrafo nem CTA para eles, e nenhum
-  foi inventado; aparecem recolhidos e sem clique.
+- **O pilar ainda não desenhado do Ecossystem** — Empresas já existe no carrossel
+  com nome e foto, mas o frame `80:77` segue oculto e ainda na estrutura antiga que
+  este projeto descartou. Não há gradiente, descrição, parágrafo nem CTA, e nada
+  foi inventado; aparece recolhido e sem clique.
 - **Texto do rodapé** com o aviso legal — redigido para este estudo.
 
 Além disso, **não há** números de usuários, taxas, limites, depoimentos nem
@@ -893,12 +919,12 @@ redirecionadores — esta página não tem função de cadastro.
 
 ## Próximos passos
 
-1. Desenhar no Figma os dois pilares restantes da Ecossystem Section
-   (Ultravioleta, Empresas) na estrutura nova — e então ligá-los ao carrossel. O
-   que entra é um bloco `active` no dado; o `key={pillar.id}` do `AnimatePresence`
-   e o `onClick` já estão prontos e a troca reaproveita a animação.
+1. Desenhar no Figma o último pilar da Ecossystem Section (Empresas, `80:77`)
+   na estrutura nova — e então ligá-lo ao carrossel. O que entra é um bloco
+   `active` no dado; o `key={pillar.id}` do `AnimatePresence` e o `onClick` já
+   estão prontos e a troca reaproveita a animação.
 2. Decidir o que fazer com o contraste da descrição do Croma (3,48:1 em 16 px) —
-   hoje segue o Figma, mas é o único texto da seção que não passa em AA.
+   hoje segue o Figma, e é o único texto da seção que não passa em AA.
 3. Desenhar no Figma os submenus da navegação e as seções restantes.
 4. Revisar o texto do rodapé e a composição mobile dos cards.
 5. Exportar o ícone do app definitivo do Figma.

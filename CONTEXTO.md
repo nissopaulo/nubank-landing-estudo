@@ -171,6 +171,12 @@ traz `text-[color:var(--neutral/800,#1c1c1e)]` no rótulo dos cards recolhidos,
 que é a tinta que propus na sessão anterior (branco sobre `#e5e7eb` dava 1,24:1).
 O design passou a ter 13,74:1.
 
+**Leitura do nó `77:40` (Ultravioleta), 2026-10-17:** nenhuma variable nova
+também. `Purple/950` e `Purple/600` aparecem porque a primeira e a última parada do
+gradiente do card são exatamente esses dois valores — mas isso **não** significa
+que são tokens utilizáveis: as três paradas do meio são interpolações do gradiente,
+não cores do design system, e transformá-las em token seria inventar cor.
+
 **Três pontos para resolver ao criar o design system:**
 
 1. **`#820ad1` tem dois nomes no Figma** — `Action/action-secondary-text` e
@@ -209,7 +215,7 @@ Escrever a mensagem num arquivo e usar `git commit -F <arquivo>`.
 
 | # | Pendência | Onde |
 |---|---|---|
-| 1 | **Desenhar no Figma os dois pilares restantes da Ecossystem** (Ultravioleta, Empresas) na estrutura nova, e então ligá-los ao carrossel | `ecosystem-pillars.ts` |
+| 1 | **Desenhar no Figma o último pilar da Ecossystem** (Empresas, `80:77`) na estrutura nova, e então ligá-lo ao carrossel | `ecosystem-pillars.ts` |
 | 2 | **Desenhar no Figma os painéis dos submenus da navegação.** É o bloqueio do restante da página | `SiteHeader.tsx` |
 | 3 | Desenhar no Figma as seções `Porque a Nu`, `Cartões`, `Diferenciais` | `SiteFooter.tsx` (`PendingSections`) |
 | 4 | Menu mobile (depende do nº 2) — **adiado**, só depois que o design mobile existir | `SiteHeader.tsx` |
@@ -220,12 +226,12 @@ Escrever a mensagem num arquivo e usar `git commit -F <arquivo>`.
 | 9 | Montar o catálogo de componentes (Storybook ou equivalente) **depois** que o design system existir — ver decisão 11 | — |
 | 10 | **A descrição do Croma reprova AA em texto pequeno** — 3,48:1 a 16 px, por desenho (a tinta é a própria marca sobre um creme que escurece). Implementado como o Figma pede. Se for para produção, a correção é no design, não no código | `ecosystem-pillars.ts` |
 
-**No Figma hoje existem três frames visíveis** — `Hero Section` (`14:446`),
-`Ecossystem Section - Nubank` (`52:3`) e `Ecossystem Section - Croma` (`76:3`) —
-mais os 4 frames soltos de arte dos cartões e **dois frames ocultos da
-Ecossystem** (`77:40`, `80:77`) que ainda estão na estrutura antiga, a que o
-projeto descartou. Não há design das seções seguintes — por isso os itens 2 e 3
-bloqueiam o resto.
+**No Figma hoje existem quatro frames visíveis** — `Hero Section` (`14:446`),
+`Ecossystem Section - Nubank` (`52:3`), `Ecossystem Section - Croma` (`76:3`) e
+`Ecossystem Section - Ultraviolet` (`77:40`) — mais os 4 frames soltos de arte dos
+cartões e **um frame oculto da Ecossystem** (`80:77`, Business) que ainda está na
+estrutura antiga, a que o projeto descartou. Não há design das seções seguintes —
+por isso os itens 2 e 3 bloqueiam o resto.
 
 ### Antes de sugerir código
 
@@ -1185,3 +1191,73 @@ headless, não estilo perdido.
 
 **A regra que fica:** `source(none)` não é configuração, é o que impede a
 documentação de derrubar o build. Está em "Antes de sugerir código".
+
+### 2026-10-17 — Ultravioleta liberado
+
+O usuário redesenhou o Ultravioleta no Figma (`77:40`, agora visível). Só o
+Empresas (`80:77`) continua oculto.
+
+**O ativo é o terceiro slot** — Nubank e Croma recolhidos à esquerda. Isso era a
+aposta da arquitetura de quatro slots fixos, e ela se pagou: **nenhum delta de 1px
+nos três estados**, e a fórmula do `flex-basis` fecha para qualquer slot sem
+nenhum caso especial. O caso do meio (ativo cercado de recolhidos dos dois lados)
+é o único que os outros dois não exercitam.
+
+| | Nubank | Croma | Ultravioleta |
+|---|---|---|---|
+| x do ativo (Main Content) | 0 | 119 | 238 |
+| pessoa, Figma | 210 · 1129 × 843 | 414 · 973 × 648 | 551 · 928 × 618 |
+| pessoa, nosso | igual | igual | igual |
+
+O gradiente são **cinco paradas** (contra três no Nubank), ainda como data URI
+pelo mesmo motivo do `gradientTransform`.
+
+**Contraste: o Ultravioleta não tem problema nenhum, e é o oposto do Croma.**
+Mesmo branco, mesmo 16 px, pior ponto **6,04:1** — e, mais forte que isso, **todo**
+o card passa: a parada mais clara (#9b2fe8) dá 5,30:1. O que salva é o gradiente
+de cinco paradas, não a escolha de tinta. Registrado porque mostra que a falha do
+Croma é do **desenho** e não da decisão de texto claro sobre roxo.
+
+### Medir gradiente: grão atrapalha, e inclinação separa as explicações
+
+Comparar o gradiente do meu render com o do export do Figma acusou 13% dos pontos
+fora de tolerância, delta 113. **Não era o gradiente.** Duas etapas para chegar
+nisso, e as duas são reutilizáveis:
+
+**1. O grão impede classificar card por cor.** A página tem `.nu-grain` em
+`opacity` fixo sobre tudo, então o branco de fundo fica entre ~215 e 255 — e o card
+recolhido é #e5e7eb = **229, dentro dessa faixa**. Duas versões do script
+mediram errado por isso antes de eu parar de tentar: uma classificou o creme do
+Croma como cinza e mediu 1225px; outra classificou o próprio fundo como card e
+mediu a linha inteira (1650px). **A geometria tem que vir do DOM**
+(`getBoundingClientRect`), que não chuta.
+
+**2. O gradiente está certo se o erro for uniforme.** O perfil mostrou um
+deslocamento de ~+10 no verde em todo o card — e a conta bate com o grão:
+overlay de ruído a 0,12 sobre fundo escuro clareia em 0,12 × (128 − fundo); para o
+verde 0x26 = 38 isso dá 11. Desligando com `--nu-grain-opacity: 0`, o resíduo cai
+para 1–2 níveis em 290px, com **inclinação de 0,0006 níveis por px**. Inclinação
+praticamente nula é a assinatura de offset uniforme; gradiente errado daria erro
+crescendo de uma ponta à outra, de ordem 0,05 ou mais. **A inclinação é o
+discriminador.**
+
+**A lição sobre os meus próprios verificadores, que errei três vezes seguidas:**
+
+1. Medi a geometria do "ativo" em coordenadas do frame (200 + slot × 119)
+   esperando x=200/319/438, mas o DOM devolve **relativo ao `Main Content`** —
+   0/119/238. O código estava certo nas três vezes.
+2. Escrevi a fórmula de x à mão e errei o termo: o ativo é 1056px mais largo que
+   um recolhido, então `x_i = i×119 + (i > k ? 1056 : 0)`. First escrevi `i >= k`,
+   depois `i*119` sem o excesso. **Toda divergência que acusa erro onde a linha
+   fecha em 1520 é do verificador** — e por isso o script agora imprime medido e
+   esperado lado a lado, para a próxima divergência se explicar sozinha.
+
+A regra: **fórmula de geometria no verificador é derivada, nunca digitada.** E
+qualquer "DIVERGE" que persista depois de a soma fechar é motivo para olhar o
+verificador antes do código.
+
+**Verificado:** `tsc` e `eslint` limpos; build sem aviso de CSS; ciclo pelos quatro
+cards em build de produção — Nubank, Croma, Ultravioleta, clique no Empresas
+desativado (não muda nada), volta ao Nubank e Ultravioleta de novo. Soma da linha
+1520 nos seis estados, pessoa com posição e tamanho exatos, CTA e texto do card
+trocando juntos, e exatamente 1 card desativado em todos eles.
