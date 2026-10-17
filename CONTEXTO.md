@@ -244,6 +244,20 @@ bloqueiam o resto.
   nome da variável). `README.md > Fidelidade medida contra o Figma` é o padrão.
 - Não quebrar as garantias já pagas: contraste AA medido, sem hydration mismatch,
   sem `aria-disabled` silencioso, sem conteúdo inventado.
+- **NUNCA escrever uma classe do Tailwind "literal" na documentação.** O Tailwind
+  v4 varre **o projeto inteiro** para achar classes, inclusive Markdown, e
+  qualquer string com cara de classe vira uma regra de verdade no CSS. Citar
+  `text-[color:var(--neutral/800,#1c1c1e)]` — que é o que o `get_design_context`
+  devolve e o que a documentação precisa registrar — gera
+  `color: var(--neutral/800,...)`, e `/` não é válido no nome de uma custom
+  property: o Lightning CSS (Turbopack) rejeita com `Unexpected token
+  Delim('/')`. O `@import "tailwindcss" source(none)` + `@source ".."` no
+  `globals.css` impede que isso volte; **se ele for removido, a documentação
+  volta a derrubar o build.** Ver a entrada de 2026-10-17 sobre isso.
+- **`next build` e `next dev` discordam sobre gravidade de erro de CSS.** O build
+  trata parse failure como **aviso** e segue — a Vercel deploya sem reclamar. O
+  dev trata como **erro fatal** e mostra overlay. Então "passou no build" não
+  prova que o CSS está válido: para CSS, o teste é abrir o `next dev`.
 - **Trabalhar e julgar no desktop (≥1024 px).** Não propor breakpoint novo, nem
   "aproveitar para já tratar o mobile", nem auditar tela estreita — a menos que
   o usuário peça. Medidas, espaçamentos e decisões de layout são tomadas no
@@ -1116,3 +1130,58 @@ value:"reduce"}]})`, 60ms após o clique as larguras já estão nas finais e a
 pessoa já trocou de `src` sem subir. O seletor de teste precisou ser
 `img[aria-hidden="true"]` — `img[draggable="false"]` também pega as imagens da
 Hero.
+
+### 2026-10-17 — o build quebrou por causa de uma linha de documentação
+
+O usuário mandou o print do overlay do `next dev`: `Parsing CSS source code
+failed`
+em `globals.css.css:656`, `Unexpected token Delim('/')`, na regra
+
+```
+.text-\[color\:var\(--neutral\/800\,\#1c1c1e\)\] { color: var(--neutral/800,#1c1c1e); }
+```
+
+**A causa é a linha 170 do próprio `CONTEXTO.md`**, escrita na sessão anterior.
+Ao documentar o mapeamento Figma → código, eu citei a classe que o
+`get_design_context` devolve. O Tailwind v4 detecta as fontes **sozinho** e
+varre o projeto inteiro — Markdown incluído —, então leu aquilo da documentação
+como candidato e gerou a regra. E `var(--neutral/800)` é CSS inválido: o nome de
+uma custom property é um `<dashed-ident>`, e `/` não é identificador.
+
+**O detalhe que explica por que isso passou meses de revisão:** `next build`
+trata parse failure de CSS como **aviso** e segue adiante — foi assim que a
+Vercel fez deploy, com o CSS sem aquela regra, sem reclamar. `next dev` trata
+como **erro fatal**. O mesmo código passa no CI e não abre local. E o commit
+anterior foi verificado com `tsc` e `eslint` — **nenhum dos dois passa o
+arquivo por um transformador de CSS**, então a verificação de sempre não tinha
+como pegar isso.
+
+**A correção é declarar as fontes, não escaping.** Em `globals.css`:
+
+```css
+@import "tailwindcss" source(none);
+@source "..";
+```
+
+Duas coisas aprendidas no caminho, ambas por ter medido em vez de suposto:
+
+1. **`@source` resolve a partir do diretório do CSS**, que aqui é `src/app`.
+   Escrever `@source "../src"` aponta para `src/src`, que não existe — e o
+   Tailwind **não avisa**: ele simplesmente não gera nada. Resultado silencioso:
+   225 utilitárias desaparecidas do bundle e o build "passando". Foi comparar o
+   número de seletores entre os dois builds que revelou.
+2. **Comparar dois builds prova pouco.** O que prova é perguntar se **toda
+   classe usada em `src/` tem regra no CSS** — 183 classes, e aí sim. Uma
+   classe presente no código e ausente no CSS é estilo que não existe, e **não**
+   quebra o build, então passa despercebido. Esse é o teste certo para
+   qualquer mudança em detecção de fontes, e vale mais que a comparação.
+
+**Verificado depois da correção:** `next dev` responde HTTP 200 com log limpo;
+CSS servido com as 355 regras e `.eco-card*`, `--ease-emphasized` presentes e
+zero ocorrência da classe venenosa. No build, diff de pixel do antes e do
+depois: **23 pixels em 2.073.600** (0,0011%), numa única mancha de 8×9 numa
+borda de card rotacionado, com o pixel de origem idêntico — antialiasing do
+headless, não estilo perdido.
+
+**A regra que fica:** `source(none)` não é configuração, é o que impede a
+documentação de derrubar o build. Está em "Antes de sugerir código".

@@ -89,6 +89,46 @@ public/images/
 
 ## Design tokens
 
+### Quais arquivos o Tailwind varre — leia antes de citar uma classe
+
+O `globals.css` abre com
+
+```css
+@import "tailwindcss" source(none);
+@source "..";
+```
+
+Isso **não é boilerplate**. O Tailwind v4 detecta as fontes sozinho e varre o
+projeto inteiro, **inclusive o Markdown** — então qualquer string com cara de
+classe escrita nesta documentação vira uma regra de verdade no CSS.
+
+Aconteceu. Ao registrar o mapeamento Figma → código, este arquivo e o
+`CONTEXTO.md` citam a classe que o `get_design_context` devolve, e o Tailwind
+leu aquilo como candidato:
+
+```css
+.text-\[color\:var\(--neutral\/800\,\#1c1c1e\)\] {
+  color: var(--neutral/800,#1c1c1e);
+}
+```
+
+`var(--neutral/800)` é **CSS inválido**: o nome de uma custom property é um
+`<dashed-ident>` e `/` não é identificador. O Lightning CSS — que é o
+transformador do Turbopack — rejeita com `Unexpected token Delim('/')`.
+
+O detalhe que fez isso passar despercebido: **`next build` trata parse failure de
+CSS como aviso e segue adiante**, então a Vercel fez deploy sem reclamar. **`next
+dev` trata como erro fatal.** O mesmo código passa no CI e não abre local. Para
+CSS, o teste é abrir o `next dev` — `tsc` e `eslint` não passam arquivo nenhum
+por um transformador de CSS.
+
+`@source ".."` resolve a partir do diretório do CSS, que é `src/app`, então
+`..` é o `src/` da raiz. Só `src/` usa `className` (verificado). Se essa linha
+for removida, citar uma classe de qualquer forma na documentação volta a derrubar
+o build.
+
+### Os tokens
+
 Todos os valores vêm das **variáveis do Figma** (nós `14:446` e `52:3`) e estão
 em `src/app/globals.css`:
 

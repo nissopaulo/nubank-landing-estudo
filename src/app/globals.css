@@ -1,4 +1,38 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
+
+/**
+ * Quais arquivos o Tailwind varre caçando classes, declarado à mão.
+ *
+ * ## Por que `source(none)`
+ *
+ * Sem isso o Tailwind v4 detecta as fontes sozinho e varre **o projeto
+ * inteiro** — inclusive o Markdown. E aí qualquer string com cara de classe
+ * escrita em documentação vira uma regra de verdade no CSS.
+ *
+ * Aconteceu exatamente isso. O `CONTEXTO.md` documenta o mapeamento Figma →
+ * código e, para isso, cita a classe que o `get_design_context` devolve:
+ *
+ * ```
+ * text-[color:var(--neutral/800,#1c1c1e)]
+ * ```
+ *
+ * Tailwind leu aquilo como candidato e gerou a regra
+ * `.text-\[color\:var\(--neutral\/800\,\#1c1c1e\)\] { color: var(--neutral/800,#1c1c1e) }`.
+ * E `var(--neutral/800)` é **CSS inválido**: o nome de uma custom property é um
+ * `<dashed-ident>`, e `/` não é identificador. O Lightning CSS — que é o que o
+ * Turbopack usa — rejeita com `Unexpected token Delim('/')`.
+ *
+ * O pior detalhe é que **build e dev discordam sobre a gravidade**: `next build`
+ * trata como aviso e segue adiante, então a Vercel fez deploy sem aquela regra e
+ * sem reclamar; `next dev` trata como erro fatal e mostra o overlay. O mesmo
+ * código passa no CI e não abre local.
+ *
+ * Por isso a lista de fontes é explícita. Só `src/` usa `className` (verificado),
+ * e é isso que o Tailwind deve ler. O ganho maior não é o build de hoje, é que
+ * amanhã escrever `bg-red-500` numa frase de documentação deixar de ser um
+ * acidente esperando.
+ */
+@source "..";
 
 /**
  * Design tokens — extraídos das variáveis do Figma (node 14:446).
