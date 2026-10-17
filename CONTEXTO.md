@@ -752,3 +752,43 @@ que o usuário vinha reclamando no Firefox, e foi exatamente por isso que virou
 (`next dev`, `start-server` e o worker do Turbopack) e **remover `.next`**. Foi
 o que resolveu, depois de três incidentes de CSS velho — a recompilação
 incremental não dá conta.
+
+### 2026-10-17 — Ecossystem Section removida, recomeçando do zero
+
+Pedido do usuário: apagar a seção inteira e refazê-la com calma. Três commits
+sairam da `main` por `git reset --hard e9459a7` — `4f2bbe1`, `8e1bd2b` e
+`89ced5b`, **nenhum deles tinha sido enviado**. `main` voltou a estar em sincronia
+com o `origin/main`.
+
+O README e este arquivo voltaram ao estado de `e9459a7` junto com o código, sem
+edição manual: aquela versão nunca menciona a seção. Os `grep` por
+`ecosystem|eco-|PILLARS` em `src/` e por `ecosystem|pilares|Croma|Ultraviolet`
+nos `.md` não acham nada — e os `Croma`/`Ultraviolet`/`Empresas` que sobram no
+README são os cards da **Hero** e o CTA `Login Empresas` do header, não a seção
+removida. `tsc`, `eslint` e `build` verdes no estado final.
+
+**O que mais foi junto:** o `HeroSection.tsx` estava com `min-h-[420px]`, que era o
+atalho temporário para fotografar a seção em headless (a Hero é `min-h-[100svh]`
+e empurra tudo para fora da viewport). Não tinha sido restaurado e ia entrar no
+commit por engano. Voltou.
+
+**Rede de segurança:** branch local `backup/ecosystem-89ced5b` apontando para o
+`89ced5b`, caso o experimento ainda sirva. Pode apagar à vontade.
+
+**O que se perdeu de propósito:** as decisões de cor dos cards (`grayscale()`
+contra cinza chapado `neutral-500`, a geometria do radial do Ultravioleta, o
+metalizado medido em 6,00:1) saíram daqui junto com o código. Se a seção voltar,
+**reler os quatro frames do Figma** (`52:3`, `52:188`, `52:255`, `52:293`) em vez
+de confiar nessas notas — o que vale como método continua valendo: valor que
+existe no design se lê no design, não se calibra por comparação visual.
+
+**Lição de método, que vem da sequência e não só do resultado:** a última
+iteração mexeu em três coisas ao mesmo tempo (card fechado chapado, tinta movida
+para custom properties, gradiente e tinta do Ultravioleta retunados) e ficou
+sendo um experimento não verificado, com um fix de contraste já medido
+(`at 50% 85%`, 6,00:1) revertido sem nova medição. Em iteração visual, manter as
+variáveis separáveis para que cada uma possa ser medida sozinha.
+
+**Próximo passo:** aguardando o usuário definir como a seção vai ser refeita. A
+pendência nº 1 (painéis dos submenus no Figma) continua sendo o bloqueio do
+restante da página e não depende desta seção.
