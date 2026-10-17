@@ -20,9 +20,12 @@
 
 Duas telas implementadas e funcionando. A **Hero**, com header fixo, cards em
 parallax e rodapé. Abaixo dela a **Ecossystem Section**, carrossel de pilares —
-com apenas o Nubank desenhado, porque no Figma só existe o frame dele na
-estrutura nova. Entre as duas e o rodapé existe um bloco **"Em construção"** que
-é provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
+com **dois pilares desenhados** (Nubank e Croma) e os outros dois recolhidos e
+sem clique, porque os frames `77:40` e `80:77` do Figma seguem ocultos e ainda
+na estrutura antiga que este projeto descartou. Clicar num pilar desenhado
+reequilibra a linha de cards inteira, com transição. Entre as duas telas e o
+rodapé existe um bloco **"Em construção"** que é provisório e existe só para o
+CTA "Explore o Universo Nu" ter destino.
 
 | | |
 |---|---|
@@ -158,6 +161,16 @@ token. `Background/bg-primary` (`#ffffff`), `Action/action-disabled` (`#e5e7eb`,
 mesmo valor de `Neutral/200`) e `Action/action-primary` (`#820ad1`, mesmo valor
 de `Text/text-brand`) já estavam cobertos por tokens existentes.
 
+**Leitura do nó `76:3` (Croma), 2026-10-17:** nenhuma variable nova também. O
+único nome novo é `Background/bg-brand` (`#820ad1`), que é o mesmo valor de
+`Text/text-brand` com outro nome — mais um caso de `#820ad1` ter dois nomes no
+Figma, agora três.
+
+**O Figma adotou a correção de contraste dos cards recolhidos.** O nó `76:3`
+traz `text-[color:var(--neutral/800,#1c1c1e)]` no rótulo dos cards recolhidos,
+que é a tinta que propus na sessão anterior (branco sobre `#e5e7eb` dava 1,24:1).
+O design passou a ter 13,74:1.
+
 **Três pontos para resolver ao criar o design system:**
 
 1. **`#820ad1` tem dois nomes no Figma** — `Action/action-secondary-text` e
@@ -196,7 +209,7 @@ Escrever a mensagem num arquivo e usar `git commit -F <arquivo>`.
 
 | # | Pendência | Onde |
 |---|---|---|
-| 1 | **Desenhar no Figma os três pilares restantes da Ecossystem** (Croma, Ultravioleta, Empresas) na estrutura nova, e então ligá-los ao carrossel | `ecosystem-pillars.ts` |
+| 1 | **Desenhar no Figma os dois pilares restantes da Ecossystem** (Ultravioleta, Empresas) na estrutura nova, e então ligá-los ao carrossel | `ecosystem-pillars.ts` |
 | 2 | **Desenhar no Figma os painéis dos submenus da navegação.** É o bloqueio do restante da página | `SiteHeader.tsx` |
 | 3 | Desenhar no Figma as seções `Porque a Nu`, `Cartões`, `Diferenciais` | `SiteFooter.tsx` (`PendingSections`) |
 | 4 | Menu mobile (depende do nº 2) — **adiado**, só depois que o design mobile existir | `SiteHeader.tsx` |
@@ -205,12 +218,14 @@ Escrever a mensagem num arquivo e usar `git commit -F <arquivo>`.
 | 7 | Limpar comentário desatualizado em `HeroSection.tsx` — ainda cita `Neutral/200`, 2,74:1 e "ainda não atinge 4.5:1". O estado real é branco puro a 5,52:1, passando AA | `src/components/hero/HeroSection.tsx` |
 | 8 | Regra de ESLint proibindo hex literal fora do `globals.css`. Motivo: o gradiente de `HeroSection.tsx:27` tem quatro hex hardcoded no JSX, três deles já existentes como token — e isso passou por lint e revisão. O gradiente da Ecossystem **também** traz literal, mas é o export do Figma em data URI e não tem como ser token. É a única trava de deriva que dá para instalar **antes** do design system existir. Prioridade baixa por decisão do usuário (ver Storybook) | `eslint.config.mjs` |
 | 9 | Montar o catálogo de componentes (Storybook ou equivalente) **depois** que o design system existir — ver decisão 11 | — |
+| 10 | **A descrição do Croma reprova AA em texto pequeno** — 3,48:1 a 16 px, por desenho (a tinta é a própria marca sobre um creme que escurece). Implementado como o Figma pede. Se for para produção, a correção é no design, não no código | `ecosystem-pillars.ts` |
 
-**No Figma hoje existem dois frames visíveis** — `Hero Section` (`14:446`) e
-`Ecossystem Section - Nubank` (`52:3`) — mais os 4 frames soltos de arte dos
-cartões e **três frames ocultos da Ecossystem** (`76:3`, `77:40`, `80:77`) que
-ainda estão na estrutura antiga, a que o projeto descartou. Não há design das
-seções seguintes — por isso os itens 2 e 3 bloqueiam o resto.
+**No Figma hoje existem três frames visíveis** — `Hero Section` (`14:446`),
+`Ecossystem Section - Nubank` (`52:3`) e `Ecossystem Section - Croma` (`76:3`) —
+mais os 4 frames soltos de arte dos cartões e **dois frames ocultos da
+Ecossystem** (`77:40`, `80:77`) que ainda estão na estrutura antiga, a que o
+projeto descartou. Não há design das seções seguintes — por isso os itens 2 e 3
+bloqueiam o resto.
 
 ### Antes de sugerir código
 
@@ -1029,3 +1044,75 @@ que fez o defeito parecer ser do *hover* — e não era: o hover só deu a condi
 de aparecer. **Antes de culpar a propriedade que mudou, olhar as duas que não
 mudaram.** O mesmo raciocínio já apareceu no resíduo de meio pixel do logo, que
 também era divergência de motor e não de layout.
+
+### 2026-10-17 — Croma liberado, e a transição entre pilares
+
+O usuário redesenhou o Croma no Figma na mesma estrutura (`76:3`, agora visível)
+e pediu a animação de troca: dinâmica e suave.
+
+**O achado que mudou a arquitetura.** No frame do Croma o card ativo é o
+**segundo** da lista — o Nubank recolhe para o primeiro slot. Nas sessões
+anteriores eu tratei como "um card ativo mais três botões", o que não permite
+trocar de pilar sem remontar a linha. O certo são **quatro slots fixos, na ordem
+do design, e um deles é o ativo**; a animação é o rebalanceamento. A soma confere
+em qualquer estado: ativo `calc(100% - 357px)` + três de 107 + três gaps de 12 =
+1520, a largura do `Main Content`.
+
+Medido por CDP depois de um clique real: antes `1163/107/107/107`, depois
+`107/1163/107/107` com o ativo em x=319 — que é a geometria do frame `76:3`.
+
+**Duas coisas do Figma que mudaram em relação à sessão anterior.** O rótulo dos
+cards recolhidos agora é `Neutral/800` — a correção de contraste que propus foi
+adotada no design. E a tinta do card ativo **não é mais sempre branca**: no
+Croma é `Background/bg-brand` (#820ad1), porque o fundo é creme. Implementado
+como `--eco-ink` por card.
+
+**A curva estava errada, e só medir mostra isso.** Subir de 1,1s para 1,5s não
+resolvheu a sensação de "colocada" que a pessoa dava, e a intuição era aumentar
+mais. O problema era outro: com `EASE_OUT_EXPO`, 82% dos 843px do percurso
+acontecem nos primeiros 375ms — o que sobra é 1,1s arrastando os 5% finais.
+Com uma curva assim **duração e velocidade percebida não são a mesma coisa**, e
+aumentar a primeira só comprimenta a cauda. Substituí por `EASE_EMPHASIZED`
+(`cubic-bezier(0.32, 0.72, 0, 1)`, Material 3) na pessoa e no morph dos cards.
+
+Medido no navegador depois da troca: pessoa a 91% da subida aos 600ms (era 370ms),
+98% aos 1005ms, assentada em 1690ms. Card a 62% aos 134ms. A diferença está no
+meio do trajeto, que é onde o olho acompanha.
+
+**Como medir transição, que é o que faltava.** `chrome --screenshot` fotografa no
+load e não interage. Dirigi o Chrome pelo **DevTools Protocol** — `node` 22 já
+tem `WebSocket` e `fetch` nativos, então dá para navegar, dar `click()` de
+verdade e capturar em instantes escolhidos, sem dependência nova. Dois
+detalhes: cada `Page.captureScreenshot` leva ~230ms, então um laço de amostragem
+atrasa e o rótulo do tempo não bate com a foto (medir a posição e fotografar no
+mesmo laço dá tempos falsos); e o `Runtime.evaluate` do clique precisa contar o
+`t0` **dentro** da página, senão o instante 0 é o do retorno da chamada.
+
+**Armadilha de verificação que quase custou um bug.** Para medir o hover sem
+mouse, eu removia o `:hover` do CSS compilado com um replace. No `SiteHeader` o
+patch temporário comeu o `background` de `transition-[background-color,…]` e
+deixou `transition-[-color,…]` — alteração silenciosa, que o `git diff` mostrou
+só porque eu conferi o arquivo depois de reverter. **Patch em arquivo-fonte
+exige reverter verificando com `git diff`, não confiando no replace.**
+
+**Contraste do Croma — falha de AA no texto pequeno, do próprio design.**
+Medido na faixa real da descrição (x 343..870), em linhas de fundo puro: pior
+ponto **3,48:1** no nosso render e 3,32:1 no export do Figma (a diferença é o
+grão). Passa em texto grande, e a descrição tem 16px. Não é ajuste de tom que
+resolve — para chegar a 4,5:1 sobre `#8f7f64` o texto precisaria ser bem mais
+claro que a própria marca. Implementado como o design pede; registrado como
+pendência nº 10.
+
+**Armadilha de medição de contraste.** Medir em `x` até 900 dá 3,38:1 — pior que
+o real — porque além de x≈870 não há mais glifo, é gradiente limpo. Medir
+somente o pior pixel da faixa de fundo **adjacente** ao texto também erra: as
+linhas y=499 e y=512 caem **dentro** das letras, e o pior ponto vira `#7d09ca`,
+que é o próprio glifo. As linhas certas são as que ficam **entre** as linhas de
+texto: y=468, 479 e 530.
+
+**Movimento reduzido verificado de verdade.** Com
+`Emulation.setEmulatedMedia({features:[{name:"prefers-reduced-motion",
+value:"reduce"}]})`, 60ms após o clique as larguras já estão nas finais e a
+pessoa já trocou de `src` sem subir. O seletor de teste precisou ser
+`img[aria-hidden="true"]` — `img[draggable="false"]` também pega as imagens da
+Hero.

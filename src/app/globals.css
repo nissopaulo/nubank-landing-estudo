@@ -39,6 +39,17 @@
 
   /* Curvas de movimento no espírito Apple: saídas longas e suaves. */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  /*
+   * Desaceleração enfática (Material 3), usada no carrossel da Ecossystem.
+   *
+   * O expo acima é excellent para deslocamentos curtos, mas a pessoa da seção
+   * percorre 843px e nele 82% do caminho acontece nos primeiros 25% do tempo —
+   * o resto é uma cauda de arrasto que não se lê como movimento. Esta curva
+   * distribui o trajeto sem perder o arranque rápido. Mesma curva, e mesmo
+   * motivo, em `EASE_EMPHASIZED` no `lib/motion.ts`, para o JS e o CSS não
+   * divergirem.
+   */
+  --ease-emphasized: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @layer base {
@@ -247,87 +258,162 @@
 }
 
 /*
- * Interação de hover do carrossel da Ecossystem.
+ * Carrossel da Ecossystem — largura, gradiente e troca de conteúdo.
  *
- * Os dois crescem **só na horizontal**, e o que faz o vizinho sair do lugar é a
- * propriedade de layout — `flex-grow` no card ativo, `width` no pilar
- * recolhido. Não é `transform: scale`, e essa distinção é o efeito inteiro:
- * `scale` redesenha o elemento sem mexer no fluxo, então o card cresceria *por
- * cima* do vizinho em vez de empurrá-lo. Aqui o flexbox recalcula a linha e o
- * outro sai do lugar de verdade. É por isso que não é `transform` apesar de
- * `transform` ser a escolha habitual para "grow" — e é também o custo: cada
- * quadro recalcula layout. São quatro elementos e um hover, então é irrelevante
- * aqui; se a composição crescer muito, revisitar.
+ * São **quatro cards em ordem fixa**, e um deles é o ativo. Isso não é uma
+ * escolha de implementação, é o que o Figma mostra: no frame do Croma o card
+ * ativo é o *segundo* da lista, com o Nubank recolhido no primeiro. Um modelo
+ * de "um ativo e três botões" não teria como representar isso — a troca
+ * desmontaria a linha. Com quatro slots, a animação é só o rebalanceamento.
  *
- * Vertical não se mexe, e é por um motivo concreto: o card ativo é
- * `items-stretch` e o recolhido herda a altura do `Main Content`. Qualquer
- * alteração vertical desalinharia a linha inteira e a pessoa, que é absoluta e
- * não acompanha.
+ * ## A largura é flex-basis, e não flex-grow
  *
- * Os valores são pequenos de propósito. O card ativo tem mais de 1000px de
- * largura, então 2% é imperceptível e 5% já parece um clique: 2,4%. O pilar
- * recolhido tem 107px, então precisa de uma fração bem maior para ser notado —
- * 13%.
+ * `flex-grow` reparte o espaço **livre entre os itens que crescem**, e aqui
+ * cada card cresce sozinho para um valor absoluto. Um item com `flex-grow: 1`
+ * fica com todo o espaço restante, então subir para 1,024 não muda uma vírgula
+ * — foi testado e a largura continuou 1163.
  *
- * `:focus-visible` entra junto do `:hover` nos dois botões, senão quem navega
- * por teclado não recebe o mesmo feedback — e o botão recolhido é focável
- * (`aria-disabled` não remove do tab order). No card ativo, que não é
- * interativo, só o `:hover`: é afordância visual do pilar corrente.
+ * `flex-basis` é o valor *antes* do preenchimento, então é ele que anima:
+ * recolhido `107px`, ativo `calc(100% - 357px)`. Os 357 são 3×107 dos
+ * recolhidos + 3×12 de gap, e a conta fecha em qualquer estado: ativo mais três
+ * recolhidos mais três gaps dá exatamente a largura do `Main Content` (1520),
+ * seja qual for o slot ativo. `flex-grow: 0` impede o item de absorver a
+ * sobra, senão o basis deixaria de ser a largura final.
  *
- * `prefers-reduced-motion` zera a duração pelo bloco no fim deste arquivo, e
- * então o crescimento vira um corte seco — que é o comportamento pedido.
+ * ## Por que calc(100% - 357px) e não a largura medida
+ *
+ * 1163px é o valor em 1920. Fixá-lo quebraria em qualquer outra largura, e a
+ * seção precisa ser proporcional. O `calc` faz a conta em qualquer viewport.
+ *
+ * ## O gradiente é uma camada, não um background-image que troca
+ *
+ * `background-image` não é interpolável — trocar o gradiente do Nubank pelo do
+ * Croma seria um corte seco, e o card está crescendo exatamente nesse instante.
+ * Por isso o card tem sempre o cinza no fundo e o gradiente numa camada por
+ * cima, que entra por `opacity`. Aí a virada é uma transição de verdade, e é
+ * o que dá a sensação de "o card se transforma".
+ *
+ * `background-size: 100% 100%` é obrigatório: o SVG do gradiente tem
+ * `viewBox` e **não** tem `width`/`height`, e aí os motores discordam do
+ * que `auto` significa. O Chrome estica até a caixa; o Firefox usa as
+ * dimensões do viewBox (1163×339) e **repete**. No repouso as duas leituras
+ * dão o mesmo pixel, o defeito só aparecia quando o card mudava de tamanho, e
+ * a faixa repetida era a borda esquerda do gradiente — a parte mais escura dele.
+ * Medido na mesma coluna: Firefox rgb(114,21,179) contra Chrome rgb(131,34,198).
+ *
+ * ## Os tempos
+ *
+ * A troca é uma coreografia, e a ordem importa mais que a duração:
+ *
+ *   largura dos cards  0 -> 700 ms, os dois juntos
+ *   gradiente          0 -> 520 ms
+ *   conteúdo sai       0 -> 220 ms
+ *   conteúdo entra     260 -> 580 ms (atrasado)
+ *   pessoa             0 -> 1500 ms, sobe de baixo
+ *
+ * O conteúdo atrasa de propósito: se entrasse junto, os dois textos ficariam
+ * sobrepostos no meio da transformação. O card termina em 700 ms e a pessoa em
+ * 1500 ms, o que dá a leitura de "a linha se reequilibra, e a pessoa se
+ * assenta por último".
+ *
+ * Medido no navegador para calibrar: com `EASE_OUT_EXPO` nesta curva, a
+ * transição estava 93% concluída aos 180 ms e arrastava o resto até 700 ms sem
+ * nada visível acontecendo. Trocar para `--ease-emphasized` resolveu — é a
+ * curva, não os números, que estava errada.
  */
-.eco-card-active {
-  /*
-   * O gradiente é um SVG em data URI que tem `viewBox` e **não** tem
-   * `width`/`height`. Aí os motores discordam do que `background-size: auto`
-   * significa: o Chrome estica até a caixa, e o Firefox usa as dimensões do
-   * viewBox (1163x339) e **repete**.
-   *
-   * No repouso (1163px) as duas leituras dão o mesmo resultado, então o
-   * defeito só aparecia no hover, quando o card vai a 1193px: sobram 30px, e a
-   * faixa repetida era a borda esquerda do gradiente — que é justamente a
-   * parte mais escura dele. Era a listra. Medido na mesma coluna: Firefox
-   * rgb(114,21,179) contra Chrome rgb(131,34,198).
-   *
-   * `100% 100%` diz explicitamente "preenche a caixa", e `no-repeat` fecha a
-   * porta para qualquer motor que ainda tente ladrilhar. Com os dois, os dois
-   * motores batem dentro de 2,4 níveis em toda a faixa.
-   */
-  background-size: 100% 100%;
-  background-repeat: no-repeat;
-
-  /*
-   * `flex-basis` e não `flex-grow`, e essa é a parte que custa uma tentativa.
-   *
-   * `flex-grow` reparte o espaço **livre entre os itens que crescem**. Aqui o
-   * card ativo é o único que cresce — os três recolhidos são `shrink-0`, de
-   * largura fixa —, então ele fica com todo o espaço livre de qualquer jeito.
-   * Trocar `flex-grow` de 1 para 1,024 não muda uma vírgula. Foi testado: com
-   * o hover forçado, a largura continuou 1163.
-   *
-   * `flex-basis` resolve o problema porque é o valor **antes** do
-   * preenchimento: a linha em repouso tem que ocupar Main Content inteiro, e
-   * isso é `100% - 357px`, com 357 = 3x107 dos recolhidos + 3x12 de gap.
-   * `flex-grow: 0` impede o item de absorber a sobra, então o basis vira a
-   * largura final. No hover somo 2% da própria linha.
-   */
-  flex: 0 0 calc(100% - 357px);
-  transition: flex-basis 320ms ease-out;
+.eco-card {
+  flex: 0 0 107px;
+  transition: flex-basis 700ms var(--ease-emphasized);
 }
-.eco-card-active:hover {
+.eco-card[data-state="active"] {
+  flex-basis: calc(100% - 357px);
+}
+
+/*
+ * Hover — só na horizontal, e empurrando o vizinho.
+ *
+ * É propriedade de layout, e não `transform: scale`: `scale` redesenha o
+ * elemento sem mexer no fluxo, então o card cresceria *por cima* do vizinho em
+ * vez de empurrá-lo — que é justamente o efeito pedido. Aqui o flexbox recalcula
+ * a linha e o outro sai do lugar de verdade. Vertical não se mexe, senão a
+ * composição desalinharia: o card ativo é `items-stretch` e a pessoa é
+ * absoluta.
+ *
+ * Os valores são pequenos de propósito. O card ativo tem mais de 1000px, então
+ * 2% seria imperceptível e 5% já pareceria um clique: 2%. O recolhido tem
+ * 107px, e precisa de uma fração bem maior para ser notado: 13%.
+ *
+ * `:focus-visible` entra junto do `:hover`, senão quem navega por teclado não
+ * recebe o mesmo feedback.
+ */
+.eco-card[data-state="active"]:hover {
   flex-basis: calc(100% - 357px + 2%);
 }
-
-.eco-pillar {
-  width: 107px; /* 59px do texto vertical + 24px de padding de cada lado */
-  transition:
-    width 320ms ease-out,
-    opacity 200ms ease-out;
+.eco-card[data-state="idle"]:hover,
+.eco-card[data-state="idle"]:focus-visible {
+  flex-basis: 121px;
 }
-.eco-pillar:hover,
-.eco-pillar:focus-visible {
-  width: 121px;
+
+.eco-card__grad {
+  position: absolute;
+  inset: 0;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 520ms ease-out;
+}
+.eco-card[data-state="active"] .eco-card__grad {
+  opacity: 1;
+}
+
+/*
+ * As duas camadas de conteúdo ficam sempre no DOM e trocam por `opacity`, o
+ * que faz a virada ser uma transição de verdade em vez de uma remontagem.
+ *
+ * `visibility` com atraso no fim da transição: é o que tira a camada da
+ * pintura e da árvore de acessibilidade, e só depois que o fade termina. Sem o
+ * atraso, o `visibility` mudaria no meio e a opacidade ficaria presa — que foi
+ * exatamente o bug do nome do card recolhido aparecer por cima do conteúdo
+ * aberto.
+ */
+.eco-card__label,
+.eco-card__body {
+  position: absolute;
+  inset: 0;
+  padding: 24px;
+  opacity: 0;
+  transition:
+    opacity 220ms ease-out,
+    visibility 0s linear 220ms;
+}
+
+.eco-card__label {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.eco-card[data-state="idle"] .eco-card__label {
+  opacity: 1;
+  visibility: visible;
+  /* Entra com atraso: o rótulo só deve aparecer quando o card já abriu. */
+  transition:
+    opacity 300ms ease-out 180ms,
+    visibility 0s linear 180ms;
+}
+
+.eco-card__body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+  color: var(--eco-ink, #ffffff);
+}
+.eco-card[data-state="active"] .eco-card__body {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 320ms ease-out 260ms,
+    visibility 0s linear 260ms;
 }
 
 /**

@@ -208,23 +208,44 @@ de layout, não um valor do design** — ajuste em `globals.css` à vontade.
 
 ## Ecossystem Section
 
-Figma `Ecossystem Section - Nubank` (nó `52:3`, 1920×919). Carrossel de pilares:
-um aberto por vez, o resto recolhido com o nome lido de baixo para cima.
+Figma `Ecossystem Section - Nubank` (nó `52:3`) e `Ecossystem Section - Croma`
+(nó `76:3`), ambos 1920×919. Carrossel de pilares: um aberto por vez, o resto
+recolhido com o nome lido de baixo para cima. Clicar num pilar recolhido abre.
 
-### Só o Nubank está desenhado
+### Quatro slots fixos, não "um ativo e três botões"
 
-O Figma tem **um** frame visível — o Nubank, na estrutura nova — e três ocultos
-(`76:3` Croma, `77:40` Ultraviolet, `80:77` Business) que ainda estão na estrutura
-antiga, que é a que este projeto descartou. Então o carrossel e os quatro pilares
-existem, e **só o primeiro abre**.
+A decisão de arquitetura vem do design, não de preferência. **Os quatro cards
+existem sempre, na mesma ordem, e um deles é o ativo** — e no frame do Croma o
+ativo é o *segundo* da lista, com o Nubank recolhido no primeiro. Um modelo de
+"um card ativo mais três botões" não teria como representar isso: trocar de pilar
+desmontaria a linha inteira em vez de rebalanceá-la.
 
-Os três recolhidos são botões de verdade com `aria-disabled` e aviso para leitor
-de tela — a mesma regra dos itens da navegação: um botão que não faz nada não
-existe em silêncio. **Nada foi inventado** para eles: nome e foto vieram do
-Figma e dos assets, e não há descrição, parágrafo nem CTA porque ainda não
-existem no design. Quando os três forem redesenhados, o que entra é um
-`useState` com o índice e um `onClick` no botão — o `key` do `AnimatePresence`
-já está lá, e é ele que faz a troca reaproveitar a animação.
+Com quatro slots a animação é só o rebalanceamento, e a conta fecha em qualquer
+estado:
+
+```
+ativo  calc(100% - 357px)  +  3 × 107 recolhidos  +  3 × 12 de gap  =  1520px
+```
+
+1520 é a largura do `Main Content`, seja qual for o slot que estiver ativo.
+
+### Dois pilares desenhados, dois ainda não
+
+| Pilar | Frame | Estado |
+|---|---|---|
+| Nubank | `52:3` | desenhado, abre por padrão |
+| Croma | `76:3` | desenhado, clicável |
+| Ultravioleta | `77:40` | oculto, e ainda na estrutura antiga que este projeto descartou |
+| Empresas | `80:77` | idem |
+
+Os dois últimos aparecem recolhidos e **não são clicáveis**: `aria-disabled` com
+aviso para leitor de tela, a mesma regra dos itens da navegação — um botão que não
+faz nada não existe em silêncio. **Nada foi inventado** para eles: nome e foto
+vieram do Figma e dos assets, e não há gradiente, descrição, parágrafo nem CTA
+porque ainda não existem no design.
+
+Na prática a ausência do bloco `active` no dado **é** o que torna o pilar não
+clicável — não existe flag separada para divergir do conteúdo.
 
 ### O gradiente do card ativo vai como SVG, não como CSS
 
@@ -248,20 +269,26 @@ do gradiente, que é a parte mais escura dele. Era a listra que surgia no
 Firefox. `background-size: 100% 100%` com `background-repeat: no-repeat` resolve,
 e os dois motores passam a bater dentro de 2,4 níveis.
 
-### Fidelidade medida contra o Figma (nó `52:3`)
+### Fidelidade medida nos dois estados
 
 Comparação pixel a pixel entre o render do frame e o build de produção, ambos
 normalizados na grade de 1920×919:
 
-| Elemento | Figma | Implementado |
-|---|---|---|
-| Título da seção | x 202,8 · y 117,6 · 520,8×122,4 | x 202 · y 117 · 521×123 |
-| Card ativo | x 200,4 · y 356,4 · 1162,8×338,4 | x 200 · y 356 · 1163×339 |
-| Card recolhido 1 | x 1375,2 · 106,8 de largura | x 1375 · 107 |
-| Card recolhido 2 | x 1494 · 106,8 | x 1494 · 107 |
-| Card recolhido 3 | x 1612,8 · 108 | x 1613 · 107 |
-| Botão do CTA | x 1496,4 · y 759,6 · 223,2×39,6 | x 1500 · y 759 · 220×40 |
-| Parágrafo | 3 linhas a partir de y 763 | 3 linhas a partir de y 762 |
+| Elemento | Figma `52:3` | Nosso | Figma `76:3` | Nosso |
+|---|---|---|---|---|
+| Título da seção | x 202,8 · y 117,6 · 520,8×122,4 | x 202 · y 117 · 521×123 | idem | idem |
+| Card ativo | x 200,4 · 1162,8 de largura | **x 200 · 1163** | x 319 · 1163 | **x 319 · 1163** |
+| Card recolhido 1 | x 1375,2 · 106,8 | **x 1375 · 107** | x 200 · 107 | **x 200 · 107** |
+| Card recolhido 2 | x 1494 · 106,8 | **x 1494 · 107** | x 1494 · 107 | **x 1494 · 107** |
+| Card recolhido 3 | x 1612,8 · 108 | **x 1613 · 107** | x 1612,8 · 105 | **x 1613 · 107** |
+| Botão do CTA | x 1496,4 · y 759,6 · 223,2×39,6 | x 1500 · y 759 · 220×40 | idem | idem |
+| Parágrafo | 3 linhas a partir de y 763 | 3 linhas a partir de y 762 | 3 linhas | 3 linhas |
+
+O card ativo é detectado pela cor, e é por isso que dá para medir sem a pessoa
+atrapalhar: nenhum pixel da borda esquerda ou da direita do card tem ninguém
+sobre. No estado do Croma o primeiro card recolhido é o Nubank, em x 200 — que é a
+confirmação de que os slots ficam onde o design os põe, e não num "ativo" à
+frente.
 
 A altura dos cards (339 px) **não é declarada no CSS**: ela sai da sobra do
 `Main Content` (595 px − título − gap de 100 px), com a linha em `flex-1` e os
@@ -286,21 +313,48 @@ Só **um** texto da seção usa `Text/text-tertiary`: o parágrafo ao lado do CT
 Figma pede — variável `Text/text-tertiary`, nó `52:164` — e dá **4,83:1** sobre
 o branco da seção.
 
-Todo o resto é branco:
+**A tinta do card ativo é por pilar, e acompanha o fundo.** Não pode ser branco
+por definição: o card do Nubank é roxo e o do Croma é creme, e a mesma tinta
+funciona num e não no outro. O Figma resolve com `Background/bg-brand` (#820ad1)
+no Croma, e é o que está implementado, como `--eco-ink` por card.
 
 | Texto | Cor | Contraste |
 |---|---|---|
 | Título da seção | `Text/text-brand` `#820ad1` | 6,59:1 sobre branco |
-| Nome no card ativo | branco | 5,95:1 no pior ponto do gradiente |
-| Descrição no card ativo | branco | 5,95:1 |
+| Nome no card ativo (Nubank) | branco | 5,95:1 no pior ponto do gradiente |
+| Descrição no card ativo (Nubank) | branco | 5,95:1 |
+| Nome no card ativo (Croma) | `Background/bg-brand` `#820ad1` | 4,98:1 sob o título |
+| Descrição no card ativo (Croma) | `Background/bg-brand` `#820ad1` | **3,48:1** ⚠️ |
 | Parágrafo ao lado do CTA | `Text/text-tertiary` `#6b7280` | 4,83:1 |
 | Rótulo do card recolhido | `Neutral/800` `#1c1c1e` | 13,74:1 sobre `#e5e7eb` |
 
 **O tertiary não serve sobre o gradiente do card.** Ele chega a 1,23:1 no pior
-ponto da área da descrição, e 1,93:1 no melhor — nenhum canto passa. Não é
-ajuste de tom: para chegar a 4,5:1 o texto precisaria de luminância ≈ 0,72, um
-cinza visualmente indistinguível do branco. Houve uma tentativa de colocá-lo ali
-por leitura equivocada do pedido, e foi revertida.
+ponto da área da descrição do Nubank, e 1,93:1 no melhor — nenhum canto passa.
+Não é ajuste de tom: para chegar a 4,5:1 o texto precisaria de luminância ≈ 0,72,
+um cinza visualmente indistinguível do branco. Houve uma tentativa de colocá-lo
+ali por leitura equivocada do pedido, e foi revertida.
+
+#### A descrição do Croma reprova AA em texto pequeno
+
+Medido na faixa real da descrição (x 343..870), em linhas de fundo puro — entre
+o título e a primeira linha, e abaixo da segunda — para o número não depender de
+acertar uma amostra dentro de uma letra:
+
+| Origem | Pior ponto | Onde |
+|---|---|---|
+| Nosso render | **3,48:1** | x 865, fundo `#beb39d` |
+| Export do Figma | 3,32:1 | x 865, fundo `#baaf97` |
+
+Os dois concordam dentro de 0,16:1 — a diferença é o grão, que escurece o fundo do
+export. E a faixa é larga: **7,09:1** na borda esquerda da descrição caindo até
+3,48:1 na ponta direita, porque o gradiente vai de `#eeece9` a `#8f7f64`.
+
+Passa em texto grande (mínimo 3:1) e **reprova em texto pequeno**, que é o caso —
+a descrição tem 16 px. Não é um ajuste de tom que resolva: para chegar a 4,5:1
+sobre `#8f7f64` o texto precisaria ser bem mais claro que a própria marca, e a
+mesma tinta passaria a falhar no lado claro do gradiente. É uma falha do design, e
+a implementação segue o Figma. Se o Croma for para produção com texto pequeno,
+o caminho é mudar o desenho — não a cor no código.
 
 ### O CTA e a variante `brand`
 
@@ -334,10 +388,22 @@ entraria no CSS gerado. É uma restrição da ferramenta.
 ### A pessoa
 
 Recorte em WebP com alfa, posicionado em absoluto contra o `Main Content` nas
-mesmas coordenadas do Figma (`left-210px top-0`), convertidas em fração da
-largura dele para escalarem sem distorcer. A altura não é declarada de propósito:
-o asset é 2400×1792, e 1129 px de largura dá 842,99 px de altura — que é o
-`h-[842.987px]` do design, com a proporção garantida pela própria imagem.
+coordenadas do Figma, convertidas em fração da largura dele para escalarem sem
+distorcer. A altura não é declarada: sai da proporção do próprio asset.
+
+**A geometria é por pilar, porque o design não usa a mesma.** No Figma a pessoa
+do Nubank é `left-210px w-1129px` e a do Croma é `left-414px w-973px` — e cada
+caixa bate com a proporção do asset correspondente, o que confirma a leitura:
+
+| Pilar | Caixa no Figma | Proporção da caixa | Asset |
+|---|---|---|---|
+| Nubank | 1129 × 843 | 1,33929 | 2400×1792 = 1,33929 |
+| Croma | 973 × 648 | 1,50154 | 2400×1599 = 1,50094 |
+
+O `top` é 0 nos dois, mas expressado de jeitos diferentes no Figma — o do Nubank
+é filho do `Main Content`, o do Croma é filho do `Content` com `top-[-256px]`, que
+desce exatamente o `gap` de 100 mais a altura do título. Convertido para a mesma
+referência, os dois são 0.
 
 A janela de recorte é um `absolute inset-0 overflow-clip` **dentro** do
 `Main Content`, e não o próprio `Main Content`. O motivo está na seção do hover
@@ -377,9 +443,66 @@ idênticas — a linha preenche tudo, não há o que centralizar. No hover diver
 e é aí que importa: com `center` o card cresceria dos dois lados e atravessaria
 o alinhamento de 200 px da seção.
 
-`:focus-visible` entra junto do `:hover` nos dois botões, senão quem navega por
-teclado fica sem o feedback. O card ativo não é interativo, então nele só o
-`:hover`.
+`:focus-visible` entra junto do `:hover` nos quatro cards, senão quem navega por
+teclado fica sem o feedback.
+
+### A transição entre pilares
+
+Clicar num pilar recolhido não troca um card por outro: a linha inteira se
+reequilibra, porque o card que entra ocupa o slot dele e o que sai recolhe no
+dele. É isso que a coreografia abaixo executa.
+
+| O quê | Quando | Por quê |
+|---|---|---|
+| largura dos cards | 0 → 700 ms, os dois ao mesmo tempo | o rebalanceamento é um gesto só |
+| gradiente | 0 → 520 ms | camada com `opacity`, não `background-image` |
+| conteúdo sai | 0 → 220 ms | some cedo, para não atrapalhar o morph |
+| conteúdo entra | 260 → 580 ms | atrasado de propósito |
+| rótulo entra | 180 → 480 ms | idem, pelo outro lado |
+| pessoa | 0 → 1500 ms, sobe de baixo | fecha o gesto por último |
+| parágrafo e CTA | 260 ms + 260 ms, `mode="wait"` | saída antes da entrada, nunca os dois juntos |
+
+**O conteúdo atrasa de propósito.** Se nome e descrição entrassem junto com a
+largura, os dois textos ficariam sobrepostos no meio da transformação. As duas
+camadas de conteúdo ficam sempre no DOM e trocam por `opacity`, o que faz a
+virada ser uma transição de verdade em vez de uma remontagem — e o
+`visibility` com atraso no fim do fade é o que tira a camada da pintura e da
+árvore de acessibilidade sem cortar a opacidade pela metade.
+
+**O gradiente é uma camada, não um `background-image` que troca.**
+`background-image` não é interpolável, e o card está crescendo exatamente no
+instante da virada: seria um corte seco. O card tem sempre o cinza no fundo e o
+gradiente por cima, entrando por `opacity`.
+
+**A curva é `--ease-emphasized`, e isso foi medido.** Com `ease-out-expo` a
+transição ficava 93% concluída aos 180 ms e depois arrastava até 700 ms sem nada
+acontecendo. A curva não é um detalhe: é ela que faz a duração declarada
+significar alguma coisa. Ver `EASE_EMPHASIZED` no `lib/motion.ts`.
+
+**A pessoa é aquecida no hover.** O `src` só é trocado no clique, então em rede
+fria o navegador começaria a decodificar no mesmo quadro em que a animação
+parte — um quadro em branco no meio da subida. `pointerenter` e `focus` pedem o
+download antes, o que não custa nada a quem não vai clicar e não carrega as
+quatro imagens para a maioria que nunca troca de pilar.
+
+### Medido por CDP
+
+`chrome --screenshot` fotografa no load e não interage, então a transição foi
+medida dirigindo o Chrome pelo DevTools Protocol: navegar, `click()` de verdade
+no segundo card, e ler a cada ~100 ms.
+
+```
+antes      larg 1163 / 107 / 107 / 107   pessoa nubank 843px  no lugar
++134 ms    o card que entrou está a  62%
++586 ms    card a 100%                   pessoa a  91%
++1005 ms                              pessoa a  98%
++1687 ms                              pessoa a 100%
+depois     larg 107 / 1163 / 107 / 107   pessoa croma  648px  no lugar
+```
+
+O quadro dos 141 ms mostra o estado intermediário real: os dois cards no meio do
+morph, os dois gradientes em crossfade, a pessoa subindo de baixo e recortada pela
+janela, e o parágrafo antigo ainda saindo. Sem texto duplicado em nenhum momento.
 
 ### assets: PNG → WebP
 
@@ -427,7 +550,8 @@ movimento foi desenhado aqui:
    e CTAs descem em cascata (ver a seção da entrada em CSS, abaixo).
 5. **Texto** — reveal escalonado com `cubic-bezier(0.16, 1, 0.3, 1)`.
 6. **Ecossystem** — a pessoa do pilar sobe de baixo para cima, e desce quando o
-   tópico troca (ver a seção do Ecossystem).
+   tópico troca. Toda a troca de pilar é uma coreografia; ver a seção do
+   Ecossystem.
 
 ### A pessoa que sobe de baixo para cima
 
@@ -446,9 +570,31 @@ quase o dobro dos cards da Hero —, então no mesmo tempo a velocidade sobe e o
 movimento lia como *colocada* em vez de *subindo*. Tem valor próprio para não
 arrastar junto o `revealUp` da Hero e o texto da seção, que já estão aprovados.
 
-O caminho de saída (`exit`, desce e some) ainda **não roda** — só existe um pilar
-desenhado. Ele fica pronto para quando os outros três entrarem, e é a única
-parte da animação que precisa de olho humano.
+**A curva, e não o número, é o que faz esses 1,5 s valerem.** Com
+`EASE_OUT_EXPO`, o expo põe 82% dos 843 px nos primeiros 375 ms — o que sobra é
+1,1 s de arrasto dos 5% finais, movimento lento demais para ser lido como
+movimento e longo demais para ser lido como repouso. Subir de 1,1 s para 1,5 s
+**não** resolveu isso: com uma curva desse formato, duração e velocidade
+percebida não são a mesma coisa, e aumentar a primeira só comprimenta a cauda.
+
+`EASE_EMPHASIZED` (`cubic-bezier(0.32, 0.72, 0, 1)`, a do Material 3) resolve.
+Comparando as duas no mesmo instante:
+
+| Fração do tempo | expo | enfática |
+|---|---|---|
+| 17% | 65% | 53% |
+| 25% | 78% | 77% |
+| 40% | 91% | 92% |
+| 74% | 99,9% | 99% |
+
+A diferença está no meio do trajeto, que é onde o olho acompanha. Medido no
+navegador depois da troca: a pessoa está a 91% da subida aos 600 ms, a 98% aos
+1005 ms, e assenta em 1690 ms. Com o expo ela estaria a 91% aos 370 ms e a
+100% aos 1300 ms, com o resto do tempo sem nada visível acontecendo.
+
+O caminho de saída (`exit`, desce e some) **roda a cada troca de pilar** — é o
+`AnimatePresence` que mantém a antiga montada enquanto a nova entra, e é por isso
+que as duas se cruzam em vez de se cortarem.
 
 ### O leque dos cards
 
@@ -591,6 +737,12 @@ gradiente: o subtítulo e o CTA fantasma passaram de `Action/action-secondary`
 (`#f3e8ff`) para branco puro. Sobre roxo a diferença visual é imperceptível,
 mas o branco rende ~0,5:1 a mais.
 
+**A Ecossystem Section tem uma exceção, e ela é do design:** a descrição do card
+do Croma é `Background/bg-brand` sobre um gradiente creme e chega a **3,48:1** na
+ponta direita — passa em texto grande, reprova em texto pequeno, e a descrição
+tem 16 px. Implementado como o Figma pede; a discussão está na seção do
+Ecossystem.
+
 ### CTAs da header no estado condensado
 
 Desvio consciente do design. Sobre o gradiente os dois botões seguem o Figma
@@ -628,9 +780,11 @@ com `PROVISÓRIO`:
 - **Menu mobile.** Ausente; depende dos painéis.
 - **Seções seguintes** (`Porque a Nu`, `Cartões`, `Diferenciais`) — hoje existe
   um bloco "Em construção" só para o CTA "Explore o Universo Nu" ter destino.
-- **Os três pilares recolhidos do Ecossystem** — Croma, Ultravioleta e Empresas
-  já existem no carrossel com nome e foto, mas o Figma só tem o frame do Nubank.
-  Não há descrição, parágrafo nem CTA para eles, e nenhum foi inventado.
+- **Os dois pilares ainda não desenhados do Ecossystem** — Ultravioleta e
+  Empresas já existem no carrossel com nome e foto, mas os frames `77:40` e
+  `80:77` seguem ocultos e ainda na estrutura antiga que este projeto
+  descartou. Não há gradiente, descrição, parágrafo nem CTA para eles, e nenhum
+  foi inventado; aparecem recolhidos e sem clique.
 - **Texto do rodapé** com o aviso legal — redigido para este estudo.
 
 Além disso, **não há** números de usuários, taxas, limites, depoimentos nem
@@ -699,11 +853,15 @@ redirecionadores — esta página não tem função de cadastro.
 
 ## Próximos passos
 
-1. Desenhar no Figma os três pilares restantes da Ecossystem Section (Croma,
-   Ultravioleta, Empresas) na estrutura nova — e então ligá-los ao carrossel.
-2. Desenhar no Figma os submenus da navegação e as seções restantes.
-3. Revisar o texto do rodapé e a composição mobile dos cards.
-4. Exportar o ícone do app definitivo do Figma.
+1. Desenhar no Figma os dois pilares restantes da Ecossystem Section
+   (Ultravioleta, Empresas) na estrutura nova — e então ligá-los ao carrossel. O
+   que entra é um bloco `active` no dado; o `key={pillar.id}` do `AnimatePresence`
+   e o `onClick` já estão prontos e a troca reaproveita a animação.
+2. Decidir o que fazer com o contraste da descrição do Croma (3,48:1 em 16 px) —
+   hoje segue o Figma, mas é o único texto da seção que não passa em AA.
+3. Desenhar no Figma os submenus da navegação e as seções restantes.
+4. Revisar o texto do rodapé e a composição mobile dos cards.
+5. Exportar o ícone do app definitivo do Figma.
 
 ## Deploy
 

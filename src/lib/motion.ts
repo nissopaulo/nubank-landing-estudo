@@ -11,6 +11,35 @@ import type { Transition, Variants } from "motion/react";
 export const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 export const EASE_OUT_QUINT = [0.22, 1, 0.36, 1] as const;
 
+/**
+ * Curva de desaceleração enfática — a mesma do Material 3.
+ *
+ * Existe por causa de uma medição, não por gosto. `EASE_OUT_EXPO` é a curva
+ * certa para entradas curtas (cards da Hero, 24px de deslocamento), mas na
+ * pessoa do Ecossystem ela **desfaz a própria duração**: o percurso é de 843px
+ * e o expo põe 82% dele nos primeiros 375ms de 1500ms. O que sobra é 1,1s de
+ * arrasto de 5% — movimento lento demais para ser lido como movimento, e longo
+ * demais para ser lido como repouso. Foi exatamente por isso que subir de 1,1s
+ * para 1,5s quase não mudou nada: com uma curva desse formato, duração e
+ * velocidade percebida não são a mesma coisa, e aumentar a primeira só
+ * comprimenta a cauda.
+ *
+ * Comparando as duas no mesmo instante (fração da distância percorrida):
+ *
+ * | fração do tempo | expo | enfática |
+ * |-----------------|------|----------|
+ * | 17%             | 65%  | 53%      |
+ * | 25%             | 78%  | 77%      |
+ * | 40%             | 91%  | 92%      |
+ * | 74%             | 99,9%| 99%      |
+ *
+ * A diferença está no meio do trajeto, que é onde o olho acompanha. A enfática
+ * mantém o arranque rápido — resposta imediata ao clique, o que faz o gesto
+ * parecer dinâmico — e distribui o resto do caminho de forma que a chegada é
+ * suave, sem a cauda arrastada do expo.
+ */
+export const EASE_EMPHASIZED = [0.32, 0.72, 0, 1] as const;
+
 export const DURATION = {
   fast: 0.35,
   base: 0.7,
@@ -66,9 +95,10 @@ export const staggerContainer = (stagger = 0.08, delayChildren = 0): Variants =>
  * deslocamento acima de ~70% já a põe inteiramente fora da tela. A folga é de
  * propósito — se o card ou a viewport mudarem de proporção, sobra margem.
  *
- * `exit` é o caminho espelho: a pessoa que sai desce e some. Ele ainda não
- * roda, porque só existe um pilar desenhado (ver `lib/ecosystem-pillars.ts`) —
- * fica pronto para quando os outros três entrarem.
+ * `exit` é o caminho espelho: a pessoa que sai desce e some. Ele roda a cada
+ * troca de pilar — é o `AnimatePresence` no `EcosystemSection` que mantém a
+ * antiga montada enquanto a nova entra, e por isso as duas se cruzam em vez de
+ * se cortarem.
  */
 
 /**
@@ -81,8 +111,9 @@ export const staggerContainer = (stagger = 0.08, delayChildren = 0): Variants =>
  * texto da seção, e afinar a entrada dela junto para acompanhar a pessoa
  * mudaria duas telas que estão aprovadas.
  *
- * 1,1s lia como "colocada" — o movimento começava antes de o olho perceber que
- * era animação. 1,5s dá tempo de ler como *subindo*.
+ * 1,1s lia como "colocada". Com `EASE_OUT_EXPO`, aumentar para 1,5s **não**
+ * resolveu — ver `EASE_EMPHASIZED`, que é a correção de verdade: a curva, não
+ * o número. Com a curva enfática os 1,5s valem 1,5s.
  */
 const PERSON_RISE = 1.5;
 
@@ -90,12 +121,12 @@ export const personRise: Variants = {
   hidden: { y: "100%" },
   visible: {
     y: 0,
-    transition: { duration: PERSON_RISE, ease: EASE_OUT_EXPO },
+    transition: { duration: PERSON_RISE, ease: EASE_EMPHASIZED },
   },
   exit: {
     y: "100%",
     opacity: 0,
-    transition: { duration: DURATION.base, ease: EASE_OUT_EXPO },
+    transition: { duration: DURATION.base, ease: EASE_EMPHASIZED },
   },
 };
 
