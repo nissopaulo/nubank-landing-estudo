@@ -239,6 +239,15 @@ Um detalhe que custa caro: os `rgba()` do export **não podem virar hex**. Dentr
 de `url("data:...")` um `#` não escapado é lido como fragmento de URL e trunca a
 string no meio — o gradiente simplesmente não aparece, sem erro no console.
 
+**`background-size` tem que ser explícito.** O SVG tem `viewBox` e não tem
+`width`/`height`, e aí os motores discordam do que `auto` significa: o Chrome
+estica até a caixa, o Firefox usa as dimensões do viewBox (1163×339) e **repete**.
+No repouso as duas leituras dão o mesmo pixel, então o defeito só aparecia no
+hover — quando o card vai a 1193px e sobram 30px, pintados com a borda esquerda
+do gradiente, que é a parte mais escura dele. Era a listra que surgia no
+Firefox. `background-size: 100% 100%` com `background-repeat: no-repeat` resolve,
+e os dois motores passam a bater dentro de 2,4 níveis.
+
 ### Fidelidade medida contra o Figma (nó `52:3`)
 
 Comparação pixel a pixel entre o render do frame e o build de produção, ambos
@@ -327,12 +336,50 @@ entraria no CSS gerado. É uma restrição da ferramenta.
 Recorte em WebP com alfa, posicionado em absoluto contra o `Main Content` nas
 mesmas coordenadas do Figma (`left-210px top-0`), convertidas em fração da
 largura dele para escalarem sem distorcer. A altura não é declarada de propósito:
-o asset é 1200×896, e 1129 px de largura dá 842,99 px de altura — que é o
+o asset é 2400×1792, e 1129 px de largura dá 842,99 px de altura — que é o
 `h-[842.987px]` do design, com a proporção garantida pela própria imagem.
 
-O `overflow-clip` do `Main Content` faz duas coisas: recorta a figura na borda
-inferior do card, que é como o design corta a pessoa, e esconde a imagem
-durante a entrada.
+A janela de recorte é um `absolute inset-0 overflow-clip` **dentro** do
+`Main Content`, e não o próprio `Main Content`. O motivo está na seção do hover
+abaixo: a linha de cards preenche o `Main Content` inteiro, então o clip do
+container comeria o crescimento. A caixa é a mesma, então o corte da figura
+continua exatamente na borda inferior do card.
+
+### A interação de hover
+
+Card ativo e pilares recolhidos crescem **só na horizontal** sob o ponteiro, e o
+vizinho sai do lugar junto. Medido contra o repouso, a 1920:
+
+| | repouso | hover | |
+|---|---|---|---|
+| Card ativo | x 200 · 1163 de largura | x 200 · 1193 | +30 px, borda esquerda parada |
+| Pilar 1 | x 1375 | x 1405 | empurrado +30 |
+| Pilar 2 | x 1494 | x 1524 | empurrado +30 |
+| Pilar 3 | x 1613 | x 1643 | empurrado +30 |
+| Altura dos dois | 339 | 339 | não muda |
+
+Sobre um pilar: ele vai de 107 para 121 de largura e empurra **os que vêm
+depois** dele — o primeiro não se move.
+
+**É propriedade de layout, e não `transform`.** `scale` redesenha o elemento sem
+mexer no fluxo, então o card cresceria *por cima* do vizinho em vez de empurrá-lo
+— que é justamente o efeito pedido. Aqui o flexbox recalcula a linha.
+
+**O card ativo usa `flex-basis`, não `flex-grow`.** `flex-grow` reparte o espaço
+livre *entre os itens que crescem*, e aqui ele é o único que cresce: os três
+recolhidos são de largura fixa. Com `flex-grow` de 1 para 1,024 a largura não
+mudava uma vírgula — foi testado e medido antes de trocar de propriedade.
+`flex-basis: calc(100% - 357px)` resolve, com 357 = 3×107 dos recolhidos +
+3×12 de gap, o que faz a linha ocupar a largura toda como no repouso.
+
+**`justify-start` em vez do `justify-center` do Figma.** No repouso as duas são
+idênticas — a linha preenche tudo, não há o que centralizar. No hover divergem,
+e é aí que importa: com `center` o card cresceria dos dois lados e atravessaria
+o alinhamento de 200 px da seção.
+
+`:focus-visible` entra junto do `:hover` nos dois botões, senão quem navega por
+teclado fica sem o feedback. O card ativo não é interativo, então nele só o
+`:hover`.
 
 ### assets: PNG → WebP
 
@@ -386,13 +433,18 @@ movimento foi desenhado aqui:
 
 O deslocamento é em porcentagem **da altura da própria imagem**, e o que esconde
 não é `opacity` — é a posição. A pessoa nasce 100% da própria altura abaixo, de
-onde o `overflow-clip` do `Main Content` a recorta: ela está renderizada o tempo
-todo, e é só a translação que a traz para a vista. O HTML do servidor já sai
-com `transform: translateY(100%)`, então não há flash antes da hidratação.
+onde o `overflow-clip` a recorta: ela está renderizada o tempo todo, e é só a
+translação que a traz para a vista. O HTML do servidor já sai com
+`transform: translateY(100%)`, então não há flash antes da hidratação.
 
 Por que 100% basta aqui, quando os cards da Hero precisam de 150%: a pessoa tem
 843 px de altura e a janela de recorte tem 595 px, então qualquer deslocamento
 acima de ~70% já a põe inteiramente fora da tela.
+
+**1,5 s, e não os 1,1 s de `DURATION.slow`.** O percurso dela é de 843 px —
+quase o dobro dos cards da Hero —, então no mesmo tempo a velocidade sobe e o
+movimento lia como *colocada* em vez de *subindo*. Tem valor próprio para não
+arrastar junto o `revealUp` da Hero e o texto da seção, que já estão aprovados.
 
 O caminho de saída (`exit`, desce e some) ainda **não roda** — só existe um pilar
 desenhado. Ele fica pronto para quando os outros três entrarem, e é a única

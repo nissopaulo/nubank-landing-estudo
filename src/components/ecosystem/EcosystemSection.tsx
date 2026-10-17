@@ -49,6 +49,10 @@ import { personRise } from "@/lib/motion";
  *    do carrossel saem da sobra, com a linha de cards em `flex-1` e os cards
  *    esticados por `items-stretch`. Se a fonte renderizar o título com meio
  *    pixel a mais, o card encolhe junto em vez de estourar a seção.
+ *
+ * O crescimento no hover dos dois fica no CSS (`.eco-card-active` e
+ * `.eco-pillar`), não aqui — o comentário do bloco em `globals.css` explica por
+ * que é propriedade de layout e não `transform`.
  */
 export function EcosystemSection() {
   const pillar = PILLARS[ACTIVE_INDEX];
@@ -62,11 +66,20 @@ export function EcosystemSection() {
     >
       {/*
         `relative` porque a pessoa é posicionada contra este elemento, como no
-        Figma. `overflow-clip` tem duas funções: recorta a figura na borda
-        inferior do card — que é como o design corta a pessoa — e é o que
-        esconde a imagem durante a entrada.
+        Figma.
+
+        Aqui **não** tem `overflow-clip`, ao contrário do que o Figma pede — e a
+        razão é o hover. A linha de cards preenche este elemento exatamente
+        (1163 + 3x107 + 3x12 = 1520), então não sobra um pixel: qualquer
+        crescimento no hover transbordaria, e o clip comeria a beirada — o card
+        ativo perderia 14px da esquerda e o último pilar 14px da direita. O
+        efeito deixaria de ser "empurrar" e viraria "ser cortado".
+
+        A janela de recorte da pessoa é a mesma caixa; ela só foi para um
+        wrapper próprio, com `inset-0`, logo abaixo. O resultado na tela é
+        idêntico ao do Figma, e o card pode crescer de verdade.
       */}
-      <div className="relative flex h-[595px] flex-col gap-[100px] overflow-clip">
+      <div className="relative flex h-[595px] flex-col gap-[100px]">
         <h2
           id="ecossistema-titulo"
           className="font-display text-[64px] font-bold leading-[1.22] text-nu-brand"
@@ -76,14 +89,28 @@ export function EcosystemSection() {
           {title[1]}
         </h2>
 
-        <div className="flex min-h-0 flex-1 flex-col">
-          {/* gap-[12px] do Figma; a linha é `flex-1` para herdar a altura que
-              sobrou do `Main Content` (339px em 1920). */}
-          <div className="flex w-full flex-1 items-stretch justify-center gap-[12px]">
-            {/* Card ativo. `flex-1` porque é ele que leva a sobra da linha —
-                no Figma dá 1163px em 1920. */}
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          {/*
+            gap-[12px] do Figma; a linha é `flex-1` para herdar a altura que
+            sobrou do `Main Content` (339px em 1920).
+
+            `justify-start` em vez do `justify-center` do Figma: no repouso as
+            duas são idênticas, porque a linha preenche a largura toda — não há
+            o que centralizar. No hover elas divergem, e é aí que importa: com
+            `center` o card cresceria dos dois lados, atravessando o alinhamento
+            de 200px da seção. Com `start` a borda esquerda fica em 200 e o
+            crescimento vai todo para a direita, que é o "empurrar" que se pede.
+          */}
+          <div className="flex w-full flex-1 items-stretch justify-start gap-[12px]">
+            {/*
+              Card ativo. A largura vem de `.eco-card-active` no `globals.css`,
+              por `flex-basis: calc(100% - 357px)` — 357 = 3x107 dos recolhidos
+              + 3x12 de gap, o que faz a linha ocupar Main Content inteiro, como
+              no Figma (1163px em 1920). Aqui só fica o `flex-1` como valor de
+              reserva: se a regra for removida, a linha volta a se distribuir.
+            */}
             <div
-              className="flex flex-1 flex-col items-start overflow-hidden rounded-[16px] p-6"
+              className="eco-card-active flex flex-1 flex-col items-start overflow-hidden rounded-[16px] p-6"
               style={{ backgroundImage: gradient }}
             >
               <div className="flex flex-col items-start gap-6">
@@ -123,12 +150,12 @@ export function EcosystemSection() {
                 key={other.id}
                 type="button"
                 aria-disabled="true"
-                className="flex shrink-0 flex-col items-center justify-end overflow-hidden rounded-[16px] bg-nu-neutral-200 p-6
-                  transition-opacity hover:opacity-80 aria-disabled:cursor-not-allowed"
+                className="eco-pillar flex shrink-0 flex-col items-center justify-end overflow-hidden rounded-[16px] bg-nu-neutral-200 p-6 hover:opacity-80 aria-disabled:cursor-not-allowed"
               >
-                {/* A caixa do texto tem 59px de espessura (w-[59px]); com o
-                    `p-6` dos dois lados, o card dá 107px — a largura do Figma,
-                    sem precisar declará-la. */}
+                {/* A largura (107px) e o crescimento no hover vêm de
+                    `.eco-pillar` no `globals.css` — precisam ser do CSS porque o
+                    `width` anima e um `style` fixo não teria como. O texto
+                    continua com os 59px de espessura. */}
                 <span
                   className="font-display text-[48px] font-bold leading-none text-nu-neutral-800 [writing-mode:vertical-rl] rotate-180"
                   style={{ width: 59 }}
@@ -145,28 +172,36 @@ export function EcosystemSection() {
         </div>
 
         {/*
-          A pessoa. `left` e `width` são 210px e 1129px do Figma, convertidos
-          em fração da largura do `Main Content` (1520px) para escalarem sem
-          distorcer. A altura não é declarada de propósito: o WebP é
-          * 2400x1792 — 2x da largura de exibição, para densidade de tela —, e
-          * 1129px de largura dá 842,99px de altura, que é o `h-[842.987px]`
-          do design, com a proporção garantida pela própria imagem.
+          A pessoa, dentro de uma janela de recorte com a MESMA caixa do
+          `Main Content` (`inset-0`). O clip saiu do `Main Content` e veio para
+          aqui — ver o comentário dele. `pointer-events-none` porque essa
+          janela cobre a linha inteira e não pode roubar o hover dos cards.
         */}
-        <AnimatePresence>
-          <motion.img
-            key={pillar.id}
-            src={pillar.person}
-            alt=""
-            aria-hidden="true"
-            draggable={false}
-            variants={personRise}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
-            className="pointer-events-none absolute top-0 select-none object-cover"
-            style={{ left: "13.816%", width: "74.276%", height: "auto" }}
-          />
-        </AnimatePresence>
+        <div className="pointer-events-none absolute inset-0 overflow-clip">
+          {/*
+            `left` e `width` são 210px e 1129px do Figma, convertidos em fração
+            da largura do `Main Content` (1520px) para escalarem sem distorcer.
+            A altura não é declarada de propósito: o WebP é 2400x1792 — 2x da
+            largura de exibição, para densidade de tela —, e 1129px de largura
+            dá 842,99px de altura, que é o `h-[842.987px]` do design, com a
+            proporção garantida pela própria imagem.
+          */}
+          <AnimatePresence>
+            <motion.img
+              key={pillar.id}
+              src={pillar.person}
+              alt=""
+              aria-hidden="true"
+              draggable={false}
+              variants={personRise}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="pointer-events-none absolute top-0 select-none object-cover"
+              style={{ left: "13.816%", width: "74.276%", height: "auto" }}
+            />
+          </AnimatePresence>
+        </div>
       </div>
 
       <div className="flex items-start gap-[100px]">

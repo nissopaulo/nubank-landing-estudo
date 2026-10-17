@@ -214,6 +214,15 @@ seções seguintes — por isso os itens 2 e 3 bloqueiam o resto.
 
 ### Antes de sugerir código
 
+- **NUNCA usar `Set-Content`, `Out-File` ou `Get-Content -Raw` para ler e
+  reescrever arquivo-fonte deste projeto.** São a causa de uma corrupção de
+  encoding que já foi commitada e enviada — ver a entrada de 2026-10-17 sobre
+  mojibake. Em Windows o PowerShell 5.1 lê UTF-8 como a página de códigos do
+  sistema e escreve de volta na mesma, então cada acento vira dois caracteres.
+  **Use sempre as ferramentas `edit` / `write`**, que operam em UTF-8.
+- Para **verificar** encoding, le bytes crus com `node` e `TextDecoder` explícito.
+  Não confie em `Get-Content` nem em `git show`: os dois passam pelo console do
+  Windows e devolvem falso positivo **e** falso negativo.
 - Este é o **Next.js 16**, não o que veio no treinamento. Ler o guia relevante em
   `node_modules/next/dist/docs/` antes de escrever qualquer coisa.
 - Qualquer valor novo que venha do Figma precisa ser rastreável à origem (node id,
@@ -946,3 +955,77 @@ escondeu um bug de interação, porque a propriedade que ele sobrescrevia era s�
 uma das três do estado. Quando um componente tem variantes de interação, a
 variação tem de morar no mesmo lugar — num `style`, o resto da cadeia fica para
 trás em silêncio.
+
+### 2026-10-17 — mojibake em `globals.css`, commitado e enviado
+
+**Erro meu, corrigido.** Precisa ficar registrado porque o método de detecção
+usado foi o que quase mascarou o problema.
+
+**O que aconteceu.** Para remover o bloco da Ecossystem do `globals.css` eu usei
+`splice` de linhas em PowerShell com `Set-Content`. O PowerShell 5.1 grava na
+página de códigos do sistema, então os bytes UTF-8 de cada acento foram
+reinterpretados: `à` (C3 A0) virou `Ã` + espaço não separável (C3 83 C2 A0). O
+arquivo inteiro ficou assim — **143 ocorrências**, a começar da primeira linha.
+
+Pior: o commit `6858522` só versionava o `CONTEXTO.md`, então a corrupção ficou
+fora dele. Ela entrou no **`15c62a0`, que foi para o GitHub**.
+
+**A detecção errada.** Cheguei a "confirmar" que o arquivo estava limpo usando
+`git show` + regex, e o resultado dizia **LIMPO**. Estava errado: `git show`
+escreve UTF-8 no stdout e o console do Windows devolve como CP1252, o que produz
+`Ã§` numa string que estava correta. O mesmo vale para `Get-Content`. **Um teste
+de encoding que passa pelo console do Windows dá falso positivo e falso
+negativo.** Só bytes crus lidos com `TextDecoder` explícito, no `node`.
+
+O `Ã` que apareceu numa linha do `globals.css` era o próprio caractere
+corrompido. E `Ân` de "Ângulo" e `ÃO` de "NÃO" são falsos positivos do meu
+padrão — acentos legítimos em português. Vale registrar porque um scanner de
+mojibake sem lista de falsos positivos vira alarme constante.
+
+**A correção.** `git checkout 6858522 -- src/app/globals.css` devolve a versão
+limpa (o `git` mexe em bytes, não em texto, então não tem risco de encoding), e
+a única alteração legítima — a linha do `--color-nu-text-tertiary` — foi
+reaplicada com a ferramenta `edit`. O diff contra `6858522` agora tem **exatamente
+uma linha**, e o arquivo está com as 143 CURVAS legítimas de volta.
+
+**A regra que sai daqui:** `Set-Content` / `Out-File` / `Get-Content -Raw` não
+tocam em arquivo-fonte deste projeto. Estão em "Antes de sugerir código".
+
+### 2026-10-17 — hover nos cards da Ecossystem e pessoa mais suave
+
+**A pessoa, mais suave.** `DURATION.slow` (1,1s) ficou curto para um percurso de
+843px — lia como "colocada" e não como "subindo". Duração própria, 1,5s, sem
+mexer em `DURATION.slow` porque a Hero e o reveal de texto usam o mesmo valor e
+não são o caso.
+
+**O hover empurra, e por isso não é `transform`.** Os dois crescem só na
+horizontal, e o detalhe que define o efeito é **propriedade de layout, não
+transform**: `flex-grow` no card ativo e `width` no pilar recolhido. `scale`
+redesenha o elemento sem mexer no fluxo — o card cresceria *por cima* do vizinho
+em vez de empurrá-lo, e é justamente o empurrar que foi pedido. Vertical não se
+mexe: nenhum dos dois muda altura, o que manteria a composição alinhada.
+
+Os valores são pequenos de propósito: 2,4% no card ativo (que tem mais de 1000px
+— 2% seria imperceptível, 5% pareceria um clique) e 13% no pilar recolhido (107px
+são poucos, e menos que isso não se veria). `:focus-visible` entra junto do
+`:hover` nos dois botões, senão quem navega por teclado fica sem o feedback.
+
+**A listra escura no Firefox foi `background-size` implícito.** O gradiente é um
+SVG em data URI com `viewBox` e **sem** `width`/`height`, e aí os motores
+divergem no que `auto` significa: o Chrome estica até a caixa, o Firefox usa as
+dimensões do viewBox (1163×339) e **repete**. No repouso (1163px) as duas
+leituras dão o mesmo pixel, então o defeito só aparecia no hover, quando o card
+vai a 1193px: sobram 30px e a faixa repetida era a borda esquerda do gradiente —
+que é a parte mais escura dele. Medido na mesma coluna: Firefox
+`rgb(114,21,179)` contra Chrome `rgb(131,34,198)`, delta de ~26.
+
+`background-size: 100% 100%` + `background-repeat: no-repeat` resolve, e os
+dois motores passam a bater dentro de 2,4 níveis em toda a faixa.
+
+**A lição que dá fora daqui:** um asset com tamanho **intrínseco ausente** é uma
+divergência entre motores esperando para acontecer, e ela só aparece quando
+alguma coisa muda de tamanho. Em repouso os dois motores davam o mesmo pixel, o
+que fez o defeito parecer ser do *hover* — e não era: o hover só deu a condição
+de aparecer. **Antes de culpar a propriedade que mudou, olhar as duas que não
+mudaram.** O mesmo raciocínio já apareceu no resíduo de meio pixel do logo, que
+também era divergência de motor e não de layout.

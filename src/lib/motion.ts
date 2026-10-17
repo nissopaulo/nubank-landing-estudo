@@ -70,11 +70,27 @@ export const staggerContainer = (stagger = 0.08, delayChildren = 0): Variants =>
  * roda, porque só existe um pilar desenhado (ver `lib/ecosystem-pillars.ts`) —
  * fica pronto para quando os outros três entrarem.
  */
+
+/**
+ * Duração da subida, em segundos.
+ *
+ * Tem valor próprio, e não `DURATION.slow`, por dois motivos. O primeiro é de
+ * medida: a pessoa percorre 843px, quase o dobro do deslocamento dos cards da
+ * Hero, então o mesmo tempo cobre uma distância maior e a velocidade sobe. O
+ * segundo é de escopo: `DURATION.slow` também governa o `revealUp` da Hero e o
+ * texto da seção, e afinar a entrada dela junto para acompanhar a pessoa
+ * mudaria duas telas que estão aprovadas.
+ *
+ * 1,1s lia como "colocada" — o movimento começava antes de o olho perceber que
+ * era animação. 1,5s dá tempo de ler como *subindo*.
+ */
+const PERSON_RISE = 1.5;
+
 export const personRise: Variants = {
   hidden: { y: "100%" },
   visible: {
     y: 0,
-    transition: { duration: DURATION.slow, ease: EASE_OUT_EXPO },
+    transition: { duration: PERSON_RISE, ease: EASE_OUT_EXPO },
   },
   exit: {
     y: "100%",

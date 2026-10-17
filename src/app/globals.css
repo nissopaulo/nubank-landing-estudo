@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 /**
- * Design tokens â€” extraÃ­dos das variÃ¡veis do Figma (node 14:446).
+ * Design tokens — extraídos das variáveis do Figma (node 14:446).
  * Fonte: https://www.figma.com/design/16kp2jwaILwDfp44uYuNkP
- * Todos os valores abaixo sÃ£o literais do arquivo de design.
+ * Todos os valores abaixo são literais do arquivo de design.
  */
 @theme {
   /* Purple */
@@ -26,18 +26,18 @@
   --color-nu-action-surface: #f3e8ff; /* Action/action-secondary */
   --color-nu-action-text: #ffffff; /* Action/action-primary-text */
 
-  /* Gradiente do fundo da Hero â€” os quatro tons vÃªm do nÃ³ 14:460.
+  /* Gradiente do fundo da Hero — os quatro tons vêm do nó 14:460.
      As PARADAS foram deslocadas de 0/25/75/100 para 0/52/86/100: com as
      originais, a metade inferior do gradiente ficava clara demais e o texto
-     de 16 px caÃ­a para 2,3:1 de contraste (abaixo de AA). As quatro cores
-     sÃ£o as mesmas do Figma; sÃ³ adia onde o clareamento acontece. */
+     de 16 px caía para 2,3:1 de contraste (abaixo de AA). As quatro cores
+     são as mesmas do Figma; só adia onde o clareamento acontece. */
   --color-nu-hero-stop-3: #d8b4fe;
 
-  /* Tipografia â€” o projeto usa apenas Montserrat. */
+  /* Tipografia — o projeto usa apenas Montserrat. */
   --font-display: var(--font-nu-montserrat), ui-sans-serif, system-ui, sans-serif;
   --font-body: var(--font-nu-montserrat), ui-sans-serif, system-ui, sans-serif;
 
-  /* Curvas de movimento no espÃ­rito Apple: saÃ­das longas e suaves. */
+  /* Curvas de movimento no espírito Apple: saídas longas e suaves. */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -53,7 +53,7 @@
   }
 
   /*
-   * Foco visÃ­vel e consistente. Nunca removemos o outline â€” sÃ³ o estilizamos.
+   * Foco visível e consistente. Nunca removemos o outline — só o estilizamos.
    * O anel branco sobre o gradiente roxo garante contraste em toda a Hero.
    */
   :focus-visible {
@@ -62,7 +62,7 @@
     border-radius: 4px;
   }
 
-  /* Setas de rolagem / Ã¢ncoras */
+  /* Setas de rolagem / âncoras */
   :target {
     scroll-margin-top: 6rem;
   }
@@ -72,18 +72,18 @@
   /*
    * Entrada do header.
    *
-   * Feita em CSS, e nÃ£o com Motion, por um motivo concreto: o Firefox e o Chrome
-   * divergem quando uma biblioteca de animaÃ§Ã£o **remove** o `transform` no fim.
+   * Feita em CSS, e não com Motion, por um motivo concreto: o Firefox e o Chrome
+   * divergem quando uma biblioteca de animação **remove** o `transform` no fim.
    * O elemento sai do caminho de render composto e volta ao pintado, e os dois
-   * motores arredondam a posiÃ§Ã£o de forma diferente â€” no Firefox o logo
-   * aparecia ~1px acima atÃ© o repaint seguinte. No Chrome era imperceptÃ­vel, o
+   * motores arredondam a posição de forma diferente — no Firefox o logo
+   * aparecia ~1px acima até o repaint seguinte. No Chrome era imperceptível, o
    * que fez o bug parecer intermitente.
    *
-   * `animation-fill-mode: both` resolve a causa, nÃ£o o sintoma: o keyframe final
+   * `animation-fill-mode: both` resolve a causa, não o sintoma: o keyframe final
    * (`transform: translateY(0px)`, `opacity: 1`) continua aplicado depois que a
-   * animaÃ§Ã£o acaba. Nunca existe um instante em que o `transform` vira `none`,
-   * entÃ£o nÃ£o hÃ¡ o que os dois motores arredondem de formas diferentes. O mesmo
-   * cÃ³digo nos dois motores, sem caminho de render alternativo.
+   * animação acaba. Nunca existe um instante em que o `transform` vira `none`,
+   * então não há o que os dois motores arredondem de formas diferentes. O mesmo
+   * código nos dois motores, sem caminho de render alternativo.
    *
    * O escalonamento sai de `--header-enter-delay`, posto em cada elemento. Os
    * valores reproduzem a cascata que o Motion fazia por `staggerChildren`.
@@ -117,45 +117,45 @@
   }
 
   /*
-   * GrÃ£o de textura sobre toda a pÃ¡gina.
+   * Grão de textura sobre toda a página.
    *
-   * DESVIO AUTORAL â€” nÃ£o existe no Figma. O `bg` da Hero (nÃ³ 14:460) Ã©
-   * gradiente puro, sem camada de ruÃ­do, sem blend mode e sem filtro; o que
-   * parece grÃ£o no Figma Ã© o dithering do viewer ao renderizar um gradiente
-   * tÃ£o suave. A textura foi adicionada por decisÃ£o do usuÃ¡rio para dar
-   * profundidade, e a partir daqui vale como convenÃ§Ã£o da landing page.
+   * DESVIO AUTORAL — não existe no Figma. O `bg` da Hero (nó 14:460) é
+   * gradiente puro, sem camada de ruído, sem blend mode e sem filtro; o que
+   * parece grão no Figma é o dithering do viewer ao renderizar um gradiente
+   * tão suave. A textura foi adicionada por decisão do usuário para dar
+   * profundidade, e a partir daqui vale como convenção da landing page.
    *
-   * TrÃªs escolhas:
+   * Três escolhas:
    *
-   * 1. `feTurbulence` em data URI, nÃ£o um PNG. Zero requisiÃ§Ãµes, zero bytes no
-   *    repositÃ³rio e escala sem perda. O tile Ã© pequeno (180px) e repetido, entÃ£o
-   *    o navegador rasteriza uma vez em vez de gerar ruÃ­do para a viewport toda.
-   * 2. Sem `mix-blend-mode`. Os modos usuais (`overlay`, `soft-light`) sÃ£o
-   *    neutros em cinza-mÃ©dio: sobre branco nÃ£o fariam nada, e metade da pÃ¡gina
-   *    Ã© branca. Sem blend, o mesmo tile escurece o branco e clareia o roxo.
+   * 1. `feTurbulence` em data URI, não um PNG. Zero requisições, zero bytes no
+   *    repositório e escala sem perda. O tile é pequeno (180px) e repetido, então
+   *    o navegador rasteriza uma vez em vez de gerar ruído para a viewport toda.
+   * 2. Sem `mix-blend-mode`. Os modos usuais (`overlay`, `soft-light`) são
+   *    neutros em cinza-médio: sobre branco não fariam nada, e metade da página
+   *    é branca. Sem blend, o mesmo tile escurece o branco e clareia o roxo.
    * 3. `z-index: 40`, abaixo do header (`z-50`). O header pinta por cima e nunca
-   *    recebe grÃ£o â€” era um requisito explÃ­cito. Ao condensar, o `backdrop-blur`
-   *    ainda borra o que estiver atrÃ¡s, mas o branco a 85% jÃ¡ dissolve o resto.
+   *    recebe grão — era um requisito explícito. Ao condensar, o `backdrop-blur`
+   *    ainda borra o que estiver atrás, mas o branco a 85% já dissolve o resto.
    *
-   * A opacidade NÃƒO Ã© livre: 0.12 Ã© o teto. O grÃ£o Ã© desenhado por cima do texto,
-   entÃ£o ele escurece os glifos. Medindo o tile real em canvas (180x180) ele vai
-   de 116 a 236 â€” Â±60 nÃ­veis, bem mais forte do que parece. Aplicando isso sobre o
+   * A opacidade NÃO é livre: 0.12 é o teto. O grão é desenhado por cima do texto,
+   então ele escurece os glifos. Medindo o tile real em canvas (180x180) ele vai
+   de 116 a 236 — ±60 níveis, bem mais forte do que parece. Aplicando isso sobre o
    texto branco da Hero e comparando com o gradiente na altura de cada texto:
 *
-   *   grÃ£o   tÃ­tulo(3:1)  subtÃ­tulo(4,5:1)  CTA fantasma(4,5:1)  menu(4,5:1)
+   *   grão   título(3:1)  subtítulo(4,5:1)  CTA fantasma(4,5:1)  menu(4,5:1)
    *   ----   -----------   ---------------   -------------------   ----------
-   *   0.00      6.43 âœ…        5.56 âœ…           5.25 âœ…            7.04 âœ…
-   *   0.08      5.84 âœ…        5.05 âœ…           4.77 âœ…            6.39 âœ…
-   *   0.12      5.56 âœ…        4.80 âœ…           4.54 âœ…            6.08 âœ…   <-- teto
-   *   0.18      5.15 âœ…        4.45 âœ—            4.20 âœ—            5.64 âœ…
-   *   0.25      4.70 âœ…        4.06 âœ—            3.84 âœ—            5.14 âœ…
+   *   0.00      6.43 ✅        5.56 ✅           5.25 ✅            7.04 ✅
+   *   0.08      5.84 ✅        5.05 ✅           4.77 ✅            6.39 ✅
+   *   0.12      5.56 ✅        4.80 ✅           4.54 ✅            6.08 ✅   <-- teto
+   *   0.18      5.15 ✅        4.45 ✗            4.20 ✗            5.64 ✅
+   *   0.25      4.70 ✅        4.06 ✗            3.84 ✗            5.14 ✅
    *
    * Acima de 0.12 os dois textos de 16 px reprovam em AA. Para passar disso sem
-   * baixar a opacidade, o grÃ£o teria de ficar DEBAIXO do texto (por seÃ§Ã£o, e nÃ£o
-   * como camada de pÃ¡gina inteira) â€” aÃ­ ele texturiza a superfÃ­cie sem tocar
-   * nos glifos. PendÃªncia conhecida, nÃ£o feita.
+   * baixar a opacidade, o grão teria de ficar DEBAIXO do texto (por seção, e não
+   * como camada de página inteira) — aí ele texturiza a superfície sem tocar
+   * nos glifos. Pendência conhecida, não feita.
    *
-   * 0.03 era invisÃ­vel em Ã¡rea chapada e foi a primeira tentativa. Ajuste por
+   * 0.03 era invisível em área chapada e foi a primeira tentativa. Ajuste por
    * componente sem tocar no resto:
    *   style={{ "--nu-grain-opacity": 0.25 }}
    */
@@ -171,19 +171,19 @@
 }
 
 /**
- * ComposiÃ§Ã£o de cards da Hero.
+ * Composição de cards da Hero.
  *
- * A geometria do desktop vem do Figma e Ã© injetada como custom properties
- * (ver `lib/hero-cards.ts`). As variantes abaixo existem porque o Figma sÃ³
- * define o frame de 1920x1080 â€” em telas estreitas os quatro cards, com as
- * rotaÃ§Ãµes originais, ficam sobrepostos e ilegÃ­veis. Essa composiÃ§Ã£o mobile
- * Ã© uma decisÃ£o de layout, nÃ£o um valor do design: ajuste Ã  vontade.
+ * A geometria do desktop vem do Figma e é injetada como custom properties
+ * (ver `lib/hero-cards.ts`). As variantes abaixo existem porque o Figma só
+ * define o frame de 1920x1080 — em telas estreitas os quatro cards, com as
+ * rotações originais, ficam sobrepostos e ilegíveis. Essa composição mobile
+ * é uma decisão de layout, não um valor do design: ajuste à vontade.
  */
 .card-slot {
   left: var(--card-cx);
   top: var(--card-cy);
   width: var(--card-w);
-  /* Define a altura da cadeia â€” sem isso a imagem cai no tamanho natural. */
+  /* Define a altura da cadeia — sem isso a imagem cai no tamanho natural. */
   aspect-ratio: var(--card-aspect);
 }
 
@@ -192,25 +192,25 @@
 }
 
 /*
- * Sombra do card â€” os MESMOS valores do Figma, lidos do style do card
+ * Sombra do card — os MESMOS valores do Figma, lidos do style do card
  * `nu-card-croma`:
  *
  *   border-radius: 15.461px
  *   box-shadow: -8.226px 10.968px 18.281px 0 rgba(0, 0, 0, 0.10)
  *
- * Fica na `<img>`, e nÃ£o no `.card-art`. A caixa do `.card-art` Ã© a do SLOT,
- * que Ã© maior que a arte do card (o slot tem o bounding box jÃ¡ rotacionado), e
- * uma sombra retangular daquele tamanho apareceria errada em volta do cartÃ£o.
- * A `<img>` tem exatamente o retÃ¢ngulo da arte â€” a largura sai da proporÃ§Ã£o
- * intrÃ­nseca do WebP e a altura vem do `artHeightPct`.
+ * Fica na `<img>`, e não no `.card-art`. A caixa do `.card-art` é a do SLOT,
+ * que é maior que a arte do card (o slot tem o bounding box já rotacionado), e
+ * uma sombra retangular daquele tamanho apareceria errada em volta do cartão.
+ * A `<img>` tem exatamente o retângulo da arte — a largura sai da proporção
+ * intrínseca do WebP e a altura vem do `artHeightPct`.
  *
  * `box-shadow` em vez de `drop-shadow`: o `drop-shadow` segue o canal alfa,
- * que aqui Ã© o do arredondamento de 15.461px gravado na arte. A diferenÃ§a Ã©
- * desprezÃ­vel aqui porque a sombra do design Ã© deslocada 8px na horizontal e
- * 11px na vertical e borrada em 18px â€” os cantos da sombra ficam longe o
- * bastante da arte para o arredondamento nÃ£o aparecer.
+ * que aqui é o do arredondamento de 15.461px gravado na arte. A diferença é
+ * desprezível aqui porque a sombra do design é deslocada 8px na horizontal e
+ * 11px na vertical e borrada em 18px — os cantos da sombra ficam longe o
+ * bastante da arte para o arredondamento não aparecer.
  *
- * E o deslocamento Ã© por elemento: a rotaÃ§Ã£o do card estÃ¡ no `.card-art`, e a
+ * E o deslocamento é por elemento: a rotação do card está no `.card-art`, e a
  * sombra sai girada junto, como no design.
  */
 .card-shadow {
@@ -219,13 +219,13 @@
 
 @media (max-width: 1023px) {
   /*
-   * Aqui sobrescrevemos as PROPRIEDADES (`left`, `top`, `width`), nÃ£o as
-   * custom properties: estas vÃªm do atributo `style` inline, que vence
-   * qualquer regra de stylesheet. O seletor de atributo dÃ¡ a especificidade
-   * necessÃ¡ria para vencer `.card-slot`.
+   * Aqui sobrescrevemos as PROPRIEDADES (`left`, `top`, `width`), não as
+   * custom properties: estas vêm do atributo `style` inline, que vence
+   * qualquer regra de stylesheet. O seletor de atributo dá a especificidade
+   * necessária para vencer `.card-slot`.
    *
-   * No mobile o eixo vertical passa a ser relativo Ã  ALTURA da Hero (em %),
-   * enquanto o horizontal continua em cqw: assim a composiÃ§Ã£o acompanha a
+   * No mobile o eixo vertical passa a ser relativo à ALTURA da Hero (em %),
+   * enquanto o horizontal continua em cqw: assim a composição acompanha a
    * altura da tela do celular em vez de subir junto com a largura.
    */
   .card-slot[data-card="croma"] {
@@ -246,10 +246,94 @@
   }
 }
 
+/*
+ * Interação de hover do carrossel da Ecossystem.
+ *
+ * Os dois crescem **só na horizontal**, e o que faz o vizinho sair do lugar é a
+ * propriedade de layout — `flex-grow` no card ativo, `width` no pilar
+ * recolhido. Não é `transform: scale`, e essa distinção é o efeito inteiro:
+ * `scale` redesenha o elemento sem mexer no fluxo, então o card cresceria *por
+ * cima* do vizinho em vez de empurrá-lo. Aqui o flexbox recalcula a linha e o
+ * outro sai do lugar de verdade. É por isso que não é `transform` apesar de
+ * `transform` ser a escolha habitual para "grow" — e é também o custo: cada
+ * quadro recalcula layout. São quatro elementos e um hover, então é irrelevante
+ * aqui; se a composição crescer muito, revisitar.
+ *
+ * Vertical não se mexe, e é por um motivo concreto: o card ativo é
+ * `items-stretch` e o recolhido herda a altura do `Main Content`. Qualquer
+ * alteração vertical desalinharia a linha inteira e a pessoa, que é absoluta e
+ * não acompanha.
+ *
+ * Os valores são pequenos de propósito. O card ativo tem mais de 1000px de
+ * largura, então 2% é imperceptível e 5% já parece um clique: 2,4%. O pilar
+ * recolhido tem 107px, então precisa de uma fração bem maior para ser notado —
+ * 13%.
+ *
+ * `:focus-visible` entra junto do `:hover` nos dois botões, senão quem navega
+ * por teclado não recebe o mesmo feedback — e o botão recolhido é focável
+ * (`aria-disabled` não remove do tab order). No card ativo, que não é
+ * interativo, só o `:hover`: é afordância visual do pilar corrente.
+ *
+ * `prefers-reduced-motion` zera a duração pelo bloco no fim deste arquivo, e
+ * então o crescimento vira um corte seco — que é o comportamento pedido.
+ */
+.eco-card-active {
+  /*
+   * O gradiente é um SVG em data URI que tem `viewBox` e **não** tem
+   * `width`/`height`. Aí os motores discordam do que `background-size: auto`
+   * significa: o Chrome estica até a caixa, e o Firefox usa as dimensões do
+   * viewBox (1163x339) e **repete**.
+   *
+   * No repouso (1163px) as duas leituras dão o mesmo resultado, então o
+   * defeito só aparecia no hover, quando o card vai a 1193px: sobram 30px, e a
+   * faixa repetida era a borda esquerda do gradiente — que é justamente a
+   * parte mais escura dele. Era a listra. Medido na mesma coluna: Firefox
+   * rgb(114,21,179) contra Chrome rgb(131,34,198).
+   *
+   * `100% 100%` diz explicitamente "preenche a caixa", e `no-repeat` fecha a
+   * porta para qualquer motor que ainda tente ladrilhar. Com os dois, os dois
+   * motores batem dentro de 2,4 níveis em toda a faixa.
+   */
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+
+  /*
+   * `flex-basis` e não `flex-grow`, e essa é a parte que custa uma tentativa.
+   *
+   * `flex-grow` reparte o espaço **livre entre os itens que crescem**. Aqui o
+   * card ativo é o único que cresce — os três recolhidos são `shrink-0`, de
+   * largura fixa —, então ele fica com todo o espaço livre de qualquer jeito.
+   * Trocar `flex-grow` de 1 para 1,024 não muda uma vírgula. Foi testado: com
+   * o hover forçado, a largura continuou 1163.
+   *
+   * `flex-basis` resolve o problema porque é o valor **antes** do
+   * preenchimento: a linha em repouso tem que ocupar Main Content inteiro, e
+   * isso é `100% - 357px`, com 357 = 3x107 dos recolhidos + 3x12 de gap.
+   * `flex-grow: 0` impede o item de absorber a sobra, então o basis vira a
+   * largura final. No hover somo 2% da própria linha.
+   */
+  flex: 0 0 calc(100% - 357px);
+  transition: flex-basis 320ms ease-out;
+}
+.eco-card-active:hover {
+  flex-basis: calc(100% - 357px + 2%);
+}
+
+.eco-pillar {
+  width: 107px; /* 59px do texto vertical + 24px de padding de cada lado */
+  transition:
+    width 320ms ease-out,
+    opacity 200ms ease-out;
+}
+.eco-pillar:hover,
+.eco-pillar:focus-visible {
+  width: 121px;
+}
+
 /**
- * Respeito Ã  preferÃªncia do sistema por movimento reduzido.
- * O Motion tambÃ©m Ã© desativado via JS (hook useReducedMotion), mas esta
- * rede de seguranÃ§a cobre animaÃ§Ãµes que escapem do JS (ex.: scroll-behavior).
+ * Respeito à preferência do sistema por movimento reduzido.
+ * O Motion também é desativado via JS (hook useReducedMotion), mas esta
+ * rede de segurança cobre animações que escapem do JS (ex.: scroll-behavior).
  */
 @media (prefers-reduced-motion: reduce) {
   html {
@@ -261,8 +345,8 @@
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    /* O atraso tambÃ©m: sem ele, quem pede menos movimento ainda assistiria Ã 
-       cascata do header, sÃ³ que instantÃ¢nea. */
+    /* O atraso também: sem ele, quem pede menos movimento ainda assistiria à
+       cascata do header, só que instantânea. */
     animation-delay: 0.01ms !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
