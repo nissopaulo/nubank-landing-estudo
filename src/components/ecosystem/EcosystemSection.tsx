@@ -188,6 +188,11 @@ function PillarCard({
      * tela — a mesma regra dos itens da navegação. Um botão que não faz nada
      * não existe em silêncio. `aria-expanded` só nos desenhados, porque é
      * nesses que o clique realmente expande.
+     *
+     * O `cursor` fica no CSS, no bloco `.eco-card`, e não aqui como
+     * utilitária: o UA stylesheet põe `default` em `<button>`, então o card
+     * precisa da regra — e o `aria-disabled` que troca por `not-allowed` fica
+     * ao lado dela para não haver duas fontes.
      */
     <button
       type="button"
@@ -198,8 +203,7 @@ function PillarCard({
       onPointerEnter={precar}
       onFocus={precar}
       style={{ "--eco-ink": pillar.active?.ink } as React.CSSProperties}
-      className="eco-card relative shrink-0 overflow-hidden rounded-[16px] bg-nu-neutral-200 p-0 text-left
-        aria-disabled:cursor-not-allowed"
+      className="eco-card relative shrink-0 overflow-hidden rounded-[16px] bg-nu-neutral-200 p-0 text-left"
     >
       {/* Gradiente em camada própria. `background-image` não é interpolável, e
           o card está crescendo justo na hora da troca — um `background-image`

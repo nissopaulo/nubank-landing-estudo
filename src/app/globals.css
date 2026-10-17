@@ -388,6 +388,30 @@
   flex-basis: 121px;
 }
 
+/*
+ * O cursor.
+ *
+ * Não é detalhe de polimento: é o sinal que diz que o card é clicável, e sem
+ * ele o card cresce no hover e mesmo assim parece texto. Medido no navegador:
+ * `.eco-card` computava `cursor: default`.
+ *
+ * A causa é o UA stylesheet — o Chrome põe `cursor: default` em `<button>`,
+ * e o preflight do Tailwind v4 não desfaz (verificado: a única regra de cursor
+ * em todo o CSS servido era a de `aria-disabled`). Então é um efeito de botão em
+ * vez de link, e `<button>` é a escolha certa aqui por outro motivo — `aria-expanded`
+ * e acionamento por teclado de graça. A correção é a regra, não trocar o elemento.
+ *
+ * O `aria-disabled` continua valendo `not-allowed`, com especificidade maior
+ * para vencer o `pointer` acima. Hoje não há nenhum pilar assim, mas a regra do
+ * botão que não faz nada não pode depender de existir um caso concreto.
+ */
+.eco-card {
+  cursor: pointer;
+}
+.eco-card[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
 .eco-card__grad {
   position: absolute;
   inset: 0;

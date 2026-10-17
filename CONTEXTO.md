@@ -215,7 +215,7 @@ Escrever a mensagem num arquivo e usar `git commit -F <arquivo>`.
 
 | # | Pendência | Onde |
 |---|---|---|
-| 1 | **Desenhar no Figma o último pilar da Ecossystem** (Empresas, `80:77`) na estrutura nova, e então ligá-lo ao carrossel | `ecosystem-pillars.ts` |
+| 1 | ~~Desenhar no Figma o último pilar da Ecossystem~~ — **feito 2026-10-17**, os quatro frames (`52:3`, `76:3`, `77:40`, `80:77`) estão desenhados e os quatro abrem | — |
 | 2 | **Desenhar no Figma os painéis dos submenus da navegação.** É o bloqueio do restante da página | `SiteHeader.tsx` |
 | 3 | Desenhar no Figma as seções `Porque a Nu`, `Cartões`, `Diferenciais` | `SiteFooter.tsx` (`PendingSections`) |
 | 4 | Menu mobile (depende do nº 2) — **adiado**, só depois que o design mobile existir | `SiteHeader.tsx` |
@@ -225,12 +225,12 @@ Escrever a mensagem num arquivo e usar `git commit -F <arquivo>`.
 | 8 | Regra de ESLint proibindo hex literal fora do `globals.css`. Motivo: o gradiente de `HeroSection.tsx:27` tem quatro hex hardcoded no JSX, três deles já existentes como token — e isso passou por lint e revisão. O gradiente da Ecossystem **também** traz literal, mas é o export do Figma em data URI e não tem como ser token. É a única trava de deriva que dá para instalar **antes** do design system existir. Prioridade baixa por decisão do usuário (ver Storybook) | `eslint.config.mjs` |
 | 9 | Montar o catálogo de componentes (Storybook ou equivalente) **depois** que o design system existir — ver decisão 11 | — |
 | 10 | **A descrição do Croma reprova AA em texto pequeno** — 3,48:1 a 16 px, por desenho (a tinta é a própria marca sobre um creme que escurece). Implementado como o Figma pede. Se for para produção, a correção é no design, não no código | `ecosystem-pillars.ts` |
+| 11 | **A descrição do Empresas passa em AA por 0,06:1 de folga** — pior ponto 4,56:1 a 16 px. Passa, mas é o mais apertado dos quatro cards e qualquer ajuste de tom no fundo para mais escuro reprova. Vale revisar junto com a nº 10, que é o caso oposto | `ecosystem-pillars.ts` |
 
-**No Figma hoje existem quatro frames visíveis** — `Hero Section` (`14:446`),
-`Ecossystem Section - Nubank` (`52:3`), `Ecossystem Section - Croma` (`76:3`) e
-`Ecossystem Section - Ultraviolet` (`77:40`) — mais os 4 frames soltos de arte dos
-cartões e **um frame oculto da Ecossystem** (`80:77`, Business) que ainda está na
-estrutura antiga, a que o projeto descartou. Não há design das seções seguintes —
+**No Figma hoje existem cinco frames visíveis** — `Hero Section` (`14:446`) e os
+**quatro** da Ecossystem (`52:3` Nubank, `76:3` Croma, `77:40` Ultraviolet, `80:77`
+Business) — mais os 4 frames soltos de arte dos cartões. Não há nenhum frame
+oculto da Ecossystem: a seção está completa. Não há design das seções seguintes —
 por isso os itens 2 e 3 bloqueiam o resto.
 
 ### Antes de sugerir código
@@ -1261,3 +1261,62 @@ cards em build de produção — Nubank, Croma, Ultravioleta, clique no Empresas
 desativado (não muda nada), volta ao Nubank e Ultravioleta de novo. Soma da linha
 1520 nos seis estados, pessoa com posição e tamanho exatos, CTA e texto do card
 trocando juntos, e exatamente 1 card desativado em todos eles.
+
+### 2026-10-17 — Empresas liberado, e o cursor dos cards
+
+Duas coisas: o quarto pilar (frame `80:77`, agora visível) e um pedido de UX — os
+cards não pareciam clicáveis no hover.
+
+**A Ecossystem está completa.** Os quatro frames estão desenhados, os quatro abrem,
+e nenhum `PROVISÓRIO` sobra. O Empresas é o **quarto** slot, o primeiro caso em
+que o ativo vai para o fim da linha — e a linha **encolhe pela esquerda** em vez de
+crescer para a direita, o oposto de todos os outros. Fecha em 1520 igual, com o
+ativo em x 357 = 3 × 119, e a pessoa em left 735 · 889 × 668.
+
+O gradiente do Empresas é o único não-roxo: **duas paradas em cinza claro**
+(`Neutral/100` e `Neutral/300`, que já eram tokens), e a tinta volta a ser
+`Text/text-brand`. Ou seja: é o Croma invertido — roxo sobre claro, quando o
+Nubank e o Ultravioleta são branco sobre roxo.
+
+**A folha de contraste dos quatro, que é a informação útil desta sessão:**
+
+| Card | Fundo | Tinta | Pior ponto | AA texto pequeno |
+|---|---|---|---|---|
+| Nubank | radial roxo, 3 paradas | branco | 5,95:1 | sim |
+| Ultravioleta | radial roxo, 5 paradas | branco | 6,04:1 | sim |
+| Empresas | radial cinza, 2 paradas | roxo | **4,56:1** | sim, por 0,06 |
+| Croma | linear creme | roxo | 3,48:1 | **nao** |
+
+O que separa quem passa de quem não é a tinta, é o **gradiente**. Os dois que
+passam com folga são os de 3 e 5 paradas em roxo; o que reprova é um linear de
+duas cores com pouco contraste intrínseco. O Empresas passa mas raspando, e isso
+virou pendência nº 11.
+
+**O cursor: `<button>` não mostra a maozinha, e a causa não é o Tailwind.**
+Medido pelo valor computado:
+
+```
+.eco-card            <button>  cursor: default      <- o bug
+header nav button    <button>  cursor: not-allowed (tem aria-disabled)
+header a             <a>       cursor: pointer
+```
+
+É o **UA stylesheet**: o Chrome põe `cursor: default` em `<button>`, e o
+preflight do Tailwind v4 não desfaz — a única regra de cursor em todo o CSS
+servido era a de `aria-disabled`. Ou seja, **todo botão deste projeto mostrava
+seta**, e só ficou visível porque o pedido foi sobre o carrossel. A header escapa
+por acaso, porque todos os botões dela estão desativados.
+
+A correção é a regra `.eco-card { cursor: pointer }` com
+`.eco-card[aria-disabled="true"] { cursor: not-allowed }` ao lado — **não** trocar
+o elemento. `<button>` continua certo aqui: `aria-expanded` e acionamento por
+teclado saem de graça, e um `<a>` sem `href` não é focável. Removi a utilitária
+`aria-disabled:cursor-not-allowed` do JSX para o cursor ter fonte única; ela
+continua em uso na header, que é outro componente.
+
+**A lição de método:** eu ia procurar a regra no CSS e dizer que estava lá. Isso
+não prova nada — a regra pode existir e perder para outra de especificidade maior,
+ou ser anulada por `pointer-events` do ancestral. **Só o valor computado pelo
+navegador responde**, e comparar com o esperado derivado do atributo é o que fecha
+o teste. Vale para qualquer propriedade de aparência aparente, que é justamente
+o tipo de coisa em que "o CSS está certo" e "aparece certo" divergem.

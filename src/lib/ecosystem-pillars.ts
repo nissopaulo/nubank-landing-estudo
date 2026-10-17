@@ -3,21 +3,23 @@
  *
  * ## O que existe no Figma hoje
  *
- * Três frames visíveis na estrutura nova: `Ecossystem Section - Nubank` (node
- * `52:3`), `Ecossystem Section - Croma` (node `76:3`) e `Ecossystem Section -
- * Ultraviolet` (node `77:40`). O quarto — `80:77` Business — segue oculto e
- * ainda na estrutura antiga, a que este projeto descartou.
+ * Os quatro frames visíveis na estrutura nova: `Ecossystem Section - Nubank`
+ * (node `52:3`), `- Croma` (`76:3`), `- Ultraviolet` (`77:40`) e `- Business`
+ * (`80:77`). **Os quatro pilares estão desenhados** — nenhum `PROVISÓRIO`
+ * sobra aqui.
  *
- * Todos os quatro pilares aparecem no carrossel desde o começo, porque é assim
- * que o design mostra: **os quatro cards existem sempre, na mesma ordem, e um
- * deles é o ativo**. E o ativo **não fica sempre no mesmo lugar**: no frame do
- * Nubank ele é o primeiro card, no do Croma o segundo, no do Ultravioleta o
- * terceiro. Por isso o componente tem quatro slots fixos em vez de "um card
- * ativo mais três botões", e a animação de troca é o rebalanceamento da linha.
+ * Todos os quatro aparecem no carrossel desde o começo, porque é assim que o
+ * design mostra: **os quatro cards existem sempre, na mesma ordem, e um deles é
+ * o ativo**. E o ativo **não fica sempre no mesmo lugar**: no frame do Nubank
+ * ele é o primeiro card, no do Croma o segundo, no do Ultravioleta o terceiro e
+ * no do Empresas o quarto. Por isso o componente tem quatro slots fixos em vez de
+ * "um card ativo mais três botões", e a animação de troca é o rebalanceamento da
+ * linha.
  *
  * `active` ausente = pilar **ainda não desenhado**. Ele aparece recolhido, sem
  * conteúdo, e não é clicável. Nenhum texto, cor ou geometria foi inventado para
- * ele.
+ * ele. Hoje não há nenhum, mas a regra fica porque é o que impede a próxima
+ * adição de virar conteúdo inventado por omissão.
  */
 
 export type Pillar = {
@@ -164,10 +166,42 @@ export const PILLARS: Pillar[] = [
       personWidth: (928 / MAIN_W) * 100,
     },
   },
-  // PROVISÓRIO — Empresas ainda não foi redesenhado na estrutura nova; o frame
-  // `80:77` segue oculto e ainda na antiga. Fica recolhido e não-clicável até
-  // existir.
-  { id: "empresas", name: "Empresas", person: "/images/peoples/business-people.webp" },
+  {
+    id: "empresas",
+    name: "Empresas",
+    person: "/images/peoples/business-people.webp",
+    active: {
+      /**
+       * Export do Figma em data URI, e aqui com **duas** paradas só.
+       *
+       * As duas cores são tokens que já existiam — `Neutral/100` (#f3f4f6) e
+       * `Neutral/300` (#d1d5db) —, que é a diferença deste card para os outros
+       * três: nenhum gradiente roxo. Ainda vai como data URI porque o
+       * `gradientTransform` em `matrix(...)` continua não sendo expressável em
+       * CSS, mesmo com paradas nos dois extremos.
+       */
+      gradient: `url("data:image/svg+xml;utf8,<svg viewBox='0 0 1163 339' xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none'><rect x='0' y='0' height='100%' width='100%' fill='url(%23grad)' opacity='1'/><defs><radialGradient id='grad' gradientUnits='userSpaceOnUse' cx='0' cy='0' r='10' gradientTransform='matrix(72.45 -11.2 3.2647 21.118 581.5 169.5)'><stop stop-color='rgba(243,244,246,1)' offset='0'/><stop stop-color='rgba(209,213,219,1)' offset='1'/></radialGradient></defs></svg>")`,
+      /**
+       * `Text/text-brand` (#820ad1) — e é a tinta de um gradiente **claro**, o
+       * inverso do Croma, que também é roxo mas sobre creme.
+       *
+       * Passa em AA para texto pequeno, mas por **0,06:1** de folga: pior ponto
+       * 4,56:1 na faixa da descrição, e a ponta mais escura do gradiente
+       * (#d1d5db) dá 4,89:1. É o mais apertado dos quatro cards e não tem
+       * margem nenhuma — qualquer ajuste de tom no fundo, para mais escuro,
+       * reprova. Registrado no README para não virar surpresa depois.
+       */
+      ink: "#820ad1",
+      desc: [
+        "Soluções financeiras para simplificar a rotina da",
+        "sua empresa e ajudar você a focar no crescimento do negócio.",
+      ],
+      body: "O Nu Empresas foi desenvolvido para facilitar a gestão financeira de empreendedores e empresas. Com conta PJ, Pix, pagamentos, cartões e soluções de crédito e investimentos conforme a disponibilidade, você pode organizar as movimentações do negócio em um só lugar. Uma experiência digital pensada para reduzir a burocracia e dar mais praticidade ao gerenciamento financeiro da sua empresa.",
+      cta: "Conheça o Empresas",
+      personLeft: (735 / MAIN_W) * 100,
+      personWidth: (889 / MAIN_W) * 100,
+    },
+  },
 ];
 
 /** Índice do pilar ativo no primeiro render. */
