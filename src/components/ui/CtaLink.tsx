@@ -1,7 +1,7 @@
 import type { AnchorHTMLAttributes, ReactNode } from "react";
 import Link from "next/link";
 
-type Variant = "solid" | "outline" | "ghost";
+type Variant = "solid" | "outline" | "ghost" | "brand";
 
 const VARIANTS: Record<Variant, string> = {
   // Action/action-secondary sobre Action/action-secondary-text
@@ -15,6 +15,25 @@ const VARIANTS: Record<Variant, string> = {
   // clara do gradiente fica em 4,17:1; o branco chega a 4,92:1 e na diferença
   // é imperceptível sobre roxo.
   ghost: "text-white hover:text-nu-action-surface",
+  /*
+   * Fundo em Action/action-primary (#820ad1), com texto branco — o par exato do
+   * "Quero ser Nubank" da header no estado condensado. O CTA "Conheça o Nubank"
+   * da Ecossystem usa este, para que os dois sejam indistinguíveis.
+   *
+   * A cadeia de interação também é a mesma (brand → Purple/800 → Purple/950,
+   * escurecendo), e ela não é decorativa: com a variante `solid` o hover iria
+   * para branco e o active para Neutral/100, e um texto claro sobre qualquer um
+   * dos dois dá menos de 1,2:1 — o texto some.
+   *
+   * Os valores são os mesmos que a header escreve em `group-data-[condensed]`,
+   * e as duas cópias precisam continuar iguais. Não dá para compartilhar a
+   * string: o Tailwind só enxerga classes escritas por extenso no fonte, então
+   * uma constante montada por concatenação não entraria no CSS gerado.
+   *
+   * Contraste medido: 7,21:1 no repouso, 9,33:1 no hover, 15,24:1 no active.
+   */
+  brand:
+    "bg-nu-brand text-white hover:bg-nu-purple-800 active:bg-nu-purple-950",
 };
 
 const BASE =

@@ -62,6 +62,8 @@ src/
     layout.tsx         fontes, idioma (pt-BR), metadados, MotionProvider
     page.tsx           composição da página
   components/
+    ecosystem/
+      EcosystemSection.tsx  carrossel de pilares, um aberto por vez
     hero/
       HeroSection.tsx  seção da Hero (node 14:446)
       CardsShowcase.tsx composição de cards: entrada, parallax, ponteiro
@@ -74,19 +76,21 @@ src/
     motion-provider.tsx MotionConfig reducedMotion="user"
   lib/
     hero-cards.ts      geometria dos cards lida do Figma
+    ecosystem-pillars.ts  pilares e conteúdo do card ativo
     motion.ts          durações, curvas e variantes compartilhadas
     use-prefers-reduced-motion.ts
 public/images/
   brand/               logo e carets (SVG exportados do Figma)
   cards/               artes dos cartões (WebP)
+  peoples/             recorte de cada pilar (WebP, alfa)
 ```
 
 ---
 
 ## Design tokens
 
-Todos os valores vêm das **variáveis do Figma** (nó `14:446`) e estão em
-`src/app/globals.css`:
+Todos os valores vêm das **variáveis do Figma** (nós `14:446` e `52:3`) e estão
+em `src/app/globals.css`:
 
 | Token | Valor | Origem no Figma |
 |---|---|---|
@@ -96,6 +100,7 @@ Todos os valores vêm das **variáveis do Figma** (nó `14:446`) e estão em
 | `--color-nu-purple-950/800/600/400` | `#2e1065` `#6a08ad` `#9b2fe8` `#c084fc` | `Purple/*` |
 | `--color-nu-neutral-100/200/300/400/800` | `#f3f4f6` `#e5e7eb` `#d1d5db` `#9ca3af` `#1c1c1e` | `Neutral/*` |
 | `--color-nu-text-primary` | `#111111` | `Text/text-primary` |
+| `--color-nu-text-tertiary` | `#6b7280` | `Text/text-tertiary` |
 | `--color-nu-hero-stop-3` | `#d8b4fe` | lido direto do gradiente (não é token) |
 
 Tipografia: **Montserrat** (variável), carregada com `next/font` e servida
@@ -201,6 +206,166 @@ de layout, não um valor do design** — ajuste em `globals.css` à vontade.
 
 ---
 
+## Ecossystem Section
+
+Figma `Ecossystem Section - Nubank` (nó `52:3`, 1920×919). Carrossel de pilares:
+um aberto por vez, o resto recolhido com o nome lido de baixo para cima.
+
+### Só o Nubank está desenhado
+
+O Figma tem **um** frame visível — o Nubank, na estrutura nova — e três ocultos
+(`76:3` Croma, `77:40` Ultraviolet, `80:77` Business) que ainda estão na estrutura
+antiga, que é a que este projeto descartou. Então o carrossel e os quatro pilares
+existem, e **só o primeiro abre**.
+
+Os três recolhidos são botões de verdade com `aria-disabled` e aviso para leitor
+de tela — a mesma regra dos itens da navegação: um botão que não faz nada não
+existe em silêncio. **Nada foi inventado** para eles: nome e foto vieram do
+Figma e dos assets, e não há descrição, parágrafo nem CTA porque ainda não
+existem no design. Quando os três forem redesenhados, o que entra é um
+`useState` com o índice e um `onClick` no botão — o `key` do `AnimatePresence`
+já está lá, e é ele que faz a troca reaproveitar a animação.
+
+### O gradiente do card ativo vai como SVG, não como CSS
+
+O `radialGradient` do Figma vem com `gradientTransform` em `matrix(...)`, que o
+CSS não consegue expressar: ele achata a elipse e ainda a gira. A alternativa
+era um `radial-gradient(62% 187% at 60.55% 52%, ...)`, que parece equivalente e
+não é — sem a rotação de ~25°, o terço direito do card clareia e o gradiente
+perde o peso que tem no design. Por isso o export vai como **data URI**, que é
+literalmente o que o Figma produziu.
+
+Um detalhe que custa caro: os `rgba()` do export **não podem virar hex**. Dentro
+de `url("data:...")` um `#` não escapado é lido como fragmento de URL e trunca a
+string no meio — o gradiente simplesmente não aparece, sem erro no console.
+
+### Fidelidade medida contra o Figma (nó `52:3`)
+
+Comparação pixel a pixel entre o render do frame e o build de produção, ambos
+normalizados na grade de 1920×919:
+
+| Elemento | Figma | Implementado |
+|---|---|---|
+| Título da seção | x 202,8 · y 117,6 · 520,8×122,4 | x 202 · y 117 · 521×123 |
+| Card ativo | x 200,4 · y 356,4 · 1162,8×338,4 | x 200 · y 356 · 1163×339 |
+| Card recolhido 1 | x 1375,2 · 106,8 de largura | x 1375 · 107 |
+| Card recolhido 2 | x 1494 · 106,8 | x 1494 · 107 |
+| Card recolhido 3 | x 1612,8 · 108 | x 1613 · 107 |
+| Botão do CTA | x 1496,4 · y 759,6 · 223,2×39,6 | x 1500 · y 759 · 220×40 |
+| Parágrafo | 3 linhas a partir de y 763 | 3 linhas a partir de y 762 |
+
+A altura dos cards (339 px) **não é declarada no CSS**: ela sai da sobra do
+`Main Content` (595 px − título − gap de 100 px), com a linha em `flex-1` e os
+cards esticados por `items-stretch`. Se a fonte renderizar o meio pixel a mais,
+o card encolhe junto em vez de estourar a seção.
+
+Os 3,2 px de diferença no CTA vêm do ícone: o projeto usa Phosphor
+(`CaretRight`) no lugar do SVG do Figma, e a avance width dos dois não é igual.
+
+### A tinta dos cards recolhidos
+
+O Figma põe **branco** sobre `Action/action-disabled` (`#e5e7eb`), o que dá
+**1,24:1** — reprova até o mínimo de 3:1 de texto grande, e o rótulo tem 48 px.
+A superfície continua exatamente a do design; só a tinta passa para
+`Neutral/800` (`#1c1c1e`), e o contraste vai a **13,74:1**. A leitura de
+"desabilitado" vem da superfície cinza, não da cor do texto.
+
+### Onde cada cor de texto entra
+
+Só **um** texto da seção usa `Text/text-tertiary`: o parágrafo ao lado do CTA
+("O Nubank simplifica a maneira como você cuida do seu dinheiro…"). É o que o
+Figma pede — variável `Text/text-tertiary`, nó `52:164` — e dá **4,83:1** sobre
+o branco da seção.
+
+Todo o resto é branco:
+
+| Texto | Cor | Contraste |
+|---|---|---|
+| Título da seção | `Text/text-brand` `#820ad1` | 6,59:1 sobre branco |
+| Nome no card ativo | branco | 5,95:1 no pior ponto do gradiente |
+| Descrição no card ativo | branco | 5,95:1 |
+| Parágrafo ao lado do CTA | `Text/text-tertiary` `#6b7280` | 4,83:1 |
+| Rótulo do card recolhido | `Neutral/800` `#1c1c1e` | 13,74:1 sobre `#e5e7eb` |
+
+**O tertiary não serve sobre o gradiente do card.** Ele chega a 1,23:1 no pior
+ponto da área da descrição, e 1,93:1 no melhor — nenhum canto passa. Não é
+ajuste de tom: para chegar a 4,5:1 o texto precisaria de luminância ≈ 0,72, um
+cinza visualmente indistinguível do branco. Houve uma tentativa de colocá-lo ali
+por leitura equivocada do pedido, e foi revertida.
+
+### O CTA e a variante `brand`
+
+`CtaLink` ganhou uma quarta variante, `brand`, que é **exatamente** o par e a
+cadeia de interação do "Quero ser Nubank" da header no estado condensado:
+
+```
+bg-nu-brand text-white hover:bg-nu-purple-800 active:bg-nu-purple-950
+```
+
+O CTA "Conheça o Nubank" da Ecossystem usa essa variante, então os dois botões
+são indistinguíveis — inclusive no hover e no active.
+
+| Estado | Fundo | Contraste com o texto branco |
+|---|---|---|
+| repouso | `#820ad1` | 7,21:1 ✅ |
+| hover | `Purple/800` `#6a08ad` | 9,33:1 ✅ |
+| active | `Purple/950` `#2e1065` | 15,24:1 ✅ |
+
+**Por que a variante existe.** O botão usava `variant="solid"` com um `style`
+inline por cima, que fixava as cores de repouso mas **não** tocava no `hover` nem
+no `active` — que continuavam vindo da `solid`. O texto claro sobre o branco do
+hover e sobre o `Neutral/100` do active dava menos de 1,2:1: some.
+
+**A duplicação com a header é intencional e precisa continuar em sincronia.** A
+header escreve os mesmos valores em `group-data-[condensed]:`. Não dá para
+extrair para uma constante compartilhada: o Tailwind só enxerga classes
+escritas por extenso no fonte, então uma string montada por concatenação não
+entraria no CSS gerado. É uma restrição da ferramenta.
+
+### A pessoa
+
+Recorte em WebP com alfa, posicionado em absoluto contra o `Main Content` nas
+mesmas coordenadas do Figma (`left-210px top-0`), convertidas em fração da
+largura dele para escalarem sem distorcer. A altura não é declarada de propósito:
+o asset é 1200×896, e 1129 px de largura dá 842,99 px de altura — que é o
+`h-[842.987px]` do design, com a proporção garantida pela própria imagem.
+
+O `overflow-clip` do `Main Content` faz duas coisas: recorta a figura na borda
+inferior do card, que é como o design corta a pessoa, e esconde a imagem
+durante a entrada.
+
+### assets: PNG → WebP
+
+Os quatro recortes vieram em PNG e foram convertidos com o `sharp` (quality 86,
+alfa preservado). O do Nubank foi depois **substituído por um upscale 2×**,
+reexportado do Figma pelo autor:
+
+| Arquivo | Dimensões | Origem | WebP | |
+|---|---|---|---|---|
+| `nubank-people` | **2400×1792** | upscale 2× | 197,1 KB | |
+| `croma-people` | 2400×1599 | 1.917,4 KB | 152,0 KB | −92,1% |
+| `ultraviolet-people` | 2400×1599 | 1.821,4 KB | 134,8 KB | −92,6% |
+| `business-people` | 2384×1792 | 1.993,1 KB | 156,5 KB | −92,2% |
+
+O upscale do Nubank importa: a versão anterior tinha 1200×896, ou seja **1,06×**
+da largura de exibição (1129px a 1920) — o navegador já estava esticando, e em
+tela de alta densidade isso aparecia como softness. Com 2400×1792 são 2,1×, e a
+proporção é idêntica (1,33929), então nenhum valor de layout mudou.
+
+Para regerar:
+
+```bash
+node -e "const s=require('sharp');const f=require('fs');\
+for(const n of f.readdirSync('public/images/peoples').filter(x=>x.endsWith('.png')))\
+s('public/images/peoples/'+n).webp({quality:86,alphaQuality:100,effort:6})\
+.toFile('public/images/peoples/'+n.replace(/\.png$/,'.webp'))"
+```
+
+Os PNGs de origem foram removidos do repositório depois da conversão (mesmo
+procedimento das artes dos cartões). Todos são reexportáveis do Figma.
+
+---
+
 ## Movimento
 
 O Figma **não define animação** (`get_motion_context` retorna vazio), então o
@@ -214,6 +379,24 @@ movimento foi desenhado aqui:
 4. **Header** — condensa e ganha fundo ao rolar; na entrada, logo, itens de nav
    e CTAs descem em cascata (ver a seção da entrada em CSS, abaixo).
 5. **Texto** — reveal escalonado com `cubic-bezier(0.16, 1, 0.3, 1)`.
+6. **Ecossystem** — a pessoa do pilar sobe de baixo para cima, e desce quando o
+   tópico troca (ver a seção do Ecossystem).
+
+### A pessoa que sobe de baixo para cima
+
+O deslocamento é em porcentagem **da altura da própria imagem**, e o que esconde
+não é `opacity` — é a posição. A pessoa nasce 100% da própria altura abaixo, de
+onde o `overflow-clip` do `Main Content` a recorta: ela está renderizada o tempo
+todo, e é só a translação que a traz para a vista. O HTML do servidor já sai
+com `transform: translateY(100%)`, então não há flash antes da hidratação.
+
+Por que 100% basta aqui, quando os cards da Hero precisam de 150%: a pessoa tem
+843 px de altura e a janela de recorte tem 595 px, então qualquer deslocamento
+acima de ~70% já a põe inteiramente fora da tela.
+
+O caminho de saída (`exit`, desce e some) ainda **não roda** — só existe um pilar
+desenhado. Ele fica pronto para quando os outros três entrarem, e é a única
+parte da animação que precisa de olho humano.
 
 ### O leque dos cards
 
@@ -393,6 +576,9 @@ com `PROVISÓRIO`:
 - **Menu mobile.** Ausente; depende dos painéis.
 - **Seções seguintes** (`Porque a Nu`, `Cartões`, `Diferenciais`) — hoje existe
   um bloco "Em construção" só para o CTA "Explore o Universo Nu" ter destino.
+- **Os três pilares recolhidos do Ecossystem** — Croma, Ultravioleta e Empresas
+  já existem no carrossel com nome e foto, mas o Figma só tem o frame do Nubank.
+  Não há descrição, parágrafo nem CTA para eles, e nenhum foi inventado.
 - **Texto do rodapé** com o aviso legal — redigido para este estudo.
 
 Além disso, **não há** números de usuários, taxas, limites, depoimentos nem
@@ -461,9 +647,11 @@ redirecionadores — esta página não tem função de cadastro.
 
 ## Próximos passos
 
-1. Desenhar no Figma os submenus da navegação e as seções restantes.
-2. Revisar o texto do rodapé e a composição mobile dos cards.
-3. Exportar o ícone do app definitivo do Figma.
+1. Desenhar no Figma os três pilares restantes da Ecossystem Section (Croma,
+   Ultravioleta, Empresas) na estrutura nova — e então ligá-los ao carrossel.
+2. Desenhar no Figma os submenus da navegação e as seções restantes.
+3. Revisar o texto do rodapé e a composição mobile dos cards.
+4. Exportar o ícone do app definitivo do Figma.
 
 ## Deploy
 

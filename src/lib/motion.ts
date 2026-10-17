@@ -54,6 +54,36 @@ export const staggerContainer = (stagger = 0.08, delayChildren = 0): Variants =>
 });
 
 /**
+ * Entrada da pessoa do Ecossystem, de baixo para cima.
+ *
+ * O deslocamento é em porcentagem **da altura da própria imagem**, e o
+ * esconde não é `opacity`: é a posição. A pessoa nasce 100% da própria altura
+ * abaixo, de onde o `overflow-clip` do `Main Content` a recorta — ela está
+ * renderizada o tempo todo, e é só a translação que a traz para a vista.
+ *
+ * Por que 100% basta aqui, quando os cards da Hero precisam de 150%: a pessoa
+ * tem 843px de altura e a janela de recorte tem 595px, então qualquer
+ * deslocamento acima de ~70% já a põe inteiramente fora da tela. A folga é de
+ * propósito — se o card ou a viewport mudarem de proporção, sobra margem.
+ *
+ * `exit` é o caminho espelho: a pessoa que sai desce e some. Ele ainda não
+ * roda, porque só existe um pilar desenhado (ver `lib/ecosystem-pillars.ts`) —
+ * fica pronto para quando os outros três entrarem.
+ */
+export const personRise: Variants = {
+  hidden: { y: "100%" },
+  visible: {
+    y: 0,
+    transition: { duration: DURATION.slow, ease: EASE_OUT_EXPO },
+  },
+  exit: {
+    y: "100%",
+    opacity: 0,
+    transition: { duration: DURATION.base, ease: EASE_OUT_EXPO },
+  },
+};
+
+/**
  * Abertura em leque dos cards da Hero.
  *
  * Cada card sai com `from` graus a mais do que a rotação final do design e

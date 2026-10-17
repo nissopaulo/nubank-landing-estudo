@@ -9,7 +9,8 @@
 - **Projeto:** landing page de estudo da Nu, reconstruída a partir de um design
   autoral no Figma. Sem vínculo oficial com a Nu Pagamentos.
 - **Figma:** https://www.figma.com/design/16kp2jwaILwDfp44uYuNkP
-- **Frame implementado:** `Hero Section` (node `14:446`, 1920×1080)
+- **Frames implementados:** `Hero Section` (node `14:446`, 1920×1080) e
+  `Ecossystem Section - Nubank` (node `52:3`, 1920×919)
 - **Produção:** https://nubank-landing-estudo.vercel.app
 - **Repositório:** https://github.com/nissopaulo/nubank-landing-estudo
 
@@ -17,9 +18,11 @@
 
 ## Estado atual
 
-Uma única tela implemented e funcionando: a Hero, com header fixo, cards em
-parallax e rodapé. Abaixo dela existe um bloco **"Em construção"** que é
-provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
+Duas telas implementadas e funcionando. A **Hero**, com header fixo, cards em
+parallax e rodapé. Abaixo dela a **Ecossystem Section**, carrossel de pilares —
+com apenas o Nubank desenhado, porque no Figma só existe o frame dele na
+estrutura nova. Entre as duas e o rodapé existe um bloco **"Em construção"** que
+é provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
 
 | | |
 |---|---|
@@ -146,7 +149,14 @@ Treze viraram token; duas são alias do mesmo valor.
 | `Action/action-secondary` | `#f3e8ff` | `--color-nu-action-surface` |
 | `Action/action-primary-text` | `#ffffff` | `--color-nu-action-text` |
 | `Action/action-secondary-text` **ou** `Text/text-brand` | `#820ad1` | `--color-nu-brand` |
+| `Text/text-tertiary` | `#6b7280` | `--color-nu-text-tertiary` |
 | — (não é variable) | `#d8b4fe` | `--color-nu-hero-stop-3` |
+
+**Leitura do nó `52:3` (Ecossystem), 2026-10-17:** mais 8 variables, e nenhuma
+cor nova — `Text/text-tertiary` (`#6b7280`) era a única que faltava e virou
+token. `Background/bg-primary` (`#ffffff`), `Action/action-disabled` (`#e5e7eb`,
+mesmo valor de `Neutral/200`) e `Action/action-primary` (`#820ad1`, mesmo valor
+de `Text/text-brand`) já estavam cobertos por tokens existentes.
 
 **Três pontos para resolver ao criar o design system:**
 
@@ -186,18 +196,21 @@ Escrever a mensagem num arquivo e usar `git commit -F <arquivo>`.
 
 | # | Pendência | Onde |
 |---|---|---|
-| 1 | **Desenhar no Figma os painéis dos submenus da navegação.** É o próximo passo combinado. | `SiteHeader.tsx` |
-| 2 | Desenhar no Figma as seções `Porque a Nu`, `Cartões`, `Diferenciais` | `SiteFooter.tsx` (`PendingSections`) |
-| 3 | Menu mobile (depende do nº 1) — **adiado**, só depois que o design mobile existir | `SiteHeader.tsx` |
-| 4 | Exportar do Figma o ícone do app definitivo (hoje é um quadrado placeholder) | `src/app/icon.svg` |
-| 5 | Revisar texto do rodapé com o usuário (a parte mobile dos cards saiu da lista) | — |
-| 6 | Limpar comentário desatualizado em `HeroSection.tsx` — ainda cita `Neutral/200`, 2,74:1 e "ainda não atinge 4.5:1". O estado real é branco puro a 5,52:1, passando AA | `src/components/hero/HeroSection.tsx` |
-| 7 | Regra de ESLint proibindo hex literal fora do `globals.css`. Motivo: o gradiente de `HeroSection.tsx:27` tem quatro hex hardcoded no JSX, três deles já existentes como token — e isso passou por lint e revisão. É a única trava de deriva que dá para instalar **antes** do design system existir. Prioridade baixa por decisão do usuário (ver Storybook) | `eslint.config.mjs` |
-| 8 | Montar o catálogo de componentes (Storybook ou equivalente) **depois** que o design system existir — ver decisão 11 | — |
+| 1 | **Desenhar no Figma os três pilares restantes da Ecossystem** (Croma, Ultravioleta, Empresas) na estrutura nova, e então ligá-los ao carrossel | `ecosystem-pillars.ts` |
+| 2 | **Desenhar no Figma os painéis dos submenus da navegação.** É o bloqueio do restante da página | `SiteHeader.tsx` |
+| 3 | Desenhar no Figma as seções `Porque a Nu`, `Cartões`, `Diferenciais` | `SiteFooter.tsx` (`PendingSections`) |
+| 4 | Menu mobile (depende do nº 2) — **adiado**, só depois que o design mobile existir | `SiteHeader.tsx` |
+| 5 | Exportar do Figma o ícone do app definitivo (hoje é um quadrado placeholder) | `src/app/icon.svg` |
+| 6 | Revisar texto do rodapé com o usuário (a parte mobile dos cards saiu da lista) | — |
+| 7 | Limpar comentário desatualizado em `HeroSection.tsx` — ainda cita `Neutral/200`, 2,74:1 e "ainda não atinge 4.5:1". O estado real é branco puro a 5,52:1, passando AA | `src/components/hero/HeroSection.tsx` |
+| 8 | Regra de ESLint proibindo hex literal fora do `globals.css`. Motivo: o gradiente de `HeroSection.tsx:27` tem quatro hex hardcoded no JSX, três deles já existentes como token — e isso passou por lint e revisão. O gradiente da Ecossystem **também** traz literal, mas é o export do Figma em data URI e não tem como ser token. É a única trava de deriva que dá para instalar **antes** do design system existir. Prioridade baixa por decisão do usuário (ver Storybook) | `eslint.config.mjs` |
+| 9 | Montar o catálogo de componentes (Storybook ou equivalente) **depois** que o design system existir — ver decisão 11 | — |
 
-**No Figma hoje só existe o frame `Hero Section`** (mais os 4 frames soltos de
-arte dos cartões). Não há design das seções seguintes — por isso os itens 1 e 2
-bloqueiam o resto.
+**No Figma hoje existem dois frames visíveis** — `Hero Section` (`14:446`) e
+`Ecossystem Section - Nubank` (`52:3`) — mais os 4 frames soltos de arte dos
+cartões e **três frames ocultos da Ecossystem** (`76:3`, `77:40`, `80:77`) que
+ainda estão na estrutura antiga, a que o projeto descartou. Não há design das
+seções seguintes — por isso os itens 2 e 3 bloqueiam o resto.
 
 ### Antes de sugerir código
 
@@ -780,7 +793,9 @@ contra cinza chapado `neutral-500`, a geometria do radial do Ultravioleta, o
 metalizado medido em 6,00:1) saíram daqui junto com o código. Se a seção voltar,
 **reler os quatro frames do Figma** (`52:3`, `52:188`, `52:255`, `52:293`) em vez
 de confiar nessas notas — o que vale como método continua valendo: valor que
-existe no design se lê no design, não se calibra por comparação visual.
+existe no design se lê no design, não se calibra por comparação visual. (Os
+nós citados ali estavam errados: no estado atual do arquivo são `52:3`, `76:3`,
+`77:40` e `80:77`.)
 
 **Lição de método, que vem da sequência e não só do resultado:** a última
 iteração mexeu em três coisas ao mesmo tempo (card fechado chapado, tinta movida
@@ -792,3 +807,142 @@ variáveis separáveis para que cada uma possa ser medida sozinha.
 **Próximo passo:** aguardando o usuário definir como a seção vai ser refeita. A
 pendência nº 1 (painéis dos submenus no Figma) continua sendo o bloqueio do
 restante da página e não depende desta seção.
+
+### 2026-10-17 — Ecossystem Section refeita do zero, só com o Nubank
+
+O usuário redesenhou a seção no Figma e pediu para começar por partes: só o pilar
+do Nubank, os outros três depois. Não é restauração da versão removida — a
+estrutura mudou o bastante para que quase nada aproveitasse.
+
+**O que existe no Figma:** um frame visível, `52:3` "Ecossystem Section -
+Nubank" (1920x919), e três ocultos (`76:3` Croma, `77:40` Ultraviolet, `80:77`
+Business) que continuam na estrutura antiga. Então existe **um** pilar
+desenhado. Os três recolhidos entram com nome e foto — que vieram do design e
+dos assets — e sem descrição, parágrafo nem CTA, porque nada foi inventado. São
+`<button>` com `aria-disabled` e aviso para leitor de tela, o mesmo padrão dos
+itens da navegação.
+
+**Armadilha do `get_metadata`:** devolveu `52:3` como frame **vazio**, sem
+filhos, mesmo com o frame cheio e visível. Quem acreditar nele conclui que o
+design não existe; quem renderiza (`get_screenshot`) ou pede o
+`get_design_context` vê o conteúdo. **Ao esbarrar num nó vazio, confirme pelo
+render antes de concluir qualquer coisa.**
+
+**O `#` não pode entrar no data URI.** O gradiente do card ativo é o export do
+Figma: um `radialGradient` com `gradientTransform` em `matrix(...)`, que o CSS
+não expressa (achata a elipse e ainda a gira) — então ele vai como data URI. Na
+primeira tentativa converti os `rgba()` do export para hex e **o card roxo
+simplesmente não apareceu**, sem erro no console: dentro de `url("data:...")` um
+`#` não escapado é lido como fragmento de URL e trunca a string no meio.
+Deixei os `rgba()` literais do Figma.
+
+**A quebra de linha do card é do dado, não da largura.** A descrição tem duas
+linhas compostas no Figma. Como o card ativo tem 1163px e sobra 1115px de área
+útil, o texto correria numa linha só e passaria por baixo da pessoa. Largura
+máxima seria chute; o que se reproduz é a composição.
+
+**A altura dos cards não é declarada.** Sai da sobra: `Main Content` com 595px,
+menos o título, menos o gap de 100px. A linha é `flex-1` e os cards esticam por
+`items-stretch`. Se a fonte renderizar meio pixel a mais, o card encolhe em vez
+de estourar a seção.
+
+**Verificação por pixel, não por olho.** Comparando o render do frame com o build
+de produção, os dois na grade de 1920x919: card ativo 1163x339 em (200; 356)
+contra 1162,8x338,4 em (200,4; 356,4); os três recolhidos em x 1375 / 1494 /
+1613 com 107 de largura, contra 1375,2 / 1494 / 1612,8 com 106,8; título e
+parágrafo batendo dentro de 1px. Os 3,2px de diferença no CTA são do ícone —
+Phosphor no lugar do SVG do Figma tem outra avance width.
+
+Foi preciso o truque de sempre: esconder header e Hero e zerar a duração da
+animação num build de verificação, para a seção sair exatamente no frame. Os
+três ajustes temporários foram revertidos e conferidos por `grep`.
+
+**Contraste do card recolhido — desvio aceito pelo usuário.** O Figma põe branco
+sobre `Action/action-disabled` (`#e5e7eb`): **1,24:1**, que reprova até o mínimo
+de 3:1 de texto grande, e o rótulo tem 48px. Mantida a superfície exatamente
+como o design, a tinta passa para `Neutral/800` e vai a **13,74:1** — a leitura
+de "desabilitado" vem da superfície, não da cor do texto.
+
+**Assets:** os quatro PNGs somavam 6.362 KB. Convertidos com o `sharp` (já no
+`node_modules`) para WebP com alfa. Os PNGs foram removidos depois da conversão
+(mesmo procedimento das artes dos cartões) e estão preservados em
+`%TEMP%\opencode\peoples-png-originais`.
+
+**A pessoa sobe de baixo para cima** com `personRise`, em `lib/motion.ts`. O
+deslocamento é % da altura da própria imagem e o que esconde é a posição, não
+`opacity` — o HTML do servidor já sai com `transform: translateY(100%)`, então
+não há flash antes da hidratação. 100% basta aqui (a pessoa tem 843px e a
+janela de recorte tem 595px) onde os cards da Hero precisam de 150%. O caminho
+de saída, que desce e some, **ainda não roda** — só existe um pilar — e é a
+única parte da animação que precisa de olho humano.
+
+**Próximo passo:** o usuário redesenha os três pilares no Figma. Aí entra um
+`useState` com o índice e um `onClick` no botão; o `key` do `AnimatePresence` já
+está lá e é ele que faz a troca reaproveitar a animação.
+
+### 2026-10-17 — cor da descrição e a interação do CTA
+
+Duas mudanças pedidas, ambas sobre a Ecossystem que acabou de subir.
+
+**1. Descrição do card ativo em `Text/text-tertiary`.** Implementado — e
+**revertido no mesmo dia**, porque o texto do pedido apontava para outro
+elemento.
+
+O que aconteceu, na ordem:
+
+1. O pedido dizia "a descrição abaixo dos cards/pilares" e vinha com uma
+   captura em que a descrição **de dentro** do card aparecia cinza. Eu li como a
+   de dentro e pus `#6b7280` ali.
+2. Antes de editar, reli o Figma: `get_design_context` no nó `52:156` devolvia
+   `text-white`, e o render do `52:3` saiu idêntico ao da sessão anterior — ou
+   seja, **a alteração não estava no arquivo**. Apliquei mesmo assim, tratando a
+   captura como a fonte, e registrei a divergência.
+3. A medição do resultado deu **1,23:1 no pior ponto** da área do texto e
+   **1,93:1 no melhor** — nenhum canto passava. Com branco, 5,95:1.
+4. O usuário esclareceu: o tertiary é do **parágrafo ao lado do CTA**, que é o
+   único "abaixo dos cards/pilares" — e que **já** estava em text-tertiary desde
+   a primeira implementação. A descrição de dentro volta ao branco.
+
+Duas lições que valem mais que o resultado:
+
+- **A pergunta certa antes de editar uma cor é "qual elemento?", não "qual
+  hex?".** Havia dois textos candidatos e "abaixo dos cards" apontava para o
+  outro. O elemento certo estava à vista e eu não conferi.
+- **A divergência entre o Figma e a captura era o sinal.** Quando o arquivo não
+  mostra o que a captura mostra, a captura pode ser de outro estado, de outro
+  frame, ou de outra intenção — e nenhuma dessas é "aplique assim mesmo". O
+  certo era perguntar antes de codar, não depois de medir.
+
+**2. O CTA "Conheça o Nubank" com a interação do "Quero ser Nubank".** Aqui
+estava um **bug real**, não só uma inconsistência: o botão usava
+`variant="solid"` com um `style` inline em cima, que fixava as cores de repouso
+mas **não** tocava no `hover` nem no `active` — que continuavam vindo da
+`solid`. O texto claro sobre o branco do hover e sobre o `Neutral/100` do active
+dava menos de 1,2:1: o texto sumia nos dois estados.
+
+Corrigido na raiz, e não com mais um `style` inline: **`CtaLink` ganhou a variante
+`brand`**, que é **exatamente** o par e a cadeia do "Quero ser Nubank" da header
+no estado condensado — `bg-nu-brand text-white hover:bg-nu-purple-800
+active:bg-nu-purple-950`. Os dois botões ficaram indistinguíveis.
+
+O texto do CTA é **branco**, e o usuário estava certo ao dizer `#ffffff`. Vale
+registrar o porque, porque é o tipo de coisa que dá dúvida: o "Quero ser Nubank"
+**no estado transparente** tem texto `Action/action-secondary-text` (`#820ad1`)
+sobre o fundo claro `#f3e8ff` — não é branco. O branco é o do **estado
+condensado**, que é o de fundo na cor da marca. Como o CTA da Ecossystem tem
+fundo na cor da marca, é o condensado que serve de referência.
+
+Contraste medido da variante `brand`: **7,21:1** no repouso, **9,33:1** no hover,
+**15,24:1** no active.
+
+**A duplicação com a header é intencional e precisa continuar em sincronia.** A
+header escreve os mesmos valores em `group-data-[condensed]:`. Não dá para
+extrair para uma constante: o Tailwind só enxerga classes escritas por extenso
+no fonte, então uma string montada por concatenação não entraria no CSS gerado.
+É uma restrição da ferramenta, e vale para qualquer refatoração desse tipo aqui.
+
+**Lição que vem dos dois:** o `style` inline que "resolvia" a cor do botão
+escondeu um bug de interação, porque a propriedade que ele sobrescrevia era só
+uma das três do estado. Quando um componente tem variantes de interação, a
+variação tem de morar no mesmo lugar — num `style`, o resto da cadeia fica para
+trás em silêncio.
