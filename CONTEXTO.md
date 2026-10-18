@@ -9,8 +9,9 @@
 - **Projeto:** landing page de estudo da Nu, reconstruída a partir de um design
   autoral no Figma. Sem vínculo oficial com a Nu Pagamentos.
 - **Figma:** https://www.figma.com/design/16kp2jwaILwDfp44uYuNkP
-- **Frames implementados:** `Hero Section` (node `14:446`, 1920×1080) e
-  `Ecossystem Section - Nubank` (node `52:3`, 1920×919)
+- **Frames implementados:** `Hero Section` (node `14:446`, 1920×1080),
+  `Ecossystem Section - Nubank` (node `52:3`, 1920×919) e `Cards Section -
+  Nubank` (node `97:2`, 1920×1086)
 - **Produção:** https://nubank-landing-estudo.vercel.app
 - **Repositório:** https://github.com/nissopaulo/nubank-landing-estudo
 
@@ -18,20 +19,29 @@
 
 ## Estado atual
 
-Duas telas implementadas e funcionando. A **Hero**, com header fixo, cards em
+Três telas implementadas e funcionando. A **Hero**, com header fixo, cards em
 parallax e rodapé. Abaixo dela a **Ecossystem Section**, carrossel de pilares —
-**completa: os quatro desenhados** (frames `52:3` Nubank, `76:3` Croma, `77:40`
-Ultravioleta, `80:77` Empresas), os quatro clicáveis, e nenhum `PROVISÓRIO`
+**completa: os quatro desenhados**, os quatro clicáveis, e nenhum `PROVISÓRIO`
 sobrando. Clicar num pilar reequilibra a linha de cards inteira, com transição.
-Entre as duas telas e o rodapé existe um bloco **"Em construção"** que é
+Depois dela a **Cards Section**: um seletor de pílulas, o cartão de crédito que
+inclina em 3D sob o ponteiro, e o nome, a descrição e o CTA. A Cards Section
+**entra por scroll** — nada está lá quando se chega nela —, e a interação é da
+**seção inteira**, não só do cartão.
+
+A Cards Section está **no primeiro frame dos quatro**: só o `97:2` (Nubank) está
+liberado, e as outras três pílulas são botões desativados com aviso para leitor
+de tela. É decisão de processo, não falta de design — os quatro frames existem
+no Figma, três deles ocultos.
+
+Entre as seções e o rodapé existe um bloco **"Em construção"** que é
 provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
 
 | | |
 |---|---|
 | Stack | Next.js 16.4 (App Router, Turbopack), React 19.3, TS, Tailwind v4, Motion 14, Phosphor Icons |
 | Tipografia | Montserrat (única fonte), `next/font` self-hosted |
-| Ícones | Phosphor Icons; só o logo da marca é SVG do Figma |
-| Qualidade | `tsc --noEmit` e `eslint` passam limpos (verificado 2026-10-16) |
+| Ícones | Phosphor Icons; logo da marca e peças do cartão são SVG do Figma |
+| Qualidade | `tsc --noEmit` e `eslint` passam limpos (verificado 2026-10-18) |
 
 ---
 
@@ -176,10 +186,26 @@ gradiente do card são exatamente esses dois valores — mas isso **não** signi
 que são tokens utilizáveis: as três paradas do meio são interpolações do gradiente,
 não cores do design system, e transformá-las em token seria inventar cor.
 
+**Leitura do nó `97:2` (Cards Section), 2026-10-18:** **duas variables novas**,
+e nenhuma delas é uma cor nova:
+
+- `Purple/700` = `#820ad1` — o **quinto** nome que o Figma dá a esse valor
+  (já eram `Text/text-brand`, `Action/action-secondary-text`,
+  `Action/action-primary`, `Background/bg-brand` e `Border/border-brand`).
+  Não vira token: `--color-nu-brand` já cobre o valor.
+- `Purple/50` = `#faf5ff` — primeira parada do gradiente do fundo da seção.
+  **Não** vira token pelo mesmo motivo de `Purple/950`/`Purple/600`: é a
+  extremidade de um gradiente, e as seis paradas do meio são interpolações.
+
+**O ponto 1 da lista de pendências abaixo subiu de 4 para 5 nomes.** Consolidar
+`#820ad1` é agora ainda mais necessário, e o caso já tem lugar de fixo: o token
+`--color-nu-brand`.
+
 **Três pontos para resolver ao criar o design system:**
 
-1. **`#820ad1` tem dois nomes no Figma** — `Action/action-secondary-text` e
-   `Text/text-brand`. Consolidar em um só quando o DS for criado.
+1. **`#820ad1` tem cinco nomes no Figma** — `Action/action-secondary-text`,
+   `Text/text-brand`, `Action/action-primary`, `Background/bg-brand` e
+   `Border/border-brand`. Consolidar em um só quando o DS for criado.
 2. **Três tokens foram renomeados** em relação ao Figma (`action-secondary` →
    `action-surface`, `action-primary-text` → `action-text`, `action-secondary-text`
    → `brand`). A renomeação foi boa — `surface`/`text` descrevem melhor o papel
@@ -216,7 +242,7 @@ Escrever a mensagem num arquivo e usar `git commit -F <arquivo>`.
 |---|---|---|
 | 1 | ~~Desenhar no Figma o último pilar da Ecossystem~~ — **feito 2026-10-17**, os quatro frames (`52:3`, `76:3`, `77:40`, `80:77`) estão desenhados e os quatro abrem | — |
 | 2 | **Desenhar no Figma os painéis dos submenus da navegação.** É o bloqueio do restante da página | `SiteHeader.tsx` |
-| 3 | Desenhar no Figma as seções `Porque a Nu`, `Cartões`, `Diferenciais` | `SiteFooter.tsx` (`PendingSections`) |
+| 3 | Desenhar no Figma as seções `Porque a Nu`, `Cartões`, `Diferenciais` — **a de `Cartões` começou** e virou a Cards Section (frame `97:2`); faltam `Porque a Nu` e `Diferenciais` | `SiteFooter.tsx` (`PendingSections`) |
 | 4 | Menu mobile (depende do nº 2) — **adiado**, só depois que o design mobile existir | `SiteHeader.tsx` |
 | 5 | Exportar do Figma o ícone do app definitivo (hoje é um quadrado placeholder) | `src/app/icon.svg` |
 | 6 | Revisar texto do rodapé com o usuário (a parte mobile dos cards saiu da lista) | — |
@@ -225,12 +251,16 @@ Escrever a mensagem num arquivo e usar `git commit -F <arquivo>`.
 | 9 | Montar o catálogo de componentes (Storybook ou equivalente) **depois** que o design system existir — ver decisão 11 | — |
 | 10 | **A descrição do Croma reprova AA em texto pequeno** — 3,48:1 a 16 px, por desenho (a tinta é a própria marca sobre um creme que escurece). Implementado como o Figma pede. Se for para produção, a correção é no design, não no código | `ecosystem-pillars.ts` |
 | 11 | **A descrição do Empresas passa em AA por 0,06:1 de folga** — pior ponto 4,56:1 a 16 px. Passa, mas é o mais apertado dos quatro cards e qualquer ajuste de tom no fundo para mais escuro reprova. Vale revisar junto com a nº 10, que é o caso oposto | `ecosystem-pillars.ts` |
+| 12 | **A pílula inativa da Cards Section reprova AA em texto pequeno** — 4,40:1 a 16 px, contra 4,5:1. **Por 0,10:1.** O design puro passa (≈4,93:1 no export do Figma) e o grão 0.12 come 0,24 dessa folga; sem grão são 4,64:1. Implementado como o Figma pede. A correção é de design: fundo próprio na pílula, ou outra cor de texto | `card-showcase.ts` / `globals.css` |
+| 13 | **A virada entre cartões está escrita e nunca executou** — com um só frame liberado não existe troca para medir. Medir por CDP quando o `103:248` entrar, pela mesma razão do Ecossystem: o sentido do gesto é a coisa mais fácil de inverter sem ninguém perceber | `CardsSection.tsx` |
 
-**No Figma hoje existem cinco frames visíveis** — `Hero Section` (`14:446`) e os
-**quatro** da Ecossystem (`52:3` Nubank, `76:3` Croma, `77:40` Ultraviolet, `80:77`
-Business) — mais os 4 frames soltos de arte dos cartões. Não há nenhum frame
-oculto da Ecossystem: a seção está completa. Não há design das seções seguintes —
-por isso os itens 2 e 3 bloqueiam o resto.
+**No Figma hoje existem nove frames visíveis** — `Hero Section` (`14:446`), os
+**quatro** da Ecossystem (`52:3` Nubank, `76:3` Croma, `77:40` Ultravioleta,
+`80:77` Business) e os **quatro** da Cards Section (`97:2` Nubank, `103:248`
+Croma, `103:318` Ultravioleta, `103:383` Business) — mais os 4 frames soltos de
+arte dos cartões. A Ecossystem está completa. Na Cards Section **só o `97:2`
+está liberado**: os outros três estão ocultos por decisão de processo. Não há
+design das seções seguintes — por isso os itens 2 e 3 bloqueiam o resto.
 
 ### Antes de sugerir código
 
@@ -243,6 +273,26 @@ por isso os itens 2 e 3 bloqueiam o resto.
 - Para **verificar** encoding, le bytes crus com `node` e `TextDecoder` explícito.
   Não confie em `Get-Content` nem em `git show`: os dois passam pelo console do
   Windows e devolvem falso positivo **e** falso negativo.
+- **Medir contraste com o grão ligado**, porque é o estado que o usuário vê, e
+  comparar com a mesma seção sem grão para separar as duas causas. Foi assim que
+  a pílula inativa da Cards Section ficou registrada como 4,40:1 sendo 4,93:1 no
+  design.
+- **Ao medir contraste pela captura:** a caixa do *texto*, e não a do elemento
+  (CTA e pílulas são `rounded-full`, e os cantos da caixa do elemento são fundo
+  da seção — foi o que reprovou o CTA em 1,44:1 e a pílula em 1,2:1); o `clip` do
+  CDP em coordenadas de **documento**, e não de viewport; e **esperar um repaint**
+  depois de apagar a tinta. Sem a espera, `color: transparent` deixa o glifo na
+  rasterização da camada composta e ele aparece como um fantasma claro — que é
+  o pixel que reprova. A solução que funciona é pintar o glifo **da cor do
+  próprio fundo**, o que mantém a layout intacta.
+- **Verificar que o efeito APLICA antes de calibrar.** Esta é a quarta vez que a
+  lição aparece (as três primeiras foram a sombra dos cards da Hero). O sintoma
+  "o `nu` não aparece no cartão" parecia ser de asset, e era o `loading="lazy"`
+  do `next/image` em elemento abaixo da dobra: `naturalWidth` 0 e um retângulo
+  que não corresponde a pixel nenhum.
+- **`prefers-reduced-motion` não é só o `MotionConfig`.** Ele desliga animação,
+  não motion value, e a inclinação do cartão é motion value puro — o corte tem de
+  ser no `handler` (`usePrefersReducedMotion()`), como na paralaxe da Hero.
 - Este é o **Next.js 16**, não o que veio no treinamento. Ler o guia relevante em
   `node_modules/next/dist/docs/` antes de escrever qualquer coisa.
 - Qualquer valor novo que venha do Figma precisa ser rastreável à origem (node id,
@@ -1360,3 +1410,202 @@ do CSS:
 certo (as outras duas foram as fórmulas de geometria da Ecossystem). O padrão é
 o mesmo: **confiar na medida feita com heurística antes de confiar no número que
 ela imprime.**
+
+### 2026-10-18 — Cards Section, primeiro frame (`97:2`)
+
+O usuário desenhou uma seção nova e escondeu três dos quatro frames, para que o
+trabalho fosse feito um de cada vez. Implementei só o `97:2`: seletor de pílulas,
+cartão de crédito, nome, descrição e CTA.
+
+**A decisão que define a seção: o cartão é DOM, não uma imagem exportada.** O
+Figma compõe o cartão em camadas, e exportar como PNG daria o cartão perfeito
+matando a interação pedida — não há como girar em 3D nem fazer um reflexo
+seguir o ponteiro se não há nada para transformar. Montado em DOM, com os quatro
+SVG do Figma como asset, e nada de `path` copiado para o código.
+
+**Virada e inclinação não podem compartilhar um `transform`:** as duas usam
+`rotateY`. São dois elementos aninhados — `.cc-flip` gira na troca, `.cc-tilt`
+inclina no ponteiro. Se fossem um só, o segundo gesto cancelaria o primeiro no
+meio. E a `perspective` fica no palco, que não se move, e não no cartão.
+
+**O corte de movimento reduzido teve de ser em dois lugares.** O
+`MotionConfig reducedMotion="user"` desliga animação, não motion value — e a
+inclinação é motion value puro. O corte no `handler` é o mesmo da paralaxe da
+Hero. O reflexo também sai fora por CSS, porque sem movimento ele continuaria
+aparecendo parado no centro do cartão, o que não é movimento.
+
+**O `rotateX` é invertido.** Girar para cima tem que empurrar o topo para longe
+de quem olha. O caminho inverso foi testado e lê como "cartão caindo para
+trás".
+
+**A pílula inativa reprova AA por 0,10:1 — 4,40:1 a 16 px.** Separando as
+causas por medição: 4,93:1 no export do Figma, 4,64:1 no nosso render sem grão,
+4,40:1 com o grão em 0.12. Ou seja, **o design passa com 0,43 de folga e o grão
+come 0,24**. Não é tinta errada nem tom errado. Implementado como o Figma pede e
+registrado como pendência nº 12 — a correção é de design.
+
+**A evidência da reprovação só saiu depois de três verificadores errados.** O
+número do código estava certo desde o começo; o que estava errado foi o script,
+três vezes seguidas, e pela mesma razão de sempre:
+
+1. Medi a **caixa do elemento** em vez da **caixa do texto**. CTA e pílulas são
+   `rounded-full`, então os cantos da caixa do elemento são fundo da seção — e
+   foi esse pixel que reprovou o CTA em 1,44:1 e a pílula em 1,2:1, contra
+   6,53:1 e 6,57:1 do texto real.
+2. Usei o `clip` do CDP em coordenadas de **viewport**. Ele é em coordenadas de
+   **documento**: o recorte caía na Ecossystem, que é branca, e toda tinta clara
+   saía em 1:1.
+3. Apaguei a tinta com `color: transparent` e capturei no mesmo instante. Em
+   elemento promovido a camada própria — e o CTA e a pílula passam por animação
+   do Motion — o glifo continua na rasterização e aparece como um fantasma
+   claro, que é o pixel que reprova. A solução foi **pintar o glifo da cor do
+   próprio fundo**, que some com o fantasma e mantém a layout intacta, mais uma
+   espera de repaint antes de fotografar.
+
+**É a quarta vez que um verificador meu acusa erro onde o código está certo**, e
+a quinta vez que "confirmar que o efeito aplica" vem antes de calibrar. Esta vez
+foi o `nu` do cartão que "não aparecia": parecia asset corrompido e era o
+`loading="lazy"` do `next/image` em elemento abaixo da dobra — `naturalWidth` 0 e
+um retângulo que não corresponde a pixel nenhum. Confirmar o efeito teria dito
+"o asset está lá, o render é que ainda não pediu".
+
+**Fidelidade, por medição e não por olho.** Geometria lida do DOM contra os nós
+do frame: cartão 252,174 × 400, chip em `130,43 / 47,83`, marca `nu` 86,956 ×
+47,432, pílula em `699,83` com gap 24 — todos batendo. Os 2,08 px a mais na altura
+da seção vêm das três caixas de texto em que o Figma usa `leading: normal` e o
+projeto usa `leading-[1.25]`, e não deslocam elemento nenhum.
+
+Contra o export do Figma, com o grão desligado: erro médio 8,17 níveis, dos
+quais **6,94 / 5,87 / 4,66** (R/G/B) são um offset uniforme — o dithering do
+viewer, que o próprio arquivo já registra como falso grão. Tirado o offset o
+resíduo cai para **3,54 níveis**, e a **inclinação do erro no eixo X é
+0,00000 níveis/px**: zero é a assinatura de offset, e gradiente errado daria
+erro crescendo de ponta a ponta.
+
+**O cartão não tem sombra.** O diff mostrava um contorno aceso ao redor dele e
+parecia sombra. Medido: a transição da borda é abrupta dos dois lados
+(`236,223,246` a 3 px, `109,17,174` em 0 px), sem pixel intermediário. O
+contorno é a borda de 1 px amplificada pelo fator 6 da visualização do diff.
+
+**A tilt foi medida nos dois estados de movimento**, por CDP:
+`rotateY` +11,2° / `rotateX` −8,5° no canto superior direito, `−11,2°` / `+8,3°`
+no inferior esquerdo, `transform: none` ao sair do cartão, e `none` também com
+`prefers-reduced-motion: reduce`.
+
+**Posição na página:** a Cards Section entra **depois** da Ecossystem, e o bloco
+"Em construção" continua existindo — ele existe para o CTA "Explore o Universo
+Nu" ter destino, e a Cards Section não é esse destino.
+
+**Verificado:** `tsc` e `eslint` limpos, build sem aviso de CSS, geometria batendo
+com os nós do frame, contraste dos seis textos medido no render de produção com o
+grão ligado, e a inclinação medida nos dois estados de movimento.
+
+**Não verificado:** a **virada entre cartões**. As variantes estão escritas, com
+os dois cartões montados ao mesmo tempo e a direção vinda do sentido da troca,
+mas com um único frame liberado não existe troca para executar. Registrado como
+pendência nº 13.
+
+**Próximo passo:** aguardar o usuário liberar o `103:248` (Croma). Aí o
+preenchimento é o campo `showcase` em `lib/card-showcase.ts` e nada mais muda no
+componente — e a virada passa a ser medível.
+
+### 2026-10-18 — interação na seção inteira, entrada por scroll e sombra
+
+Três pedidos numa sessão: a interação do cartão deve alcançar a seção, a seção
+deve **surgir** quando se chega nela, e o cartão precisa de sombra.
+
+**1. A interação passou a ser da seção, com alcance.** O handler do `pointermove`
+saiu do cartão e foi para a `<section>`, em `use-card-tilt.ts`. A resposta é
+**direção × força**: direção normalizada contra a caixa do cartão e saturada em
+±1, força que vale 1 dentro do cartão e morre 460 px depois da borda
+(`CARD_TILT.reach`).
+
+A saturação não é detalhe. Sem ela, passar do canto levava o cartão do ângulo
+máximo direto ao oposto — o gesto virava uma guinada. E a força é o que evita o
+cartão ficar travado no ângulo máximo assim que o ponteiro sai da caixa: sem
+isso não parece reação, parece defeito. Medido, e as duas batem com a fórmula:
+
+| Distância | Medida | `1 − d/460` |
+|---|---|---|
+| dentro do cartão | 1,000 | 1,000 |
+| 150 px acima | 0,674 | 0,674 |
+| 400 px abaixo | 0,139 | 0,130 |
+
+**Os sinais dos dois eixos estavam trocados, e eu só descobri porque fui ler o
+`transform` em texto.** Na sessão anterior eu tinha publicado uma tabela de
+sinais lida da `matrix3d` computada, e ela estava errada: em `matrix3d` o sinal
+de `rotateY` aparece em dois elementos com sinais opostos, e a leitura depende de
+qual deles se olha. `style.transform` entrega `rotateX(-8.55deg) rotateY(-11.04deg)`
+sem ambiguidade. O sinal certo é `rotateY = -x` e `rotateX = +y`: em CSS,
+`rotateX(+θ)` traz a **base** para quem olha e `rotateY(+θ)` traz a **esquerda**,
+e o que se quer é o oposto nos dois — a borda mais próxima do ponteiro avança.
+Com o sinal trocado o cartão afunda na direção do mouse, que é o gesto de quem
+pressiona.
+
+**2. O reflexo nunca tinha funcionado — e eu não tinha percebido.** Era
+posicionado por `--cc-glare-x`, uma custom property alimentada por motion value.
+O React escrevia literalmente `[object Object]` no atributo `style`, o gradiente
+ficava inválido, e **não havia erro nem aviso**. Nem `motion.span` resolveu: o
+`useRender` do Motion passou o `style` direto ao React.
+
+O que enganou foi a verificação: eu media o `opacity` do reflexo, que vinha de
+outra fonte e respondia normalmente. Dois "efeitos" que só se confundem quando se
+olha o `background-image` e não a variável. Agora o gradiente inteiro é uma
+`MotionValue<string>` de `useMotionTemplate`, escrita em `backgroundImage` — uma
+propriedade normal, sem depender de o Motion saber tratar custom property.
+
+**Esta é a quinta vez que "confirmar que o efeito APLICA" vem antes de
+calibrar**, e a segunda vez nesta seção só. O checklist honesto para um efeito
+visual é: o `opacity` mudou, **o `background` mudou**, e a captura mostra o
+elemento.
+
+**3. `display: contents` quebrou a entrada por scroll, e em silêncio.** O
+container do escalonamento usava `className="contents"` para não acrescentar
+caixa nenhuma. `display: contents` **não gera caixa**, então o
+`IntersectionObserver` do `whileInView` não tinha o que observar, a entrada
+nunca rodava, e as pílulas ficaram presas em `translateY(24px)` — 24 px abaixo do
+lugar, com a página toda funcionando. Virou `div` de verdade e o layout não
+mudou: a seção é `items-center`, então o wrapper encolhe até o conteúdo e
+continua centralizado. Confirmado por `pillBox.y` voltando a 96 na viewport.
+
+**4. A sombra é desvio autoral, e medida antes de existir.** O Figma não tem
+sombra no cartão — a transição da borda é abrupta dos dois lados
+(`236,223,246` a 3 px, `109,17,174` em 0 px, sem pixel intermediário) e o
+`get_design_context` não devolve `boxShadow`. Duas camadas pelo motivo da Hero:
+difusão sozinha é larga demais para marcar borda. Tom em `Purple/950`, porque
+preto puro sobre o lilás deixa halo cinza.
+
+**A ref precisa ficar fora do objeto das motion values.** A regra
+`react-hooks/refs` do projeto proíbe acessar qualquer propriedade de um objeto
+que contenha uma ref durante o render — ela não distingue "isto é uma ref" de
+"isto está ao lado de uma ref". Separar `cardRef` de `values` resolve, sem
+desligar a regra.
+
+**Duas sondas minhas encore erradas, pela mesma razão de sempre** (o verificador,
+não o código):
+
+1. `Emulation.setDeviceMetricsOverride` **não sobrevive entre execuções**, e a
+   janela ficou em 764×485. Três dos pontos de teste caíam fora dela ou embaixo
+   do header fixo, e a leitura saía zerada com cara de "o efeito não funciona".
+   `elementFromPoint` no ponto do teste resolveu em uma linha.
+2. A medição de contraste lia o retângulo **antes** da espera de repaint. Com a
+   entrada por scroll, as pílulas ainda se movem durante a espera, e o recorte
+   caía no fundo da seção — reprovando a pílula **ativa** em 1,51:1, que é a cor
+   do próprio texto. Reler o retângulo depois da espera devolveu os 6,57:1
+   corretos.
+
+**Verificado:** `tsc`, `eslint` e build limpos; entrada medida antes e depois da
+rolagem (`translateY(28px) scale(0.94)` com `opacity: 0` → assentada); sombra
+computada em `rgb(46 16 101 / 0.16) 0 2px 4px` + `rgb(46 16 101 / 0.32) 0 24px
+56px −12px`; inclinação e alcance medidos nos pontos da tabela; movimento
+reduzido sem inclinação e sem reflexo; geometria da seção inalterada
+(1920 × 1088,08, pílulas em y 100); e contraste dos seis textos refeito, com os
+mesmos números de antes — o que confirma que a sombra não encosta no texto.
+
+**`revealScale` saiu da lista de export morto.** Ele era uma das três variáveis
+documentadas em `motion.ts` sem uso, mantidas para as seções que viriam; a
+entrada do cartão passou a usá-la. `EASE_OUT_QUINT` e `springSoft` continuam sem
+uso, e o comentário foi atualizado.
+
+**Próximo passo:** o mesmo do fim da sessão anterior — aguardar o `103:248`
+(Croma), que libera a medição da virada.

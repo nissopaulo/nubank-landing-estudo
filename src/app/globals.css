@@ -475,6 +475,154 @@
 }
 
 /**
+ * Cards Section — o cartão de crédito e o seletor de pílulas.
+ *
+ * ## O cartão é DOM, e por isso a cadeia é 3D de verdade
+ *
+ * Três elementos, três papéis:
+ *
+ *   .cc-stage   palco, tamanho fixo e `perspective` (inline no componente)
+ *   .cc-flip    a virada da troca de cartão — `rotateY` com keyframes
+ *   .cc-tilt    a inclinação sob o ponteiro — `rotateX`/`rotateY` reativas
+ *
+ * A virada e a inclinação precisaram ficar separadas porque **as duas usam
+ * `rotateY`** — um `transform` só não comporta os dois gestos, e o segundo
+ * cancelaria o primeiro no meio do gesto.
+ *
+ * O `preserve-3d` está nos dois intermediários e **não** no cartão: `.cc-face`
+ * tem `overflow: clip` para arredondar os cantos, e `overflow` diferente de
+ * `visible` achata a 3D dos filhos (é o comportamento do spec, e é o que se
+ * quer aqui — as peças do cartão são planas).
+ *
+ * ## O fundo é data URI e precisa de `background-size` explícito
+ *
+ * O SVG do gradiente tem `viewBox` e não tem `width`/`height`, e aí os motores
+ * discordam do que `auto` significa: o Chrome estica até a caixa e o Firefox usa
+ * as dimensões do viewBox e **repete**. Já custou um bug real na Ecossystem — a
+ * faixa repetida era a borda esquerda do gradiente, que é a parte mais escura.
+ */
+.cc-face {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: clip;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+
+  /*
+   * Sombra do cartão — DESVIO AUTORAL, por pedido do usuário.
+   *
+   * O Figma **não tem** sombra aqui, e isso foi medido antes de adicionar: a
+   * transição da borda é abrupta dos dois lados (fundo `236,223,246` a 3 px,
+   * cartão `109,17,174` em 0 px, sem pixel intermediário), e o
+   * `get_design_context` não devolve `boxShadow` no nó `98:150`. A sombra é
+   * decisão nossa, como a textura da página.
+   *
+   * **Duas camadas, e a ordem importa.** É a mesma técnica que calibratei na
+   * Hero, e a lição de lá vale aqui: difusão sozinha é larga demais para marcar
+   * borda, e quem dá leitura de objeto é a de contato.
+   *
+   *   contato  0 2px 4px        — define a borda
+   *   difusão  0 24px 56px −12px — cria a altura
+   *
+   * O tom é `Purple/950` e não preto, para não sujar o lilás do fundo da seção:
+   * preto puro sobre `#e1dcf6` deixa um halo cinza que parece sujeira.
+   *
+   * No hover ela aprofunda, com a mesma transition de 400 ms. É a única parte
+   * do efeito que custa repaint, e só enquanto o ponteiro entra e sai — o
+   * steady state do tilt é transform, que é barato.
+   */
+  box-shadow:
+    0 2px 4px rgb(46 16 101 / 0.16),
+    0 24px 56px -12px rgb(46 16 101 / 0.32);
+  transition: box-shadow 400ms ease-out;
+}
+.cc-flip:hover .cc-face {
+  box-shadow:
+    0 4px 8px rgb(46 16 101 / 0.2),
+    0 34px 72px -12px rgb(46 16 101 / 0.4);
+}
+
+.cc-flip,
+.cc-tilt {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.cc-tilt {
+  will-change: transform;
+}
+
+/*
+ * O reflexo que segue o ponteiro.
+ *
+ * Sem `background` e sem `opacity` aqui: os dois vêm como `MotionValue` do
+ * `useMotionTemplate`, escritas direto no elemento. A primeira versão posicionava
+ * o reflexo por custom property alimentada por motion value, e o efeito
+ * simplesmente **não aparecia** — o React escrevia `[object Object]` no
+ * atributo `style`, o gradiente virava inválido, e a verificação passava porque
+ * a opacidade vinha de outra fonte. Está comentado em `use-card-tilt.ts`.
+ *
+ * **Blendagem normal, e não `soft-light`/`overlay`** — ao contrário do grão da
+ * página. O grão é rejeitado nesses modos porque eles são neutros em cinza
+ * médio e metade da página é branca. Aqui a base é sempre a cor do cartão, e
+ * dois dos quatro cartões que ainda vão vir têm fundo cinza claro (Croma e
+ * Empresas), onde os dois modos praticamente não fariam nada. Branco puro com
+ * alfa baixa clareia nos quatro, então o brilho aparece igual em qualquer um.
+ *
+ * Sem `transition`: a opacidade muda a cada quadro e a mola do `useCardTilt` já
+ * faz o amortecimento. Transition aqui brigaria com a mola e a deixaria chegar
+ * atrasada em relação ao cartão.
+ */
+.cc-glare {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/*
+ * O reflexo sai fora sob movimento reduzido.
+ *
+ * O corte do `pointermove` já impede o cartão de girar, mas sem isto o brilho
+ * continuaria aparecendo parado no centro do cartão — que não é movimento, é
+ * uma mudança de aparência que ninguém pediu. E o bloco global de movimento
+ * reduzido abaixo já zera a transition, então aqui não chega a piscar.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .cc-glare {
+    opacity: 0 !important;
+  }
+}
+
+/*
+ * Pílulas do seletor.
+ *
+ * O cursor precisa da regra pelo mesmo motivo do `.eco-card`: o UA stylesheet
+ * põe `cursor: default` em `<button>` e o preflight do Tailwind v4 não desfaz.
+ */
+.cc-tab {
+  cursor: pointer;
+  border: 1px solid transparent;
+  color: var(--color-nu-brand);
+  transition:
+    background-color 200ms ease-out,
+    color 200ms ease-out,
+    border-color 200ms ease-out;
+}
+.cc-tab[data-state="active"] {
+  background-color: var(--color-nu-brand);
+  color: var(--color-nu-action-text);
+}
+.cc-tab[data-state="idle"]:hover {
+  background-color: color-mix(in srgb, var(--color-nu-brand) 10%, transparent);
+}
+.cc-tab[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/**
  * Respeito à preferência do sistema por movimento reduzido.
  * O Motion também é desativado via JS (hook useReducedMotion), mas esta
  * rede de segurança cobre animações que escapem do JS (ex.: scroll-behavior).

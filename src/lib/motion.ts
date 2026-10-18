@@ -47,15 +47,18 @@ export const DURATION = {
 } as const;
 
 /**
- * Vocabulário de movimento ainda sem uso — 2026-10-17.
+ * Vocabulário de movimento ainda sem uso — 2026-10-18.
  *
- * `EASE_OUT_QUINT`, `springSoft` e `revealScale` estão exportados e **nenhum
- * componente os usa hoje**. Ficam de propósito: as seções `Porque a Nu`,
- * `Cartões` e `Diferenciais` ainda vão ser desenhadas, e reveal com escala e
- * mola amortecida são exatamente o que costuma pedir nelas.
+ * `EASE_OUT_QUINT` e `springSoft` estão exportados e **nenhum componente os usa
+ * hoje**; `revealScale` saiu desta lista em 2026-10-18, quando a Cards Section
+ * passou a usar ele na entrada do cartão.
+ *
+ * Os dois que ficam estão aqui de propósito: as seções `Porque a Nu` e
+ * `Diferenciais` ainda vão ser desenhadas, e mola amortecida é o que costuma
+ * pedir nelas.
  *
  * Estão aqui documentados como tal porque export morto sem explicação se confunde
- * com esquecimento. **Se uma seção passar sem nenhum dos três, apague** — código
+ * com esquecimento. **Se uma seção passar sem nenhum dos dois, apague** — código
  * que ninguém usa não é biblioteca, é dívida. O lint não pega export não
  * importado, então essa revisão é manual.
  */
@@ -174,4 +177,66 @@ export const FAN = {
   y: "150%",
   /** Ponto de rotação — perto da base, para o card bascular. */
   origin: "50% 78%",
+} as const;
+
+/**
+ * Inclinação do cartão de crédito sob o ponteiro (Cards Section).
+ *
+ * Concentrado aqui, e não no componente, pelo mesmo motivo do `FAN`: são os
+ * números que se ajustam enquanto a sensação está sendo calibrada, e eles
+ * mudam juntos.
+ *
+ * ## Os ângulos são pequenos de propósito
+ *
+ * `maxY: 12°` e `maxX: 9°`. Acima disso o cartão passa a parecer um painel de
+ * windshield em vez de um cartão bancário — e o alvo é um cartão bancário.
+ *
+ * ## O alcance é o que faz a interação parecer com a seção
+ *
+ * `reach: 460px` é a distância, a partir da borda do cartão, em que a resposta
+ * morre. O ponteiro é seguido na **seção inteira**, não no cartão: passando pela
+ * seção o cartão já responde, e a resposta se dissolve conforme o ponteiro se
+ * afasta.
+ *
+ * Sem o `reach` o cartão fica travado no ângulo máximo assim que o ponteiro sai
+ * da sua caixa — e aí não parece reação, parece defeito. Com ele, a inclinação
+ * é uma coisa só em toda a seção, e o cartão volta ao repouso antes de a
+ * seção acabar.
+ *
+ * 460px é quase duas vezes a largura do cartão: perto o bastante para a seção
+ * inteira estar no raio de ação, longe o bastante para o cartão não ficar
+ * grudado no ponteiro.
+ *
+ * ## A mola é o que dá o peso
+ *
+ * `stiffness: 220 / damping: 26` no cartão acompanha o ponteiro rápido o bastante
+ * para parecer resposta, e ainda entrega um leve atraso na volta. Sem mola, o
+ * cartão gruda no cursor e o efeito fica plástico; com mola fraca demais, ele
+ * chacoalha atrás do mouse e deixa de ler como objeto.
+ *
+ * O `glareSpring` é mais frouxo de propósito: o reflexo é a parte que **segue**
+ * o ponteiro, e a mola dele tem que ser visivelmente mais lenta que a do
+ * cartão. Com a mesma mola os dois se movem juntos e o reflexo parece grudado
+ * na imagem, não numa superfície.
+ *
+ * ## Os dois eixos têm sinal oposto, e é proposital
+ *
+ * `rotateY = -x` e `rotateX = +y`, com `x`/`y` normalizados na direção do
+ * ponteiro. A conta é a da mão direita de CSS: `rotateX(+θ)` traz a **base** para
+ * quem olha e joga o topo para trás, e `rotateY(+θ)` traz a **esquerda** para
+ * quem olha e joga a direita para trás.
+ *
+ * O que se quer é o oposto nos dois: a borda mais próxima do ponteiro avança, e
+ * a outra recua. Com o sinal trocado o cartão afunda na direção do mouse, que
+ * é o gesto de quem pressiona — não o de quem acompanha.
+ */
+export const CARD_TILT = {
+  /** Inclinação máxima no eixo Y (o cartão acompanha o ponteiro na horizontal). */
+  maxY: 12,
+  /** Inclinação máxima no eixo X (na vertical). */
+  maxX: 9,
+  /** Distância da borda do cartão em que a resposta morre, em px. */
+  reach: 460,
+  spring: { stiffness: 220, damping: 26, mass: 0.6 },
+  glareSpring: { stiffness: 120, damping: 26, mass: 0.7 },
 } as const;

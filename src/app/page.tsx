@@ -1,3 +1,4 @@
+import { CardsSection } from "@/components/cards/CardsSection";
 import { EcosystemSection } from "@/components/ecosystem/EcosystemSection";
 import { HeroSection } from "@/components/hero/HeroSection";
 import { NoiseOverlay } from "@/components/site/NoiseOverlay";
@@ -22,6 +23,7 @@ export default function Home() {
       <main>
         <HeroSection />
         <EcosystemSection />
+        <CardsSection />
         <PendingSections />
       </main>
       <SiteFooter />
