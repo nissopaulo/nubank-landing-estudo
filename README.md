@@ -826,12 +826,39 @@ vê.
 O `backface-visibility` **continua no CSS**: no Chrome ele basta, e é ele que
 resolve a troca suave. A garantia é que a pintura não depende do motor.
 
-#### Quem manda na pintura é a fase, não o ângulo
+#### Quem manda na pintura é a fase, e não o ângulo
 
 `angulo` é o valor **alvo**: no começo da primeira metade ele já vale 90°, com a
-peça ainda em 0°. Derivar a face dele trocava a pintura no primeiro quadro e a
-peça mostrava o verso de costas durante toda a fase 1. Quem manda é `fase`; o
-ângulo só decide em repouso, onde é múltiplo de 180.
+peça ainda em 0°. E ele não serve nem depois, porque é a geometria errada — **o
+slot pintado vira a cada 90° do ângulo, mas o cartão só troca a cada 180°**.
+
+Derivando a face do ângulo, voltar do Croma para o Nubank acabava a segunda
+metade pintando o slot velho, e o cartão aparecia **ao contrário**, de costas e
+espelhado.
+
+A regra é a do gesto, e é a mesma nos dois sentidos:
+
+| metade | quem pinta | o que aparece |
+|--------|-----------|---------------|
+| 1ª (0°→90°) | o slot que já estava na tela | o cartão de onde se está saindo, estreitando |
+| 2ª (90°→180°) | o outro slot | o cartão de destino, alargando |
+
+E por isso o destino vai para o slot **escondido** — o oposto de quem está
+pintado, que é justamente o que vai estar de frente depois da meia-volta. Trocar
+o escondido não aparece: ele não está pintado.
+
+Verificado com um invariante geométrico, que é mais forte que comparar
+timestamps: **a face pintada tem que estar de frente para quem olha**, e pode
+estar de costas só quando a largura projetada é ~0.
+
+| ângulo | slot pintado | ângulo efetivo | largura | cartão |
+|--------|--------------|----------------|---------|--------|
+| 13°  | frente | 13°  | 245,7px | Nubank |
+| 81°  | frente | 81°  | 40,1px  | Nubank |
+| 94°  | verso  | 274° | 19,1px  | Croma  |
+| 171° | verso  | 351° | 249px   | Croma  |
+
+No Firefox a troca acontece com **2,1px** de largura.
 
 #### A interação é medida contra o palco, nunca contra a face
 

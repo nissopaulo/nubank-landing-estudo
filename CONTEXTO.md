@@ -1808,6 +1808,71 @@ giro (8,18014° → 8,18415° → 8,18415°); diff contra o Figma sem regrão co
 `browsingContext.captureScreenshot` existe no 158. Qualquer defeito de render
 que só apareça fora do Chrome agora é verificável aqui — antes de mexer.
 
+### 2026-10-18 — na volta o cartão aparecia ao contrário
+
+A correção do Firefox resolveu o fantasma, mas criou outro defeito, só na
+volta: **Croma → Nubank mostrava o cartão do Nubank de costas**, espelhado
+("SUICIИIV OLUAP", logo `nu` invertida), depois de sumir.
+
+#### A causa: eu estava contando em 90° o que é de 180°
+
+A pintura vinha do ângulo, com `resto ∈ [90, 270] ⇒ verso`. Só que o **slot
+pintado vira a cada 90°** do ângulo, e o **cartão só troca a cada 180°** — são
+contagens diferentes, e eu tinha usado a segunda para a primeira.
+
+Rastreando Croma → Nubank com `angulo` em 180, `virado` verdadeiro, `par` =
+`{frente: Nubank, verso: Croma}`:
+
+| fase | ângulo | slot pintado | cartão | |
+|------|--------|--------------|--------|---|
+| 1 | 180→270 | verso | Croma | certo: quem sai |
+| 2 | 270→360 | verso | **Croma** | **errado**: o destino (Nubank) está na frente, de costas |
+
+A fase 2 pintava o slot velho. E `fecharVirada` invertia o `par` no fim, tarde
+demais para a segunda metade.
+
+#### A correção
+
+A pintura vem de `virado` e da fase, nunca do ângulo:
+
+```ts
+const pintandoVerso = virando ? (fase === 1 ? virado : !virado) : virado;
+```
+
+Primeira metade pinta quem está na tela (a peça mostra o cartão de onde se está
+saindo, estreitando); segunda pinta o outro (o destino, alargando). E em
+`select` o destino vai para o slot **escondido** — o oposto de quem está pintado,
+que é justamente o que estará de frente depois:
+
+```ts
+const noEscuro = virado ? par.frente !== index : par.verso !== index;
+```
+
+Com movimento reduzido não há as duas metades, então `meiaVolta` inverte
+`virado` junto com o ângulo.
+
+#### Verificação: invariante geométrico, não comparação de tempos
+
+Comparar "o que a pílula diz" com "o que está na tela" por timestamp foi o que
+deixou passar as duas versões anteriores deste defeito. O invariante real é
+geométrico e não depende de amostra:
+
+> A face pintada tem que estar **de frente** para quem olha. Effective
+> `angulo + 180` se for a de verso, e isso tem que cair em `[0,90)` ou `(270,360]`.
+> Pode estar de costas só quando a largura projetada é ~0.
+
+Na volta completa, a 380ms do giro: `ang=270`, `efetivo=270`, largura **2,1px** —
+perfil, invisível, e logo depois o slot certo com o cartão certo. Chrome e Firefox.
+
+**Verificado:** 8 trocas coerentes em movimento normal e reduzido; uma e apenas
+uma face pintada em 27 amostras de giro; curva com 90° aos 49% (684ms); inclinação
+estável durante o giro; diff contra o Figma com resíduo 3,30 e inclinação
+0,00001 níveis/px; contraste com as três reprovações de sempre.
+
+**Sobre a trava de reentrância:** `select` ignora clique durante o giro, e isso
+descartou cliques nos meus próprios testes porque o CDP é lento. É o
+comportamento correto (uma virada por vez), mas vale saber que existe.
+
 ### 2026-10-18 — a face de trás aparecia, e a culpa não era do `backface-visibility`
 
 Relatório: no Croma o cartão do Nubank aparecia **atrás**, num ângulo levemente

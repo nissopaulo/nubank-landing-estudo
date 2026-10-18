@@ -116,6 +116,9 @@ export function CardsSection() {
   /** Metade da meia-volta em curso: 1 = indo a 90°, 2 = indo a 180°. */
   const [fase, setFase] = useState<1 | 2>(1);
 
+  /** `true` quando, em repouso, quem está na tela é a face de verso. */
+  const [virado, setVirado] = useState(false);
+
   /** O cartão que a UI mostra. Muda no clique, não no meio do giro. */
   const [alvo, setAlvo] = useState(par.frente);
   const mostrarMovimento = usePrefersReducedMotion();
@@ -136,19 +139,22 @@ export function CardsSection() {
   /*
    * Qual face está pintada.
    *
-   * **Durante o giro quem manda é a fase, não o ângulo.** O `angulo` é o valor
-   * **alvo** — no começo da primeira metade ele já vale 90°, com a peça ainda
-   * em 0°. Derivar a face dele trocava a pintura no primeiro quadro, e a peça
-   * ia Mostrar o verso de costas durante toda a fase 1.
+   * **Vem de `virado` e da fase, nunca do ângulo.** O `angulo` é o valor
+   * **alvo** — no começo da primeira metade ele já vale 90°, com a peça ainda em
+   * 0° — e ele não serve mesmo depois, porque é a geometria errada: o slot
+   * pintado vira a cada **90°** do ângulo, mas o cartão só troca a cada
+   * **180°**. Derivando dele, voltar do Croma para o Nubank acabava a segunda
+   * metade pintando o slot velho, e o cartão aparecia **ao contrário**.
    *
-   * Em repouso o ângulo é múltiplo de 180 — frente em 0/360/720, verso em
-   * 180/540 —, e aí a paridade dele serve.
+   * A regra é a do gesto: na primeira metade pinta o slot que está na tela (a
+   * peça ainda mostra o cartão de onde se está saindo, estreitando); na
+   * segunda, o outro slot (o cartão de destino, alargando). Nos 90° as duas
+   * estão de perfil e a largura projetada é zero, então a troca não aparece.
    *
    * Só uma face pinta por vez, e isso não é estética: é o que resolve o defeito
    * do Firefox. Ver "Só uma face pinta por vez".
    */
-  const emRepousoFrente = (((angulo % 360) + 360) % 360) === 0;
-  const pintandoVerso = virando ? fase === 2 : !emRepousoFrente;
+  const pintandoVerso = virando ? (fase === 1 ? virado : !virado) : virado;
 
   const visivel = CARDS[alvo] ?? CARDS[par.frente];
 
@@ -160,24 +166,24 @@ export function CardsSection() {
     if (virando || index === alvo) return;
 
     /*
-     * Só o slot **escondido** pode mudar antes do giro, e só ele: mudar o que
-     * está pintado apareceria na hora.
+     * O destino vai para o slot **escondido** — o oposto de quem está pintado.
      *
-     * Escondido é o oposto da face que está pintando. Trocar o escondido não
-     * aparece porque ele está de costas — e, agora, porque nem é pintado. Por
-     * isso o `requestAnimationFrame`: o slot novo precisa estar montado antes do
+     * "Escondido" é o que vai estar de frente **depois** da meia-volta, porque a
+     * segunda metade pinta o outro slot. É essa a aritmética que faltava: a
+     * versão anterior punha o destino no slot que já estava pintado, e indo do
+     * Croma para o Nubank a segunda metade acabava mostrando o cartão velho
+     * **ao contrário** — de costas, espelhado.
+     *
+     * Trocar o escondido não aparece: ele não está pintado. Por isso o
+     * `requestAnimationFrame` — o slot novo precisa estar montado antes do
      * ângulo mudar, senão o primeiro quadro da virada já mostra o cartão errado
      * girando.
      */
-    const precisaTrocarSlot = pintandoVerso
-      ? par.frente !== index
-      : par.verso !== index;
+    const noEscuro = virado ? par.frente !== index : par.verso !== index;
 
-    if (precisaTrocarSlot) {
+    if (noEscuro) {
       setPar((p) =>
-        pintandoVerso
-          ? { frente: index, verso: p.verso }
-          : { frente: p.frente, verso: index },
+        virado ? { frente: index, verso: p.verso } : { frente: p.frente, verso: index },
       );
       requestAnimationFrame(meiaVolta);
     } else {
@@ -210,6 +216,13 @@ export function CardsSection() {
      * meia-volta inteira num commit só.
      */
     setAngulo((a) => a + (mostrarMovimento ? 180 : 90));
+
+    /*
+     * Com movimento reduzido não há as duas metades: o `angulo` já saltou os
+     * 180° e não haverá `transitionend` para inverter `virado`. Inverter aqui é
+     * o mesmo movimento lógico, só que síncrono.
+     */
+    if (mostrarMovimento) setVirado((v) => !v);
   }
 
   /**
@@ -231,6 +244,8 @@ export function CardsSection() {
       return;
     }
     setFase(1);
+    // A segunda metade pintou o outro slot, então é ele o que fica na tela.
+    setVirado((v) => !v);
     setVirando(false);
   }
 
