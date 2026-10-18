@@ -611,6 +611,26 @@
   backface-visibility: hidden;
 }
 
+/*
+ * A face que não está de frente, com a peça parada.
+ *
+ * Redundante com o `backface-visibility` acima, e é o ponto: só ele **não cull**
+ * a face de trás em pelo menos um motor, e o sintoma é o cartão da frente
+ * aparecendo atrás do de trás, num ângulo levemente diferente — porque
+ * `R_y(180°)·R_x(θ)` espelha o eixo X e a inclinação da face oculta aparece
+ * invertida.
+ *
+ * `visibility: hidden` não depende do motor acertar a conta de 3D: em repouso só
+ * a face visível é pintada. E não custa nada, porque a face escondida é a mesma
+ * que já estava sendo descartada.
+ *
+ * Durante o giro as duas pintam: a passagem de uma para a outra é aos 90°, e é
+ * por ângulo — que é o caso em que `backface-visibility` é a ferramenta certa.
+ */
+.cc-card[data-oculta] {
+  visibility: hidden;
+}
+
 .cc-card--verso {
   transform: rotateY(180deg);
 }

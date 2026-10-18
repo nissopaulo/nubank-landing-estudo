@@ -1728,6 +1728,60 @@ nos dois pilares; e contra o export do Figma, com o grão desligado, erro médio
 6,98 níveis, dos quais 5,61/5,03/4,68 são offset uniforme, com resíduo de **3,30**
 e inclinação de erro de **0,00001 níveis/px** — a mesma assinatura do Nubank.
 
+### 2026-10-18 — a face de trás aparecia, e a culpa não era do `backface-visibility`
+
+Relatório: no Croma o cartão do Nubank aparecia **atrás**, num ângulo levemente
+diferente.
+
+#### O ângulo errado é a assinatura
+
+A face de trás fica em `R_y(180°)·R_tilt`. A rotação de 180° do pai **espelha o
+eixo X**, então a inclinação da face oculta aparece invertida e o cartão de trás
+fica deslocado para o lado oposto do que a face da frente faz. Desenhar o
+produto das matrizes explica a imagem antes de qualquer medição.
+
+#### Não reproduz no Chrome headless
+
+Seis configurações, com o cartão parado e inclinado, sem `will-change`, sem
+sombra, com a frente em `display: none`: **o roxo nunca aparece**. Uma delas
+ainda media a região errada — o `clip` do `Page.captureScreenshot` é em
+coordenadas de **documento**, e sem somar `window.scrollX/Y` a amostra caía na
+Hero, que é lilás por outro motivo. Foi esse o erro que quase mandou seguir adiante
+com uma bissecção que "confirmava" a hipótese errada.
+
+#### A correção não é um conserto de navegador: é remover a dependência
+
+`visibility: hidden` na face que não está de frente, **em repouso**:
+
+```jsx
+<div className="cc-card cc-card--frente" data-oculta={ocultaFrente || undefined}>
+<div className="cc-card cc-card--verso"  data-oculta={ocultaVerso  || undefined}>
+```
+
+O `data-oculta` sai de `!virando && !mostrandoFrente` — e `mostrandoFrente` já
+existia, derivado do ângulo acumulado. Nada de estado novo.
+
+Durante o giro as duas pintam, porque a passagem é aos 90° e é por ângulo. O
+`backface-visibility` continua sendo a ferramenta certa ali.
+
+**Verificado:** cull determinístico em repouso (só a face de frente pinta, nos
+dois pilares) e as duas pintando em seis amostras durante o giro, com o `virando`
+destravando certo ao fim. Virada, ângulo acumulado, inclinação e contraste sem
+regressão.
+
+#### E uma armadilha da própria verificação
+
+`contrast-cards.mjs` mede o nome no cartão com `querySelector('.cc-holder')` — a
+**primeira** do DOM, que é a da face oculta. Depois da correção ela passou a
+medir um elemento com `visibility: hidden` e reportou **1,76:1** com tinta
+branca: um número que não existe na tela. O alvo virou
+`.cc-card:not([data-oculta]) .cc-holder`, e os três números voltaram a bater com
+as pendências: **4,40** (nº 12), **2,44** (nº 14) e **4,12** (nº 15).
+
+Vale registrar porque a leitura foi a de uma regressão séria de contraste, e a
+regra é a mesma de outros casos aqui: **verificação que mede o que está na tela,
+não o que está no DOM.**
+
 ### 2026-10-18 — a virada virou um cartão de verdade, e o bug da interação morreu
 
 O relato foi duplo: **trocar para o Croma matava a interação** (a inclinação

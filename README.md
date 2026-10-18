@@ -769,6 +769,39 @@ caíram de **40% para 13%** da duração.
 > 18% do giro aos 50ms, a curva nova tem 7% (≈12°, no terceiro quadro). É a
 > escolha certa porque ~3 quadros de atraso não se veem, e 500ms de arrasto se veem.
 
+#### A face de trás não pode depender só de `backface-visibility`
+
+O `backface-visibility: hidden` nas duas faces é o que faz a virada mostrar só
+uma — e ele **não basta** em repouso. Reportado: no Croma o cartão do Nubank
+aparecia **atrás**, num ângulo levemente diferente.
+
+Esse ângulo é a assinatura do defeito. A face de trás fica em
+`R_y(180°)·R_tilt`, e a rotação de 180° **espelha o eixo X** — então a
+inclinação da face oculta aparece invertida, e o cartão de trás fica deslocado
+para o lado oposto do que a face da frente faz. É exatamente o que a imagem
+mostra.
+
+**Não reproduz no Chrome headless** — nem parado, nem inclinado, nem em seis
+configurações de bissecção. Então a correção não é um conserto de navegador: é
+uma remoção da dependência.
+
+```jsx
+<div className="cc-card cc-card--frente" data-oculta={ocultaFrente || undefined}>
+<div className="cc-card cc-card--verso"  data-oculta={ocultaVerso  || undefined}>
+```
+
+```css
+.cc-card[data-oculta] { visibility: hidden; }
+```
+
+Em repouso só a face visível é pintada, sem depender de o motor acertar a conta
+de 3D. E não custa nada: a face escondida é a mesma que já estava sendo
+descartada.
+
+**Durante o giro as duas pintam**, porque a passagem de uma para a outra é aos
+90° e é por ângulo — que é exatamente o caso em que `backface-visibility` é a
+ferramenta certa, e nenhum motor erra durante 700ms de rotação.
+
 #### A interação é medida contra o palco, nunca contra a face
 
 A direção da inclinação vem da caixa do **`.cc-stage`**, que não gira e não é

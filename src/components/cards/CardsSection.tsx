@@ -128,6 +128,20 @@ export function CardsSection() {
   const ativo = mostrandoFrente ? par.frente : par.verso;
   const visivel = CARDS[ativo] ?? CARDS[par.frente];
 
+  /*
+   * Em repouso, a face que não está de frente sai da pintura.
+   *
+   * Redundante com o `backface-visibility: hidden` do CSS, e é deliberado: só o
+   * CSS **não cull** a face de trás em pelo menos um motor, e o sintoma é o
+   * cartão de trás aparecendo ao lado do da frente num ângulo levemente
+   * diferente. Ver o comentário no JSX.
+   *
+   * Durante o giro as duas pintam — a passagem de uma para a outra é aos 90° e é
+   * por ângulo, que é o que o `backface-visibility` faz certo.
+   */
+  const ocultaFrente = !virando && !mostrandoFrente;
+  const ocultaVerso = !virando && mostrandoFrente;
+
   // O ponteiro é escutado na seção inteira, e não no cartão — é o que faz a
   // interação parecer com a seção e não com uma caixa de 252px no meio dela.
   const tilt = useCardTilt();
@@ -300,10 +314,32 @@ export function CardsSection() {
               fecharVirada();
             }}
           >
-            <div className="cc-card cc-card--frente">
+            {/*
+              A face que **não** está de frente fica `visibility: hidden` quando
+              a peça está parada — e isso é redundante com o
+              `backface-visibility: hidden` do CSS, de propósito.
+
+              O `backface-visibility` sozinho **não é suficiente** e a falha é
+              visível: em pelo menos um motor ele não cull a face de trás, e o
+              Croma aparece com o cartão do Nubank aparecendo atrás, num ângulo
+              ligeiramente diferente. O ângulo é o do `rotateY(180°)` do pai
+              combinado com a inclinação: `R_y(180)·R_x(θ)` espelha o eixo X, então
+              a face de trás aparece com a inclinação invertida — e é exatamente
+              o deslocamento da imagem do usuário.
+
+              `visibility: hidden` não depende do motor acertar a conta de 3D: em
+              repouso só a face visível é pintada, ponto. E o custo é zero, porque
+              a face escondida é a mesma que já estava sendo descartada.
+
+              **Durante o giro as duas ficam pintadas**, porque a passagem de uma
+              para a outra acontece aos 90° e é por ângulo — aí o
+              `backface-visibility` é a ferramenta certa, e nenhum motor erra
+              durante 700ms de rotação.
+            */}
+            <div className="cc-card cc-card--frente" data-oculta={ocultaFrente || undefined}>
               <CreditCard card={CARDS[par.frente]} tilt={tilt.values} />
             </div>
-            <div className="cc-card cc-card--verso">
+            <div className="cc-card cc-card--verso" data-oculta={ocultaVerso || undefined}>
               <CreditCard card={CARDS[par.verso]} tilt={tilt.values} />
             </div>
           </motion.div>
