@@ -417,7 +417,16 @@ export function CardsSection() {
           viewport={{ once: true, amount: 0.25 }}
           variants={revealUp}
         >
-          <h2 className="font-display text-[64px] font-bold leading-[1.22] text-nu-brand">
+          {/*
+            A tinta vem do `chrome` do pilar visível. Ela era `text-nu-brand`
+            fixo no componente, o que está certo no Nubank e no Croma e **errado**
+            no Ultravioleta — onde o Figma põe `Text/text-on-brand` (branco),
+            porque o fundo é roxo escuro e o roxo da marca sumiria nele.
+          */}
+          <h2
+            className="font-display text-[64px] font-bold leading-[1.22]"
+            style={{ color: visivel.chrome.titleInk }}
+          >
             {visivel.showcase?.title}
           </h2>
           <p
@@ -448,7 +457,15 @@ export function CardsSection() {
             viewport={{ once: true, amount: 0.25 }}
             variants={revealUp}
           >
-            <CtaLink variant="brand" href="https://www.nubank.com.br/">
+            {/*
+              A variante é do frame visível. `brand` é o `Action/action-primary`
+              do Nubank e do Croma; o Ultravioleta usa `Purple/950`, que é a
+              única vez que a seção não vai na cor da marca.
+            */}
+            <CtaLink
+              variant={visivel.showcase?.ctaVariant ?? "brand"}
+              href="https://www.nubank.com.br/"
+            >
               {visivel.showcase?.cta}
             </CtaLink>
           </motion.div>

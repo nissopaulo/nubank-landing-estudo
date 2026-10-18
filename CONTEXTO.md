@@ -1873,6 +1873,107 @@ estável durante o giro; diff contra o Figma com resíduo 3,30 e inclinação
 descartou cliques nos meus próprios testes porque o CDP é lento. É o
 comportamento correto (uma virada por vez), mas vale saber que existe.
 
+### 2026-10-18 — Ultravioleta liberado (`103:318`)
+
+O terceiro frame da Cards Section. Foi o primeiro em que **quase nada** do que os
+dois primeiros ensinaram se aplica, e vale registrar por quê.
+
+#### O que o frame traz de diferente
+
+| | Nubank `97:2` | Croma `103:248` | Ultravioleta `103:318` |
+|---|---|---|---|
+| layout | `stack` | `rotated` | `stack` |
+| eixo principal | `space-between` | `space-between` | **`flex-end`** |
+| logo de rede | sim | sim | **não** |
+| nome | no fluxo | girado 90° | **absoluto, com gradiente** |
+| pílula ativa | `#820ad1` | `#eeece9` | **`#2e1065`** |
+| pílula inativa | `#820ad1` | `#8f7f64` | **branco** |
+| título | `#820ad1` | `#820ad1` | **branco** |
+| CTA | `Action/action-primary` | idem | **`Purple/950`** |
+| nome no cartão | "PAULO VINICIUS" | "PAULO VINICIUS" | **"Paulo Vinicius"** |
+
+Cinco campos novos, e **nenhum é abstração**: cada um é um ponto em que a árvore
+do Figma é diferente. `holderBox`, `holderGradient`, `network` opcional,
+`titleInk` no `chrome` e `ctaVariant`.
+
+O vão de cima do cartão **fica vazio**, e é assim que o design mostra: não tem
+logo de rede. Inventar uma seria conteúdo que o Figma não tem.
+
+#### O eixo principal, e o bug de uma linha
+
+Com o nome absoluto (nó `103:381`), a única peça no fluxo é a marca `nu`, e
+`space-between` com um filho só põe o filho no **começo** — a marca foi parar no
+topo do cartão. O Figma diz `justify-end` (nó `103:363`), e é o que põe a marca
+embaixo.
+
+A regra entra pelo mesmo atributo do `holderBox` (`.cc-face[data-nome-absoluto]`)
+porque no design os dois fatos vêm sempre juntos: não pode existir um sem o
+outro.
+
+E para isso aparecer foi preciso reiniciar o `next dev` — o Turbopack não tinha
+recompilado o `globals.css` e a regra simplesmente não existia na página, sem
+erro. **A mesma armadilha do `npm start` servindo build velha, com outro
+disfarce.**
+
+#### O nome em gradiente
+
+`background-clip: text` de `Neutral/400` a `Neutral/100`. É o primeiro gradiente
+de **texto** da seção, e precisa de `color: transparent` junto — sem ele o
+gradiente fica atrás do texto e não aparece.
+
+**A sonda de contraste precisou de duas mudanças** para medir esse caso:
+
+1. `querySelector` com lista devolve o primeiro em ordem de **documento**, e o
+   wrapper `.cc-holder` vem antes do filho — então o alvo precisa de `:has()`.
+2. Com `background-clip: text`, a cor sonda é pintada **por cima** pelo fundo
+   recortado, e o texto nunca "desaparece" — que é exatamente o que a sonda usa
+   para achar o fundo. A sonda agora apaga o gradiente antes de medir.
+
+E a tinta não é `cs.color`, que é `transparent`: entra a parada de **menor
+luminância** do gradiente, que é o pior caso com texto claro sobre fundo escuro.
+
+#### A quarta reprovação de contraste — e a pior do projeto
+
+| # | Onde | Razão |
+|---|---|---|
+| 12 | Pílula inativa, Nubank | 4,40:1 |
+| 14 | Pílula inativa, Croma | 2,44:1 |
+| 15 | Nome no cartão, Croma | 4,12:1 |
+| **16** | **Nome em gradiente, Ultravioleta** | **1,93:1** |
+
+`#9ca3af` sobre `rgb(159,62,228)`. A primeira parada vale **0,81826%** do
+gradiente — está quase no fim da rampa, sobre a parte mais clara do cartão. E o
+número é conservador por construção: a sonda emparelha a parada mais escura com
+o pior pixel da caixa. Mesmo a outra ponta, `#f3f4f6` sólido, daria 4,45:1 contra
+o mesmo fundo — **as duas pontas reprovam**.
+
+E o Ultravioleta é o **único dos três em que a pílula inativa passa**, com 7,10:1
+— que era justamente o que estava em questão nos outros dois.
+
+#### O CTA ganhou variante
+
+`Purple/950` com texto branco é a única vez que a seção não usa a cor da marca.
+Entrou como variante `deep` no `CtaLink`, e **a cadeia de interação é
+PROVISÓRIA**: o Figma não traz hover nem active para este CTA, e o `Purple/950`
+é o roxo mais escuro do design system — não há como escurecer mais no `active`.
+
+#### Verificação
+
+`tsc`, `eslint` e build limpos. Geometria contra os nós do frame: cartão 252,17 ×
+400; nome em 20,86 / 192,69 (Figma 20,87 / 192,69); chip em 130,42 / 47,83
+(Figma 130,43 / 47,83); marca `nu` 86,95 × 47,42 em 331,72; **sem** logo de rede;
+`justify-content: flex-end`; `background-clip: text` com o gradiente certo; três
+assets, todos do Ultravioleta.
+
+Diff contra o export do Figma sem grão: erro médio **5,37** níveis (Croma é 6,98),
+offset uniforme de 2,76/1,09/4,48, **resíduo 2,59** (Croma é 3,30), inclinação de
+erro 0,00001 níveis/px — a mesma assinatura dos outros dois, e melhor que ambos.
+
+Virada com **três** cartões, em Chrome e Firefox, movimento normal e reduzido: as
+seis transições, inclusive os saltos que forçam a troca do slot escondido
+(Nubank → Ultravioleta → Croma), sempre com uma face pintada e de frente para
+quem olha. Contraste dos dezoito textos, com as quatro reprovações de design.
+
 ### 2026-10-18 — a face de trás aparecia, e a culpa não era do `backface-visibility`
 
 Relatório: no Croma o cartão do Nubank aparecia **atrás**, num ângulo levemente

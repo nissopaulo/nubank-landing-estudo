@@ -633,11 +633,42 @@ procedimento das artes dos cartões). Todos são reexportáveis do Figma.
 
 ## Cards Section
 
-Figma `Cards Section - Nubank` (nó `97:2`), 1920×1086. Um seletor de pílulas
+Figma `Cards Section` — três frames liberados: `97:2` (Nubank), `103:248`
+(Croma) e `103:318` (Ultravioleta), todos 1920×1086. O quarto, `103:383`
+(Empresas), segue oculto. Um seletor de pílulas
 (Nubank · Croma · Ultravioleta · Empresas), o cartão de crédito, o nome, a
 descrição e o CTA. **Só o frame do Nubank está liberado**: os outros três
 existem no arquivo (nós `103:248`, `103:318` e `103:383`) e estão ocultos, e o
 trabalho é feito um frame por vez.
+
+### O Ultravioleta diverge em cinco pontos, e quatro viraram campo
+
+O terceiro frame (`103:318`) é o primeiro que **não** segue o padrão dos dois
+primeiros. Nada aqui é estilo: são os cinco pontos em que a árvore do Figma é
+diferente, e a lista é curta porque o resto do componente já estava certo.
+
+| | Nubank `97:2` | Croma `103:248` | Ultravioleta `103:318` |
+|---|---|---|---|
+| layout | `stack` | `rotated` | `stack` |
+| eixo principal | `space-between` | `space-between` | **`flex-end`** |
+| logo de rede | sim | sim | **não** |
+| nome | no fluxo | girado 90° | **absoluto, com gradiente** |
+| pílula ativa | `#820ad1` | `#eeece9` | **`#2e1065`** |
+| título | `#820ad1` | `#820ad1` | **branco** |
+| CTA | `Action/action-primary` | idem | **`Purple/950`** |
+
+Os quatro últimos viraram campo (`holderBox`, `holderGradient`, `network`
+opcional, `titleInk` no `chrome`, `ctaVariant`). O primeiro — o eixo principal
+— é CSS, e entra pelo mesmo atributo do `holderBox` porque no Figma os dois fatos
+vêm juntos no nó `103:363`.
+
+**O vão de cima do Ultravioleta fica vazio**, e é assim que o design mostra: não
+tem logo de rede. Inventar uma seria conteúdo que o Figma não tem.
+
+**O nome é gradiente** (`background-clip: text` em `Neutral/400` →
+`Neutral/100`), e é o único gradiente de **texto** da seção. Precisa de
+`color: transparent` junto — sem ele o gradiente fica atrás do texto e não
+aparece, o mesmo modo de falha do reflexo.
 
 ### O cartão é DOM, e não uma imagem exportada
 
@@ -1229,6 +1260,8 @@ Medido no render de produção, **com o grão ligado** (0.12), que é o estado q
 usuário vê. O método apaga a tinta do texto e fotografa a mesma região, para
 medir o que está de fato atrás do glifo:
 
+**Nubank** (`97:2`):
+
 | Elemento | Razão | Mínimo | |
 |---|---|---|---|
 | Título 64 px (texto grande) | 5,00:1 | 3:1 | ✅ |
@@ -1236,9 +1269,47 @@ medir o que está de fato atrás do glifo:
 | Nome no cartão 17,4 px | 4,89:1 | 4,5:1 | ✅ |
 | CTA 16 px | 6,53:1 | 4,5:1 | ✅ |
 | Pílula ativa 16 px | 6,57:1 | 4,5:1 | ✅ |
-| **Pílula inativa 16 px** | **4,40:1** | 4,5:1 | ⚠️ **reprova** |
+| **Pílula inativa 16 px** | **4,40:1** | 4,5:1 | ⚠️ **reprova** (nº 12) |
 
-**A pílula inativa é a única reprovação da seção, e é por 0,10:1.** As três
+**Croma** (`103:248`):
+
+| Elemento | Razão | Mínimo | |
+|---|---|---|---|
+| Título 64 px (texto grande) | 12,80:1 | 3:1 | ✅ |
+| Descrição 16 px | 4,62:1 | 4,5:1 | ✅ |
+| **Nome no cartão 17,4 px** | **4,12:1** | 4,5:1 | ⚠️ **reprova** (nº 15) |
+| CTA 16 px | 6,53:1 | 4,5:1 | ✅ |
+| Pílula ativa 16 px | 5,58:1 | 4,5:1 | ✅ |
+| **Pílula inativa 16 px** | **2,44:1** | 4,5:1 | ⚠️ **reprova** (nº 14) |
+
+**Ultravioleta** (`103:318`):
+
+| Elemento | Razão | Mínimo | |
+|---|---|---|---|
+| Título 64 px (texto grande) | 5,55:1 | 3:1 | ✅ |
+| Descrição 16 px | 5,97:1 | 4,5:1 | ✅ |
+| **Nome no cartão 17,4 px** | **1,93:1** | 4,5:1 | ⚠️ **reprova** (nº 16) |
+| CTA 16 px | 12,37:1 | 4,5:1 | ✅ |
+| Pílula ativa 16 px | 12,68:1 | 4,5:1 | ✅ |
+| Pílula inativa 16 px | 7,10:1 | 4,5:1 | ✅ |
+
+O Ultravioleta é o **único dos três em que a pílula inativa passa** — e com
+folga, porque ela é branca sobre um fundo roxo escuro. Era justamente o que
+estava em questão nos outros dois.
+
+**O nome em gradiente do Ultravioleta é a pior reprovação do projeto (nº 16).**
+O texto é `background-clip: text` indo de `Neutral/400` (`#9ca3af`) a
+`Neutral/100` (`#f3f4f6`), e o primeiro vale **0,81826%** do gradiente — está
+quase no fim da rampa, sobre a parte mais clara do cartão. O par medido é
+`#9ca3af` sobre `rgb(159,62,228)`, que dá **1,93:1**.
+
+Registrado como está, e o número é保守 por construção: a sonda emparelha a
+**parada mais escura** do gradiente com o **pior pixel de fundo** da caixa do
+nome, como faz com qualquer outro alvo. Mesmo o outro extremo, o `#f3f4f6` sólido,
+daria 4,45:1 contra esse mesmo fundo — ou seja, **as duas pontas da rampa
+reprovam**.
+
+**A pílula inativa do Nubank é a reprovação nº 12, e é por 0,10:1.** As três
 causas, separadas por medição:
 
 | Origem | Razão |
@@ -1296,14 +1367,13 @@ com `PROVISÓRIO`:
   desenhados no Figma (`52:3`, `76:3`, `77:40`, `80:77`) e os quatro abrem.
   A regra do bloco `active` ausente continua no `ecosystem-pillars.ts` porque é
   ela que impede a próxima adição de virar conteúdo inventado por omissão.
-- **Três cartões da Cards Section** — os frames `103:248` (Croma), `103:318`
-  (Ultraviolet) e `103:383` (Business) existem no Figma e estão ocultos, por
-  decisão de processo: a seção é feita um frame por vez. As três pílulas
-  restantes aparecem no seletor e são `<button>` com `aria-disabled` e aviso
-  para leitor de tela. **A virada entre cartões foi verificada** entre os dois
-  frames liberados — meia-volta de um cartão só, medida nos dois sentidos, com a
-  curva em `CARD_FLIP`, a inclinação estável **durante** o giro e a seção
-  responsiva em movimento normal e reduzido.
+- **O quarto cartão da Cards Section** — o frame `103:383` (Empresas) existe no
+  Figma e segue oculto, por decisão de processo: a seção é feita um frame por
+  vez. A pílula correspondente aparece no seletor como `<button>` com
+  `aria-disabled` e aviso para leitor de tela, e o clique não tem efeito.
+  **A virada foi verificada com os três liberados**, inclusive nos saltos que
+  forçam a troca do slot escondido (Nubank → Ultravioleta → Croma), em Chrome e
+  Firefox, movimento normal e reduzido.
 - **Texto do rodapé** com o aviso legal — redigido para este estudo.
 
 Além disso, **não há** números de usuários, taxas, limites, depoimentos nem
@@ -1372,12 +1442,16 @@ redirecionadores — esta página não tem função de cadastro.
 
 ## Próximos passos
 
-1. Liberar o terceiro frame da Cards Section (`103:318`, Ultravioleta) — a
-   virada já aceita um terceiro cartão: só o slot **escondido** troca, e a
-   troca não aparece porque ele está de costas.
+1. Liberar o quarto frame da Cards Section (`103:383`, Empresas) — a virada já
+   aceita um quarto cartão: só o slot **escondido** troca, e a troca não
+   aparece porque ele não está pintado.
 2. Desenhar no Figma os painéis dos submenus da navegação — é o bloqueio do
    restante da página.
-3. Decidir o contraste da pílula inativa da Cards Section (4,40:1 em 16 px).
+3. Decidir as quatro reprovações de contraste da Cards Section, que são **do
+   design** e estão implementadas como o Figma pede: nº 12 (pílula inativa do
+   Nubank, 4,40:1), nº 14 (pílula inativa do Croma, 2,44:1), nº 15 (nome no
+   cartão do Croma, 4,12:1) e nº 16 (nome em gradiente do Ultravioleta, 1,93:1 —
+   a pior do projeto).
 4. Decidir o que fazer com o contraste da descrição do Croma (3,48:1 em 16 px) —
    hoje segue o Figma, e é o único texto do Ecossystem que não passa em AA.
 5. Desenhar no Figma as seções `Porque a Nu` e `Diferenciais` (a de `Cartões` já

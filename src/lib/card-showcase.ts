@@ -5,9 +5,9 @@
  *
  * A seção tem quatro frames (`97:2` Nubank, `103:248` Croma, `103:318`
  * Ultravioleta e `103:383` Business) e o trabalho é feito **um frame por vez**.
- * Hoje há dois: o Nubank e o Croma. Os outros dois seguem ocultos, e as
- * pílulas correspondentes aparecem no seletor como `<button>` com `aria-disabled`
- * e aviso para leitor de tela.
+ * Hoje há três: Nubank, Croma e Ultravioleta. O quarto (Empresas) segue oculto,
+ * e a pílula correspondente aparece no seletor como `<button>` com
+ * `aria-disabled` e aviso para leitor de tela.
  *
  * A ausência do campo `showcase` é o que torna a pílula não-clicável, e não uma
  * flag separada: é o mesmo mecanismo do `ecosystem-pillars.ts`, e é o que impede
@@ -26,12 +26,20 @@
  *   Figma.
  * - **A tinta da descrição é por pilar.** `Text/text-primary` (#111) no Nubank,
  *   `Text/text-brand` (#820ad1) no Croma.
- * - **A composição do cartão é por pilar.** Não é abstração: os dois frames
- *   montam as mesmas três peças em árvores diferentes. Ver `layout`.
+ * - **A composição do cartão é por pilar.** Não é abstração: os frames montam
+ *   as mesmas peças em árvores diferentes. Ver `layout`.
+ * - **A pílula ativa deixa de ser a cor da marca no Ultravioleta.** Passa a ser
+ *   `Purple/950`, com a inativa em contorno branco. É a primeira vez que a
+ *   ativa não é `#820ad1`, e é o que impede a troca de se ler "roxo sobre roxo".
+ * - **O título é branco no Ultravioleta.** Era `text-nu-brand` fixo no
+ *   componente — certo no Nubank e no Croma, errado aqui.
+ * - **O nome do cartão é gradiente no Ultravioleta** (`background-clip: text`),
+ *   e é a única peça que **falta**: o frame não tem logo de rede, e o vão de
+ *   cima fica vazio. Ver `network`, `holderGradient` e `holderBox`.
  *
- * O que **não** virou campo, porque é igual nos dois e seria chute:
- * `Action/action-primary` no CTA e `Background/bg-brand` no título. Se um frame
- * futuro divergir, o campo entra na hora — não antes.
+ * O que **não** virou campo, porque é igual nos três e seria chute:
+ * `Action/action-primary` no CTA e a caixa do chip. Se o frame de Empresas
+ * divergir, o campo entra na hora — não antes.
  */
 
 /**
@@ -44,6 +52,20 @@
 export type CardChrome = {
   /** Fundo da seção. */
   background: string;
+
+  /**
+   * Tinta do título abaixo do cartão.
+   *
+   * Entra no `chrome` e não no `showcase` porque é uma cor da seção, e as
+   * cores da seção existem mesmo para um frame ainda não liberado — é o que faz
+   * a pílula dele já aparecer na cor certa.
+   *
+   * E é campo desde o Ultravioleta: o título era `text-nu-brand` fixo no
+   * componente, o que está certo no Nubank e no Croma e **errado** no
+   * Ultravioleta, onde o Figma põe `Text/text-on-brand` (branco) sobre um fundo
+   * roxo escuro.
+   */
+  titleInk: string;
   pill: {
     /** Fundo da pílula ativa. */
     onBg: string;
@@ -113,8 +135,37 @@ export type ShowcaseCard = {
     /** Nome impresso no cartão. */
     holder: string;
 
-    /** Peças do cartão, em `/public/images/credit-card`. */
-    network: string;
+    /**
+     * O nome em **gradiente**, quando o frame usa um.
+     *
+     * É `background-clip: text` no Figma, e não uma cor sólida: o frame do
+     * Ultravioleta pinta o nome de `Neutral/400` a `Neutral/100`. Vira
+     * `background-image` com `color: transparent`.
+     *
+     * Ausente nos outros dois frames, que têm tinta sólida em `ink`.
+     */
+    holderGradient?: string;
+
+    /**
+     * O nome posicionado **absolutamente** contra o cartão.
+     *
+     * No frame do Ultravioleta o nome é absoluto em `(20,87 ; 192,69)` e a
+     * marca `nu` é a única peça no fluxo — não há logo de rede, e sobra o vão
+     * de cima. Sem isto o `justify-end` da coluna jogaria o nome para o topo.
+     *
+     * Ausente nos outros dois frames, onde o nome flui na coluna e é o
+     * `justify-between` que o posiciona.
+     */
+    holderBox?: { left: number; top: number };
+
+    /**
+     * Peças do cartão, em `/public/images/credit-card`.
+     *
+     * A rede é **opcional**: o frame do Ultravioleta não tem logo de rede, e
+     * inventar uma seria conteúdo que o design não tem. Onde falta, o espaço
+     * fica vazio — que é o que o Figma mostra.
+     */
+    network?: string;
     nuLogo: string;
 
     /**
@@ -145,6 +196,15 @@ export type ShowcaseCard = {
 
     /** Rótulo do CTA. */
     cta: string;
+
+    /**
+     * Variante do CTA.
+     *
+     * Ausente nos dois primeiros frames, que usam `Action/action-primary` — a
+     * variante `brand`. O Ultravioleta usa `Purple/950` com texto branco, e é
+     * a única vez que a seção não vai na cor da marca.
+     */
+    ctaVariant?: "brand" | "deep";
   };
 };
 
@@ -160,6 +220,7 @@ export const CARDS: ShowcaseCard[] = [
         idleInk: "#820ad1",
         idleBorder: "#820ad1",
       },
+      titleInk: "#820ad1",
     },
     showcase: {
       layout: "stack",
@@ -210,6 +271,7 @@ export const CARDS: ShowcaseCard[] = [
         idleInk: "#8f7f64",
         idleBorder: "#8f7f64",
       },
+      titleInk: "#820ad1",
     },
     showcase: {
       layout: "rotated",
@@ -244,8 +306,71 @@ export const CARDS: ShowcaseCard[] = [
     id: "ultravioleta",
     label: "Ultravioleta",
     chrome: {
-      background: "#ffffff",
-      pill: { onBg: "#820ad1", onBgInk: "#ffffff", idleInk: "#820ad1", idleBorder: "#820ad1" },
+      /**
+       * Radial de **cinco** paradas, roxo fundo. É o mesmo gradiente do cartão
+       * — as cinco cores são as mesmas e na mesma ordem —, mudando de
+       * `gradientTransform`: na seção ele é quase redondo (96 × 54,3) e no
+       * cartão é alongado (36,5 × 8,8), que é o que dá a diagonal do cartão.
+       *
+       * A matriz tem rotação, e o CSS não expressa rotação de elipse em
+       * `radial-gradient`: ele achata o raio e gira o eixo. Vai como data URI
+       * pelo mesmo motivo do Nubank e do Croma.
+       */
+      background: `url("data:image/svg+xml;utf8,<svg viewBox='0 0 1920 1086' xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none'><rect x='0' y='0' height='100%' width='100%' fill='url(%23grad)' opacity='1'/><defs><radialGradient id='grad' gradientUnits='userSpaceOnUse' cx='0' cy='0' r='10' gradientTransform='matrix(96 54.3 -54.3 96 960 543)'><stop stop-color='rgba(155,47,232,1)' offset='0'/><stop stop-color='rgba(128,39,199,1)' offset='0.25'/><stop stop-color='rgba(101,32,167,1)' offset='0.5'/><stop stop-color='rgba(73,24,134,1)' offset='0.75'/><stop stop-color='rgba(46,16,101,1)' offset='1'/></radialGradient></defs></svg>")`,
+      pill: {
+        /**
+         * Pílula **da seção**: a inativa é contorno e texto brancos, e a ativa é
+         * `Purple/950` — não a cor da marca. É a primeira vez que a ativa não é
+         * `#820ad1`, e é o que faz a troca não se ler como "roxo sobre roxo".
+         */
+        onBg: "#2e1065",
+        onBgInk: "#ffffff",
+        idleInk: "#ffffff",
+        idleBorder: "#ffffff",
+      },
+      /** `Text/text-on-brand`: branco. Sobre o roxo escuro do fundo. */
+      titleInk: "#ffffff",
+    },
+    showcase: {
+      /**
+       * `stack`, com duas diferenças que são **dado**, não layout: sem logo de
+       * rede, e o nome absoluto. O arranjo da coluna é o mesmo do Nubank —
+       * `justify-end`, `items-start`, `gap` de 8,696.
+       */
+      layout: "stack",
+      gradient: `url("data:image/svg+xml;utf8,<svg viewBox='0 0 252.17 400' xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none'><rect x='0' y='0' height='100%' width='100%' fill='url(%23grad)' opacity='1'/><defs><radialGradient id='grad' gradientUnits='userSpaceOnUse' cx='0' cy='0' r='10' gradientTransform='matrix(36.478 8.7826 -5.537 22.997 126.09 200)'><stop stop-color='rgba(155,47,232,1)' offset='0'/><stop stop-color='rgba(128,39,199,1)' offset='0.25'/><stop stop-color='rgba(101,32,167,1)' offset='0.5'/><stop stop-color='rgba(73,24,134,1)' offset='0.75'/><stop stop-color='rgba(46,16,101,1)' offset='1'/></radialGradient></defs></svg>")`,
+      ink: "#ffffff",
+      holder: "Paulo Vinicius",
+      /**
+       * `background-clip: text` no Figma. As duas cores são tokens do design
+       * system (`Neutral/400` e `Neutral/100`) e o ângulo sai da matriz do
+       * gradiente, então é o único gradiente de **texto** da seção — e é
+       * `linear-gradient`, que o CSS expressa sem data URI.
+       *
+       * A segunda parada está em 109,71%: além de 100% o CSS deixa de interpolar
+       * e fica no último tom, que é o que dá o nome quase branco.
+       */
+      holderGradient:
+        "linear-gradient(221.31042032068433deg, #9ca3af 0.81826%, #f3f4f6 109.71%)",
+      /** 20,87 é o padding do cartão; 192,69 é o `top` do nó `103:381`. */
+      holderBox: { left: 20.87, top: 192.69 },
+      nuLogo: "/images/credit-card/ultravioleta-nu-logo.svg",
+      chip: {
+        /** Mesmos valores do Nubank: o chip é a mesma peça, no mesmo lugar. */
+        left: 130.43,
+        top: 47.83,
+        contactInset: "31.92% 26.67% 31.45% 28.69%",
+        contact: "/images/credit-card/ultravioleta-chip-contact.svg",
+        lines: "/images/credit-card/ultravioleta-chip-lines.svg",
+      },
+      title: "Cartão Ultravioleta",
+      desc: [
+        "Experiência premium com 1,25% de cashback ou acúmulo de pontos,",
+        "benefícios para viagens e mensalidade de R$ 89, com possibilidade de isenção.",
+      ],
+      descInk: "#ffffff",
+      cta: "Conheça o Cartão Ultravioleta",
+      ctaVariant: "deep",
     },
   },
   {
@@ -254,6 +379,7 @@ export const CARDS: ShowcaseCard[] = [
     chrome: {
       background: "#ffffff",
       pill: { onBg: "#820ad1", onBgInk: "#ffffff", idleInk: "#820ad1", idleBorder: "#820ad1" },
+      titleInk: "#820ad1",
     },
   },
 ];

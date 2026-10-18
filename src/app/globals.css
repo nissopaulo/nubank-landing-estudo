@@ -553,6 +553,22 @@
 .cc-face[data-layout="rotated"] {
   align-items: flex-end;
 }
+
+/*
+ * O eixo principal também é por frame, e no Ultravioleta muda de verdade.
+ *
+ * Com o nome absoluto (nó `103:381`), a única peça no fluxo é a marca `nu`, e
+ * `space-between` com um filho só põe o filho no **começo** — a marca ia para o
+ * topo do cartão. O Figma diz `justify-end` nesse frame (nó `103:363`), e é o
+ * que põe a marca embaixo com o vão de cima vazio.
+ *
+ * Os dois fatos vêm sempre juntos no design: `holderBox` no dado e
+ * `justify-end` no frame. A regra entra pelo mesmo atributo para não poder
+ * existir um sem o outro.
+ */
+.cc-face[data-nome-absoluto] {
+  justify-content: flex-end;
+}
 .cc-flip:hover .cc-face {
   box-shadow:
     0 4px 8px rgb(46 16 101 / 0.2),

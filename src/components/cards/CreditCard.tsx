@@ -77,7 +77,13 @@ export function CreditCard({
        * 252×400 — irrelevante para uma seção com um cartão só.
        */
     >
-      <div className="cc-face" data-layout={data.layout} style={faceStyle}>
+      <div
+        className="cc-face"
+        data-layout={data.layout}
+        /* Ver `.cc-face[data-nome-absoluto]` no `globals.css`. */
+        data-nome-absoluto={data.holderBox ? true : undefined}
+        style={faceStyle}
+      >
           {data.layout === "stack" ? (
             <StackPieces data={data} />
           ) : (
@@ -153,19 +159,34 @@ export function CreditCard({
   );
 }
 
-/** Peças do cartão no arranjo do `97:2` — três, empilhadas, sem rotação. */
+/**
+ * Peças do cartão no arranjo em coluna — `97:2` (Nubank) e `103:318`
+ * (Ultravioleta).
+ *
+ * As duas árvores são a mesma coluna com `justify-end`, e diferem em dados, não
+ * em arranjo: o Ultravioleta não tem logo de rede e posiciona o nome
+ * absolutamente.
+ */
 function StackPieces({ data }: { data: NonNullable<ShowcaseCard["showcase"]> }) {
   return (
     <>
-      <Image
-        src={data.network}
-        alt=""
-        aria-hidden="true"
-        width={86.8654}
-        height={53.6896}
-        className="h-auto w-[86.8654px] max-w-none"
-        unoptimized
-      />
+      {/*
+        A rede é opcional porque o frame do Ultravioleta **não tem** logo de
+        rede — o vão de cima do cartão fica vazio, e é assim que o Figma mostra.
+        Não é peça faltando por descuido do export: o nó `103:363` tem três
+        filhos (marca `nu`, chip e nome) e nenhum deles é a rede.
+      */}
+      {data.network ? (
+        <Image
+          src={data.network}
+          alt=""
+          aria-hidden="true"
+          width={86.8654}
+          height={53.6896}
+          className="h-auto w-[86.8654px] max-w-none"
+          unoptimized
+        />
+      ) : null}
 
       {/*
         `leading-[1.25]`, e não `leading-none`: é a altura natural do Montserrat a
@@ -173,9 +194,35 @@ function StackPieces({ data }: { data: NonNullable<ShowcaseCard["showcase"]> }) 
         de posição — o nome é o elemento do meio do `justify-between`, então a
         altura dele distribui os dois vãos e qualquer caixa diferente move o
         texto em ~2px.
+
+        No Ultravioleta o nome é absoluto nos valores do nó `103:381`, porque a
+        coluna tem uma peça só no fluxo: sem isso o `justify-end` jogaria o nome
+        para o topo do cartão.
       */}
-      <span className="cc-holder font-display text-[17.391px] font-semibold leading-[1.25]">
-        {data.holder}
+      <span
+        className="cc-holder font-display text-[17.391px] font-semibold leading-[1.25]"
+        style={
+          data.holderBox
+            ? { position: "absolute", left: data.holderBox.left, top: data.holderBox.top }
+            : undefined
+        }
+      >
+        {/*
+          `background-clip: text` quando o frame tem gradiente. O Figma pinta o
+          nome do Ultravioleta de `Neutral/400` a `Neutral/100` — sem o
+          `color: transparent` o gradiente fica atrás do texto e não aparece,
+          que é o mesmo modo de falha do reflexo descrito acima.
+        */}
+        {data.holderGradient ? (
+          <span
+            className="bg-clip-text text-transparent"
+            style={{ backgroundImage: data.holderGradient }}
+          >
+            {data.holder}
+          </span>
+        ) : (
+          data.holder
+        )}
       </span>
 
       <Image
@@ -228,19 +275,21 @@ function RotatedPieces({ data }: { data: NonNullable<ShowcaseCard["showcase"]> }
       </div>
 
       {/* Linha 2 — rede de cartões, girada, alinhada à direita. */}
-      <div className="flex h-[86.866px] w-[53.69px] shrink-0 items-center justify-center leading-[0]">
-        <div className="flex-none rotate-90">
-          <Image
-            src={data.network}
-            alt=""
-            aria-hidden="true"
-            width={86.8656}
-            height={53.6897}
-            className="h-[53.6897px] w-[86.8656px] max-w-none"
-            unoptimized
-          />
+      {data.network ? (
+        <div className="flex h-[86.866px] w-[53.69px] shrink-0 items-center justify-center leading-[0]">
+          <div className="flex-none rotate-90">
+            <Image
+              src={data.network}
+              alt=""
+              aria-hidden="true"
+              width={86.8656}
+              height={53.6897}
+              className="h-[53.6897px] w-[86.8656px] max-w-none"
+              unoptimized
+            />
+          </div>
         </div>
-      </div>
+      ) : null}
     </>
   );
 }

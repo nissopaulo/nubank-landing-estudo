@@ -1,7 +1,7 @@
 import type { AnchorHTMLAttributes, ReactNode } from "react";
 import Link from "next/link";
 
-type Variant = "solid" | "outline" | "ghost" | "brand";
+type Variant = "solid" | "outline" | "ghost" | "brand" | "deep";
 
 const VARIANTS: Record<Variant, string> = {
   // Action/action-secondary sobre Action/action-secondary-text
@@ -34,6 +34,20 @@ const VARIANTS: Record<Variant, string> = {
    */
   brand:
     "bg-nu-brand text-white hover:bg-nu-purple-800 active:bg-nu-purple-950",
+  /*
+   * Fundo Purple/950 com texto branco — o CTA do frame do Ultravioleta
+   * (`103:361`), que é a única vez que a Cards Section não usa a cor da marca.
+   *
+   * **A cadeia de interação é PROVISÓRIA.** O Figma não traz hover nem active
+   * para este CTA, e o `Purple/950` é o roxo mais escuro do design system: não
+   * há como escurecer mais no `active`, então ele volta ao próprio repouso.
+   *
+   * O que não é arbitrário é o texto: branco sobre `Purple/950` e branco sobre
+   * `Purple/800` no hover (7,21:1). A alternativa — levar o hover para branco,
+   * como a variante `solid` faz — deixaria o texto branco sobre branco.
+   */
+  deep:
+    "bg-nu-purple-950 text-white hover:bg-nu-purple-800 active:bg-nu-purple-950",
 };
 
 const BASE =
