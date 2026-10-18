@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import type { Variants } from "motion/react";
 
 import { CreditCard } from "@/components/cards/CreditCard";
 import { useCardTilt } from "@/components/cards/use-card-tilt";
@@ -10,16 +9,9 @@ import { CtaLink } from "@/components/ui/CtaLink";
 import {
   ACTIVE_INDEX,
   CARDS,
-  SECTION_BACKGROUND,
   type ShowcaseCard,
 } from "@/lib/card-showcase";
-import {
-  DURATION,
-  EASE_EMPHASIZED,
-  revealScale,
-  revealUp,
-  staggerContainer,
-} from "@/lib/motion";
+import { revealScale, revealUp, staggerContainer } from "@/lib/motion";
 
 /**
  * Cards Section — Figma `Cards Section - Nubank` (nó `97:2`), 1920×1086.
@@ -83,7 +75,7 @@ export function CardsSection() {
       id="cartoes"
       aria-label="Cartões"
       className="flex flex-col items-center gap-[100px] px-[200px] py-[100px]"
-      style={{ backgroundImage: SECTION_BACKGROUND }}
+      style={{ backgroundImage: card.chrome.background }}
       {...tilt.bind}
     >
       {/*
@@ -106,11 +98,30 @@ export function CardsSection() {
         viewport={{ once: true, amount: 0.25 }}
         variants={staggerContainer(0.09)}
       >
+        {/*
+          A paleta das pílulas vem do pilar **ativo**, e não do pilar de cada
+          pílula. É o que o Figma mostra: no frame do Nubank as quatro pílulas
+          usam `#820ad1`, e no do Croma as quatro usam `#8f7f64` — a paleta do
+          frame, não a de cada um.
+
+          A diferença é observável: com a paleta por pílula, a pílula do Croma
+          ficava `#8f7f64` sobre o fundo lilás do Nubank, e a mediava em 2,38:1.
+          Não é um estado que o Figma jamais mostra, e por isso não é um estado
+          que a seção pode ter.
+        */}
         <div
           role="tablist"
           aria-label="Escolher o cartão"
           aria-orientation="horizontal"
           className="flex items-start gap-[24px]"
+          style={
+            {
+              "--cc-pill-on-bg": card.chrome.pill.onBg,
+              "--cc-pill-on-ink": card.chrome.pill.onBgInk,
+              "--cc-pill-idle-ink": card.chrome.pill.idleInk,
+              "--cc-pill-idle-border": card.chrome.pill.idleBorder,
+            } as React.CSSProperties
+          }
         >
           {CARDS.map((item, index) => (
             <motion.div key={item.id} variants={revealUp}>
@@ -152,11 +163,28 @@ export function CardsSection() {
           viewport={{ once: true, amount: 0.25 }}
           variants={revealScale}
         >
-          <AnimatePresence initial={false}>
+          {/*
+            `custom={direction}` não é detalhe: é o que faz a virada inverter ao
+            voltar.
+
+            O `AnimatePresence` mantém o cartão que sai montado durante o
+            `exit`, mas com as **props do render anterior** — e a direção da
+            transição é uma delas. Sem o `custom`, o cartão que sai usaria a
+            direção antiga e os dois sentidos girariam para o mesmo lado:
+            medindo, Nubank → Croma saía a +90° e Croma → Nubank **também**,
+            quando deveria sair a −90°. A troca de conteúdo funcionava; o gesto,
+            não.
+
+            O `custom` é a via documentada do Motion para isso: ele chega ao
+            `exit` do componente que está saindo, que já está com props velhas.
+            O `initial` continua vindo da prop, porque o cartão que entra é
+            criado agora e recebe a direção atual.
+          */}
+          <AnimatePresence initial={false} custom={direction}>
             <CreditCard
               key={card.id}
               card={card}
-              flipVariants={flipVariants(direction)}
+              direction={direction}
               tilt={tilt}
             />
           </AnimatePresence>
@@ -172,7 +200,10 @@ export function CardsSection() {
           <h2 className="font-display text-[64px] font-bold leading-[1.22] text-nu-brand">
             {card.showcase?.title}
           </h2>
-          <p className="font-display text-[16px] font-medium leading-[1.25] text-nu-text-primary">
+          <p
+            className="font-display text-[16px] font-medium leading-[1.25]"
+            style={{ color: card.showcase?.descInk }}
+          >
             {card.showcase?.desc[0]}
             <br />
             {card.showcase?.desc[1]}
@@ -245,30 +276,3 @@ function CardTab({
   );
 }
 
-/**
- * A virada.
- *
- * Os dois cartões ficam montados ao mesmo tempo (o `AnimatePresence` sem
- * `mode="wait"`) e se cruzam por 90°, que é o que faz ler como **um** objeto
- * girando em vez de dois cartões trocando. Com `wait` o antigo sumiria antes do
- * novo aparecer, e o gesto seria um corte com dois intervalos.
- *
- * `EASE_EMPHASIZED`, pelo mesmo motivo do Ecossystem: com `EASE_OUT_EXPO` o
- * cartão chega em 90° cedo demais e passa o resto da duração quase parado na
- * borda — o movimento se lê como travado, não como giro.
- */
-function flipVariants(direction: number): Variants {
-  const edge = direction * 90;
-
-  return {
-    initial: { rotateY: -edge },
-    animate: {
-      rotateY: 0,
-      transition: { duration: DURATION.base, ease: EASE_EMPHASIZED },
-    },
-    exit: {
-      rotateY: edge,
-      transition: { duration: DURATION.base, ease: EASE_EMPHASIZED },
-    },
-  };
-}

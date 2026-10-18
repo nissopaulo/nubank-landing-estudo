@@ -510,6 +510,17 @@
   background-repeat: no-repeat;
 
   /*
+   * O alinhamento do eixo cruzado é **por frame**, e é o que faz as duas
+   * composições parecerem cartões diferentes em vez do mesmo cartão arrumado de
+   * outro jeito: no `97:2` as peças são `items-start` (à esquerda) e no `103:248`
+   * são `items-end` (à direita).
+   *
+   * Medido: sem esta regra a rede de cartões do Croma saía em x 20,86 quando o
+   * frame a põe em 177,61 — 157px de lado.
+   */
+  align-items: flex-start;
+
+  /*
    * Sombra do cartão — DESVIO AUTORAL, por pedido do usuário.
    *
    * O Figma **não tem** sombra aqui, e isso foi medido antes de adicionar: a
@@ -536,6 +547,10 @@
     0 2px 4px rgb(46 16 101 / 0.16),
     0 24px 56px -12px rgb(46 16 101 / 0.32);
   transition: box-shadow 400ms ease-out;
+}
+
+.cc-face[data-layout="rotated"] {
+  align-items: flex-end;
 }
 .cc-flip:hover .cc-face {
   box-shadow:
@@ -599,24 +614,39 @@
 /*
  * Pílulas do seletor.
  *
+ * As cores são **por pilar**, e por isso chegam por custom property em vez de
+ * vir em classe: no Nubank a pílula ativa é `Action/action-primary` com texto
+ * branco, e no Croma é `#eeece9` com texto `Text/text-brand`. Com
+ * `#8f7f64` — que não é token — nas inativas do Croma, não há classe a escrever:
+ * o valor vem do Figma e entra por `style`.
+ *
+ * O `color-mix` do hover usa a tinta do próprio pilar pelo mesmo motivo.
+ *
  * O cursor precisa da regra pelo mesmo motivo do `.eco-card`: o UA stylesheet
  * põe `cursor: default` em `<button>` e o preflight do Tailwind v4 não desfaz.
  */
 .cc-tab {
   cursor: pointer;
-  border: 1px solid transparent;
-  color: var(--color-nu-brand);
+  border: 1px solid var(--cc-pill-idle-border, var(--color-nu-brand));
+  color: var(--cc-pill-idle-ink, var(--color-nu-brand));
   transition:
     background-color 200ms ease-out,
     color 200ms ease-out,
     border-color 200ms ease-out;
 }
 .cc-tab[data-state="active"] {
-  background-color: var(--color-nu-brand);
-  color: var(--color-nu-action-text);
+  background-color: var(--cc-pill-on-bg, var(--color-nu-brand));
+  color: var(--cc-pill-on-ink, var(--color-nu-action-text));
+  /* A ativa não tem borda nos dois frames — a caixa é a mesma nos dois estados,
+     então a borda transparente mantém a pílula do mesmo tamanho e não "pula". */
+  border-color: transparent;
 }
 .cc-tab[data-state="idle"]:hover {
-  background-color: color-mix(in srgb, var(--color-nu-brand) 10%, transparent);
+  background-color: color-mix(
+    in srgb,
+    var(--cc-pill-idle-ink, var(--color-nu-brand)) 12%,
+    transparent
+  );
 }
 .cc-tab[aria-disabled="true"] {
   cursor: not-allowed;

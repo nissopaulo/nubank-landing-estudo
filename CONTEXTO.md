@@ -252,7 +252,9 @@ Escrever a mensagem num arquivo e usar `git commit -F <arquivo>`.
 | 10 | **A descrição do Croma reprova AA em texto pequeno** — 3,48:1 a 16 px, por desenho (a tinta é a própria marca sobre um creme que escurece). Implementado como o Figma pede. Se for para produção, a correção é no design, não no código | `ecosystem-pillars.ts` |
 | 11 | **A descrição do Empresas passa em AA por 0,06:1 de folga** — pior ponto 4,56:1 a 16 px. Passa, mas é o mais apertado dos quatro cards e qualquer ajuste de tom no fundo para mais escuro reprova. Vale revisar junto com a nº 10, que é o caso oposto | `ecosystem-pillars.ts` |
 | 12 | **A pílula inativa da Cards Section reprova AA em texto pequeno** — 4,40:1 a 16 px, contra 4,5:1. **Por 0,10:1.** O design puro passa (≈4,93:1 no export do Figma) e o grão 0.12 come 0,24 dessa folga; sem grão são 4,64:1. Implementado como o Figma pede. A correção é de design: fundo próprio na pílula, ou outra cor de texto | `card-showcase.ts` / `globals.css` |
-| 13 | **A virada entre cartões está escrita e nunca executou** — com um só frame liberado não existe troca para medir. Medir por CDP quando o `103:248` entrar, pela mesma razão do Ecossystem: o sentido do gesto é a coisa mais fácil de inverter sem ninguém perceber | `CardsSection.tsx` |
+| 13 | ~~A virada entre cartões está escrita e nunca executou~~ — **resolvido 2026-10-18**. Medida por CDP, e a medição achou um bug real: **os dois sentidos giravam para o mesmo lado**. Corrigido com o `custom` do `AnimatePresence` | `CreditCard.tsx` |
+| 14 | **A pílula inativa do Croma reprova AA em texto pequeno** — 2,59:1 calculado direto do gradiente do design, 2,44:1 com o grão. É a pior reprovação do projeto: `#8f7f64` sobre o creme de `rgb(217,210,196)` na altura das pílulas. Implementado como o Figma pede; a correção é de design | `card-showcase.ts` |
+| 15 | **O nome no cartão do Croma reprova AA em texto pequeno** — 4,26:1 no design, 4,12:1 com o grão. `Purple/800` sobre o gradiente do cartão. O pior ponto é a **base** do texto, onde o gradiente já passou da parada `bfb299`. Implementado como o Figma pede | `card-showcase.ts` |
 
 **No Figma hoje existem nove frames visíveis** — `Hero Section` (`14:446`), os
 **quatro** da Ecossystem (`52:3` Nubank, `76:3` Croma, `77:40` Ultravioleta,
@@ -277,6 +279,23 @@ design das seções seguintes — por isso os itens 2 e 3 bloqueiam o resto.
   comparar com a mesma seção sem grão para separar as duas causas. Foi assim que
   a pílula inativa da Cards Section ficou registrada como 4,40:1 sendo 4,93:1 no
   design.
+- **Contraste de fundo com gradiente: calcule, não amostre.** Quando o fundo é
+  um `radialGradient` do Figma — que é uma string SVG que a gente copia crua —
+  dá para avaliar o valor **no ponto**, analiticamente: `t = |M⁻¹(p − c)| / r`,
+  e a cor é a interpolação das paradas em `t`. Sem amostra, sem grão, sem
+  dithering. Validado duas vezes: a pílula do Nubank dá **4,61:1** calculada e
+  **4,64:1** medida no render sem grão. Amostrar erra de três maneiras que já
+  morderam aqui: glifo dentro da amostra, borda de 1px numa imagem reduzida (a
+  borda da pílula dominou a faixa de 5px e devolveu a própria tinta), e o grão
+  por cima.
+- **Ao medir `rotateY` no navegador, o valor vivo está em `getComputedStyle`.**
+  O Motion 14 anima transform por **WAAPI**, e com ela o `style.transform`
+  inline fica no valor de **origem** enquanto o corrente mora na animação — ler o
+  inline dá a mesma linha por 700ms e um salto no fim, que é a duração da
+  animação, e parece bug de código. E o ângulo sai de `atan2(m31, m11)`:
+  **`atan2(m13, m11)` devolve o valor negado**, e foi o que quase mostrou o gesto
+  da virada invertido quando ele estava certo. Conferir o decoder contra um
+  `rotateY(45deg)` conhecido leva um minuto e fecha a dúvida.
 - **Ao medir contraste pela captura:** a caixa do *texto*, e não a do elemento
   (CTA e pílulas são `rounded-full`, e os cantos da caixa do elemento são fundo
   da seção — foi o que reprovou o CTA em 1,44:1 e a pílula em 1,2:1); o `clip` do
@@ -1607,5 +1626,104 @@ documentadas em `motion.ts` sem uso, mantidas para as seções que viriam; a
 entrada do cartão passou a usá-la. `EASE_OUT_QUINT` e `springSoft` continuam sem
 uso, e o comentário foi atualizado.
 
-**Próximo passo:** o mesmo do fim da sessão anterior — aguardar o `103:248`
-(Croma), que libera a medição da virada.
+**Próximo passo:** aguardar o `103:318` (Ultravioleta). O preenchimento é o campo
+`showcase` em `lib/card-showcase.ts` e, se o frame vier na composição `stack`,
+nada mais no componente muda.
+
+---
+
+### 2026-10-18 — Croma liberado (`103:248`): a virada medida, e um bug nela
+
+O usuário liberou o segundo frame. A seção agora tem dois cartões que trocam, e
+a **pendência nº 13 — a virada escrita e nunca executada — foi medida**. Ela
+achou um bug real.
+
+**O bug: os dois sentidos giravam para o mesmo lado.** Medido por CDP:
+
+```
+Nubank -> Croma   saindo  0° -> +90°   entrando -90° -> 0°    correto
+Croma  -> Nubank  saindo  0° -> +90°   entrando +90° -> 0°    ERRADO
+```
+
+A causa é estrutural e não é óbvia. O `AnimatePresence` mantém o cartão que sai
+montado durante o `exit`, mas **com as props do render anterior** — e a direção
+da transição é uma delas. Então o cartão que saía usava a direção de quando foi
+criado, não a da troca que estava executando. A troca de conteúdo funcionava; o
+gesto, não.
+
+A correção é o `custom` do `AnimatePresence`, que é exatamente para isso: chega ao
+`exit` do componente que está saindo, que já está com props velhas. O `initial`
+continua vindo da prop, porque o cartão que entra é criado agora. Depois da
+correção, os dois sentidos invertem.
+
+**O que a medição custou, e por que ela quase mentiu.** Quatro sondas, quatro
+erros, e em três deles o código estava certo:
+
+1. `Emulation.setDeviceMetricsOverride` **não sobrevive entre execuções**. A
+   janela ficou em 764×485, três pontos caíam fora dela ou sob o header, e a
+   leitura saía zerada com cara de "a animação não roda".
+2. Ler `el.style.transform` dá o valor **declarado**, não o vivo. O Motion 14
+   anima transform por **WAAPI**, e com ela o inline fica na origem enquanto o
+   corrente mora na animação. O sintoma é uma linha congelada por 700ms — que é
+   exatamente a duração — e um salto no fim.
+3. O decoder do ângulo usou `atan2(m13, m11)`, que é o par de **sinal oposto**:
+   devolve o valor negado. Cheguei a concluir que o gesto estava invertido, e na
+   verdade estava certo. Conferir contra um `rotateY(45deg)` conhecido resolveu em
+   uma linha: o ângulo é `atan2(m31, m11)`.
+4. O `clip` do CDP é em coordenadas de documento, e a espera de repaint precisa
+   vir **antes** de ler o rect, não depois.
+
+**A segunda coisa que o frame do Croma mostrou: quase nada é genérico.** O que
+virou campo em `card-showcase.ts` porque muda entre os dois frames: o fundo da
+seção (radial roxo de 8 paradas contra creme de 5), a paleta das pílulas, a tinta
+da descrição (`Text/text-primary` contra `Text/text-brand`), a posição do chip e
+o seu `inset`, os quatro assets do cartão e — o mais visível — **a composição**:
+o `97:2` empilha três peças sem rotação, o `103:248` usa duas linhas alinhadas à
+direita com **cada peça girada 90°**.
+
+O que **não** virou campo: `Action/action-primary` no CTA e
+`Background/bg-brand` no título, iguais nos dois. Se um frame futuro divergir, o
+campo entra na hora.
+
+**A paleta das pílulas vem do pilar ATIVO, e não do pilar de cada pílula.** A
+primeira versão fez por pílula, e a pílula do Croma ficava `#8f7f64` sobre o
+fundo lilás do Nubank — medindo 2,38:1. Não é um estado que o Figma jamais
+mostra, e por isso não é um estado que a seção pode ter. O Figma mostra as quatro
+pílulas na paleta do frame.
+
+**Um bug de geometria que a medição pegou:** a rede de cartões do Croma saiu em
+x 20,86 quando o frame a põe em 177,61. Faltava o `align-items: flex-end` do nó
+`103:290` — o `items-end` é **do frame**, e eu tinha ficado só com o do Nubank.
+
+**Duas reprovações novas de AA, e as duas são do design.** Para dizer isso sem
+sampling — que erra de três maneiras aqui — o fundo foi **calculado do próprio
+`radialGradient`**, que é a mesma string SVG que o Figma exportou:
+
+```
+t = |M⁻¹ (p − centro)| / r, e a cor é a interpolação das paradas em t
+```
+
+O método se validou sozinho: para a pílula do **Nubank** ele dá **4,61:1**, e o
+pixel medido no render sem grão dá **4,64:1** — a diferença é o dithering do
+viewer. Com o método aceito:
+
+| Texto | No design | Com o grão 0,12 | |
+|---|---|---|---|
+| Pílula inativa — Nubank | 4,61:1 | 4,40:1 | ⚠️ nº 12 |
+| Pílula inativa — Croma | **2,59:1** | 2,44:1 | ⚠️ nº 14 |
+| Nome no cartão — Croma | **4,26:1** | 4,12:1 | ⚠️ nº 15 |
+
+A nº 14 é a pior reprovação do projeto inteiro: `#8f7f64` sobre `rgb(217,210,196)`.
+Oito valores que **não são token** e **não têm variable no Figma** entraram no
+`globals.css` (`#8f7f64`, `#d7cfc1`, `#a7997f`, `#bfb299`, `#eeece9`), todos
+literais do arquivo de design, como o gradiente linear do Ecossystem. As duas
+cores das pílulas do Croma entram por custom property e não por classe: com
+`#8f7f64` no meio não há classe a escrever.
+
+**Verificado:** `tsc`, `eslint` e build limpos; geometria do Croma contra os nós
+(`103:290`, `103:292`, `103:294`, `103:299`, `103:305`) batendo — nome em
+20,86/20,86 21×149, marca `nu` em 183,89 47,42×86,95, rede em 177,63 53,69×86,86,
+chip em 86,95/304,34; virada medida nos dois sentidos; contraste dos seis textos
+nos dois pilares; e contra o export do Figma, com o grão desligado, erro médio
+6,98 níveis, dos quais 5,61/5,03/4,68 são offset uniforme, com resíduo de **3,30**
+e inclinação de erro de **0,00001 níveis/px** — a mesma assinatura do Nubank.

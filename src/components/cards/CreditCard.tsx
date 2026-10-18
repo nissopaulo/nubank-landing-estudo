@@ -4,8 +4,11 @@ import Image from "next/image";
 import { motion } from "motion/react";
 import type { Variants } from "motion/react";
 
-import { CARD_GEOMETRY, type ShowcaseCard } from "@/lib/card-showcase";
+import { CARD_GEOMETRY, CHIP_GEOMETRY, type ShowcaseCard } from "@/lib/card-showcase";
 import type { CardTilt } from "@/components/cards/use-card-tilt";
+import { DURATION, EASE_EMPHASIZED } from "@/lib/motion";
+
+const FLIP = { duration: DURATION.base, ease: EASE_EMPHASIZED } as const;
 
 /**
  * O cartão de crédito, e o que faz dele o diferencial da seção.
@@ -17,18 +20,25 @@ import type { CardTilt } from "@/components/cards/use-card-tilt";
  * perfeito e **mataria a interação**: não há como girar em 3D, nem fazer um
  * reflexo seguir o ponteiro, porque não haveria nada para transformar.
  *
- * Então ele é montado em DOM, com os quatro SVG do Figma como asset em
+ * Então ele é montado em DOM, com os SVG do Figma como asset em
  * `/public/images/credit-card` — nenhum `path` copiado para o código.
+ *
+ * ## Duas composições, porque o design tem duas
+ *
+ * `layout: "stack"` (Nubank) são três peças empilhadas e sem rotação.
+ * `layout: "rotated"` (Croma) são duas linhas alinhadas à direita, e **cada peça
+ * girada 90°**.
+ *
+ * Isso não é generalização prematura nem flexibilidade: são duas árvores
+ * diferentes no Figma, com alinhamento, ordem e rotação diferentes. Forçar um
+ * arranjo único entregaria um dos dois fora do design. O branch é o preço
+ * honesto de ter dois frames de verdade.
  *
  * ## A inclinação vem de fora
  *
  * Este componente não escuta o ponteiro: recebe os valores prontos de
  * `useCardTilt`, porque quem escuta é a `<section>` — a interação é da seção
- * inteira, não do cartão. Ver `use-card-tilt.ts`.
- *
- * O corte de movimento reduzido também mora lá, pelo mesmo motivo do corte da
- * paralaxe da Hero: `MotionConfig reducedMotion="user"` desliga **animações**,
- * não motion values, e a inclinação é motion value puro.
+ * inteira, não do cartão.
  *
  * ## A virada é do elemento de fora, e a inclinação é do de dentro
  *
@@ -38,11 +48,12 @@ import type { CardTilt } from "@/components/cards/use-card-tilt";
  */
 export function CreditCard({
   card,
-  flipVariants,
+  direction,
   tilt,
 }: {
   card: ShowcaseCard;
-  flipVariants: Variants;
+  /** +1 à frente, −1 para trás. Vem da `CardsSection`. */
+  direction: number;
   tilt: CardTilt;
 }) {
   const data = card.showcase;
@@ -52,6 +63,42 @@ export function CreditCard({
   const { cardRef, values } = tilt;
 
   if (!data) return null;
+
+  /**
+   * A virada, e por que `exit` é uma função.
+   *
+   * `initial` usa a prop `direction`, que é a direção **desta** transição — o
+   * cartão que entra é criado agora e recebe a atual.
+   *
+   * `exit` não pode. O `AnimatePresence` mantém o cartão que sai montado com as
+   * props do render **anterior**, e foi assim que os dois sentidos passaram a
+   * girar para o mesmo lado: cada um usava a direção de quando foi criado, e não
+   * a da troca que estava executando. Medido: Nubank → Croma saía a +90° e
+   * Croma → Nubank **também**, quando deveria sair a −90°.
+   *
+   * O `custom` do `AnimatePresence` é a saída: ele chega ao `exit` do
+   * componente que está saindo justamente porque esse componente já está com as
+   * props velhas. Está em `CardsSection`.
+   *
+   * `rotateY(+90°)` traz a **esquerda** do cartão para quem olha e joga a
+   * direita para trás — que é girar para a direita. O que entra vem do outro
+   * lado, de `rotateY(-90°)`, e assenta em 0. Os dois se cruzam por 90°, e é aí
+   * que o gesto lê como troca e não como dois cartões.
+   */
+  const flipVariants: Variants = {
+    initial: { rotateY: -direction * 90 },
+    animate: { rotateY: 0, transition: FLIP },
+    exit: (dir: number) => ({ rotateY: dir * 90, transition: FLIP }),
+  };
+
+  const faceStyle = {
+    width: CARD_GEOMETRY.width,
+    height: CARD_GEOMETRY.height,
+    padding: CARD_GEOMETRY.padding,
+    borderRadius: CARD_GEOMETRY.radius,
+    backgroundImage: data.gradient,
+    color: data.ink,
+  };
 
   return (
     // `aria-hidden`: o cartão é uma peça de mockup. O conteúdo que importa —
@@ -77,80 +124,50 @@ export function CreditCard({
         <div
           ref={cardRef}
           className="cc-face"
-          style={{
-            width: CARD_GEOMETRY.width,
-            height: CARD_GEOMETRY.height,
-            padding: CARD_GEOMETRY.padding,
-            borderRadius: CARD_GEOMETRY.radius,
-            backgroundImage: data.gradient,
-            color: data.ink,
-          }}
+          data-layout={data.layout}
+          style={faceStyle}
         >
-          <Image
-            src={data.network}
-            alt=""
-            aria-hidden="true"
-            width={86.8654}
-            height={53.6896}
-            className="h-auto w-[86.8654px] max-w-none"
-            unoptimized
-          />
+          {data.layout === "stack" ? (
+            <StackPieces data={data} />
+          ) : (
+            <RotatedPieces data={data} />
+          )}
 
           {/*
-            `leading-[1.25]`, e não `leading-none`: é a altura natural do
-            Montserrat a esta caixa, que é a convenção do projeto. A diferença
-            não é de leitura, é de posição — o nome é o elemento do meio do
-            `justify-between`, então a altura dele distribui os dois vãos e
-            qualquer caixa diferente move o texto em ~2px.
-          */}
-          <span className="font-display text-[17.391px] font-semibold leading-[1.25]">
-            {data.holder}
-          </span>
-
-          <Image
-            src={data.nuLogo}
-            alt=""
-            aria-hidden="true"
-            width={86.9561}
-            height={47.4322}
-            className="h-auto w-[86.9561px] max-w-none"
-            unoptimized
-          />
-
-          {/*
-            O chip é absoluto contra o cartão, não contra o conteúdo: os
-            valores são do frame e não se multiplicam pelo padding. O gradiente
-            dele é o único gradiente da seção que o CSS expressa sozinho
-            (`linear-gradient`), porque os dois tons são tokens — `Neutral/400`
-            e `Neutral/200` — e ele não tem `gradientTransform`.
+            O chip é absoluto contra o cartão, não contra o conteúdo: os valores
+            são do frame e não se multiplicam pelo padding. Por isso `left` e
+            `top` são dados, e não classes — os dois frames os põem em lugares
+            diferentes. O gradiente dele é `linear-gradient` nos dois casos e é
+            o único gradiente da seção que o CSS sempre expressou sozinho, porque
+            os dois tons são tokens (`Neutral/400` e `Neutral/200`).
           */}
           <span
-            className="absolute overflow-clip rounded-[5.217px] border-[0.435px] border-nu-neutral-800"
+            className="absolute overflow-clip"
             style={{
-              left: 130.43,
-              top: 47.83,
-              width: 39.13,
-              height: 53.043,
+              left: data.chip.left,
+              top: data.chip.top,
+              width: CHIP_GEOMETRY.width,
+              height: CHIP_GEOMETRY.height,
+              borderRadius: CHIP_GEOMETRY.radius,
+              borderWidth: CHIP_GEOMETRY.border,
+              borderStyle: "solid",
+              borderColor: "var(--color-nu-neutral-800)",
               backgroundImage:
-                "linear-gradient(36.416378722528655deg, #9ca3af 0%, #e5e7eb 100%)",
+                "linear-gradient(36.416deg, #9ca3af 0%, #e5e7eb 100%)",
             }}
           >
             <Image
-              src="/images/credit-card/chip-contact.svg"
+              src={data.chip.contact}
               alt=""
               aria-hidden="true"
               width={17.4697}
               height={19.4308}
               className="absolute max-w-none"
-              style={{
-                inset: "31.92% 26.67% 31.45% 28.69%",
-                width: "auto",
-                height: "auto",
-              }}
+              style={{ inset: data.chip.contactInset, width: "auto", height: "auto" }}
               unoptimized
             />
             <Image
-              src="/images/credit-card/chip-lines.svg"
+              src={data.chip.lines}
               alt=""
               aria-hidden="true"
               width={39.1302}
@@ -169,8 +186,8 @@ export function CreditCard({
             `--cc-glare-x` alimentada por motion value, e o resultado foi um
             efeito que **não aparecia, sem erro nenhum**: o React escrevia
             `[object Object]` no atributo `style`, o gradiente ficava inválido, e
-            como a opacidade vinha de outra fonte a verificação "o `opacity`
-            respondeu?" passava. Nem `motion.span` resolveu.
+            a verificação passava porque a opacidade vinha de outra fonte. Nem
+            `motion.span` resolveu.
 
             `motion.span`, e não `span`, porque é o componente do Motion que
             escreve a `style` sem passar pelo React.
@@ -186,5 +203,97 @@ export function CreditCard({
         </div>
       </motion.div>
     </motion.div>
+  );
+}
+
+/** Peças do cartão no arranjo do `97:2` — três, empilhadas, sem rotação. */
+function StackPieces({ data }: { data: NonNullable<ShowcaseCard["showcase"]> }) {
+  return (
+    <>
+      <Image
+        src={data.network}
+        alt=""
+        aria-hidden="true"
+        width={86.8654}
+        height={53.6896}
+        className="h-auto w-[86.8654px] max-w-none"
+        unoptimized
+      />
+
+      {/*
+        `leading-[1.25]`, e não `leading-none`: é a altura natural do Montserrat a
+        esta caixa, que é a convenção do projeto. A diferença não é de leitura, é
+        de posição — o nome é o elemento do meio do `justify-between`, então a
+        altura dele distribui os dois vãos e qualquer caixa diferente move o
+        texto em ~2px.
+      */}
+      <span className="cc-holder font-display text-[17.391px] font-semibold leading-[1.25]">
+        {data.holder}
+      </span>
+
+      <Image
+        src={data.nuLogo}
+        alt=""
+        aria-hidden="true"
+        width={86.9561}
+        height={47.4322}
+        className="h-auto w-[86.9561px] max-w-none"
+        unoptimized
+      />
+    </>
+  );
+}
+
+/**
+ * Peças do cartão no arranjo do `103:248` — duas linhas, alinhadas à direita,
+ * e cada peça girada 90°.
+ *
+ * A rotação é de peça e não do cartão inteiro, porque é o que o Figma tem: os
+ * nós `103:292`, `103:294` e `103:299` são cada um um wrapper `rotate-90` em
+ * volta da peça. Girar o cartão inteiro também os deixaria na vertical, mas
+ * trocaria de lugar o nome e a marca `nu` em relação ao chip, que é absoluto.
+ */
+function RotatedPieces({ data }: { data: NonNullable<ShowcaseCard["showcase"]> }) {
+  return (
+    <>
+      {/* Linha 1 — nome à esquerda, marca `nu` à direita, ambos girados. */}
+      <div className="flex w-full items-start justify-between">
+        <div className="flex h-[149px] w-[21px] shrink-0 items-center justify-center leading-[0]">
+          <div className="flex-none rotate-90">
+            <span className="cc-holder font-display text-[17.391px] font-semibold leading-[1.25] whitespace-nowrap">
+              {data.holder}
+            </span>
+          </div>
+        </div>
+        <div className="flex h-[86.956px] w-[47.432px] shrink-0 items-center justify-center">
+          <div className="flex-none rotate-90">
+            <Image
+              src={data.nuLogo}
+              alt=""
+              aria-hidden="true"
+              width={86.9565}
+              height={47.4323}
+              className="h-[47.4323px] w-[86.9565px] max-w-none"
+              unoptimized
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Linha 2 — rede de cartões, girada, alinhada à direita. */}
+      <div className="flex h-[86.866px] w-[53.69px] shrink-0 items-center justify-center leading-[0]">
+        <div className="flex-none rotate-90">
+          <Image
+            src={data.network}
+            alt=""
+            aria-hidden="true"
+            width={86.8656}
+            height={53.6897}
+            className="h-[53.6897px] w-[86.8656px] max-w-none"
+            unoptimized
+          />
+        </div>
+      </div>
+    </>
   );
 }
