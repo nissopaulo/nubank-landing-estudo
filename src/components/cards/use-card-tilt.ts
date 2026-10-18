@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useRef } from "react";
-import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
+import { useCallback } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import { useMotionTemplate, useMotionValue, useSpring, useTransform } from "motion/react";
 import type { MotionValue } from "motion/react";
 
@@ -60,16 +60,7 @@ export type CardTilt = {
     onPointerMove: (event: ReactPointerEvent<HTMLElement>) => void;
     onPointerLeave: () => void;
   };
-  /**
-   * Vai no cartão — é contra a caixa dele que a direção é calculada.
-   *
-   * Fica **fora** de `values` de propósito. A regra `react-hooks/refs` do
-   * projeto proíbe acessar qualquer propriedade de um objeto que contenha uma
-   * ref durante o render, porque ela não distingue "isto é um ref" de "isto
-   * está ao lado de um ref". Separando, as motion values podem ser lidas no JSX
-   * sem erro de lint — e sem desligar a regra.
-   */
-  cardRef: RefObject<HTMLDivElement | null>;
+  /** Só as motion values, para o JSX ler sem esbarrar na regra de refs. */
   values: CardTiltValues;
 };
 
@@ -78,7 +69,6 @@ const clamp = (v: number, min: number, max: number) =>
 
 export function useCardTilt(): CardTilt {
   const reduceMotion = usePrefersReducedMotion();
-  const cardRef = useRef<HTMLDivElement>(null);
 
   // Ângulos finais, em graus. Escritos direto, e a mola fica por fora: assim o
   // `reset` volta ao repouso pelo mesmo caminho de ida.
@@ -139,10 +129,32 @@ export function useCardTilt(): CardTilt {
       // `pointermove` de um dedo viraria o cartão a cada toque na tela.
       if (reduceMotion || event.pointerType !== "mouse") return;
 
-      const card = cardRef.current;
-      if (!card) return;
+      // A direção é calculada contra o **palco**, e não contra uma face.
+      //
+      // O palco é o único elemento da cadeia que não gira e não é remontado:
+      // `.cc-flip` gira, e as duas faces trocam de lugar a cada virada. Ele tem
+      // exatamente a mesma caixa do cartão — 252,174 × 400, sem padding —, então
+      // a conta dá o mesmo resultado e não há nada que possa sumir no meio do
+      // gesto.
+      //
+      // Duas versões antes dessa quebraram, ambas sem erro nenhum:
+      //
+      //  1. a ref ficava no elemento do cartão, e o `AnimatePresence` zerava a
+      //     ref do cartão antigo ao sair de cena — a inclinação morria para
+      //     sempre e só voltava com F5;
+      //  2. ler a primeira `.cc-face` do DOM pega a da frente, que **durante a
+      //     virada é a de costas** — e a direção se calculava contra a caixa de um
+      //     cartão que estava de costas.
+      //
+      // A tentativa de distinguir as faces por `backface-visibility` também
+      // falhou, e é o mais instrutivo: as **duas** têm `hidden`, porque é
+      // exatamente isso que faz a virada mostrar só uma. O que decide quem está
+      // virado para quem olha é o ângulo acumulado da peça, e o ângulo já é da
+      // peça — que é o palco.
+      const palco = document.querySelector<HTMLElement>(".cc-stage");
+      if (!palco) return;
 
-      const box = card.getBoundingClientRect();
+      const box = palco.getBoundingClientRect();
       const cx = box.left + box.width / 2;
       const cy = box.top + box.height / 2;
 
@@ -179,7 +191,6 @@ export function useCardTilt(): CardTilt {
 
   return {
     bind: { onPointerMove: handlePointerMove, onPointerLeave: reset },
-    cardRef,
     values: { rotateX, rotateY, glareBackground, glareOpacity },
   };
 }

@@ -2,13 +2,9 @@
 
 import Image from "next/image";
 import { motion } from "motion/react";
-import type { Variants } from "motion/react";
 
 import { CARD_GEOMETRY, CHIP_GEOMETRY, type ShowcaseCard } from "@/lib/card-showcase";
-import type { CardTilt } from "@/components/cards/use-card-tilt";
-import { DURATION, EASE_EMPHASIZED } from "@/lib/motion";
-
-const FLIP = { duration: DURATION.base, ease: EASE_EMPHASIZED } as const;
+import type { CardTiltValues } from "@/components/cards/use-card-tilt";
 
 /**
  * O cartão de crédito, e o que faz dele o diferencial da seção.
@@ -40,56 +36,24 @@ const FLIP = { duration: DURATION.base, ease: EASE_EMPHASIZED } as const;
  * `useCardTilt`, porque quem escuta é a `<section>` — a interação é da seção
  * inteira, não do cartão.
  *
- * ## A virada é do elemento de fora, e a inclinação é do de dentro
+ * ## Este componente é uma FACE, e a virada é do pai
  *
- * As duas usam `rotateY`, e um `transform` só não comporta os dois gestos — o
- * segundo cancelaria o primeiro no meio. Separadas, cada gesto tem a sua
- * transformada, e trocar de cartão não cancela a inclinação em curso.
+ * Ele não sabe da troca. Quem gira é o `.cc-flip` do `CardsSection`, com os dois
+ * cartões como frente e verso — a virada é de um cartão só, que mostra o outro
+ * nas costas, e não de dois cartões que se cruzam.
  */
 export function CreditCard({
   card,
-  direction,
   tilt,
 }: {
   card: ShowcaseCard;
-  /** +1 à frente, −1 para trás. Vem da `CardsSection`. */
-  direction: number;
-  tilt: CardTilt;
+  /** Só as motion values da inclinação. */
+  tilt: CardTiltValues;
 }) {
   const data = card.showcase;
-  // Desestruturado: a regra `react-hooks/refs` aceita um identificador direto
-  // no `ref`, mas não uma leitura de propriedade (`tilt.cardRef`) durante o
-  // render.
-  const { cardRef, values } = tilt;
+  const { rotateX, rotateY, glareBackground, glareOpacity } = tilt;
 
   if (!data) return null;
-
-  /**
-   * A virada, e por que `exit` é uma função.
-   *
-   * `initial` usa a prop `direction`, que é a direção **desta** transição — o
-   * cartão que entra é criado agora e recebe a atual.
-   *
-   * `exit` não pode. O `AnimatePresence` mantém o cartão que sai montado com as
-   * props do render **anterior**, e foi assim que os dois sentidos passaram a
-   * girar para o mesmo lado: cada um usava a direção de quando foi criado, e não
-   * a da troca que estava executando. Medido: Nubank → Croma saía a +90° e
-   * Croma → Nubank **também**, quando deveria sair a −90°.
-   *
-   * O `custom` do `AnimatePresence` é a saída: ele chega ao `exit` do
-   * componente que está saindo justamente porque esse componente já está com as
-   * props velhas. Está em `CardsSection`.
-   *
-   * `rotateY(+90°)` traz a **esquerda** do cartão para quem olha e joga a
-   * direita para trás — que é girar para a direita. O que entra vem do outro
-   * lado, de `rotateY(-90°)`, e assenta em 0. Os dois se cruzam por 90°, e é aí
-   * que o gesto lê como troca e não como dois cartões.
-   */
-  const flipVariants: Variants = {
-    initial: { rotateY: -direction * 90 },
-    animate: { rotateY: 0, transition: FLIP },
-    exit: (dir: number) => ({ rotateY: dir * 90, transition: FLIP }),
-  };
 
   const faceStyle = {
     width: CARD_GEOMETRY.width,
@@ -104,29 +68,16 @@ export function CreditCard({
     // `aria-hidden`: o cartão é uma peça de mockup. O conteúdo que importa —
     // título, descrição e CTA — está fora dele, no `tabpanel`.
     <motion.div
-      className="cc-flip"
-      aria-hidden="true"
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      variants={flipVariants}
+      className="cc-tilt"
+      style={{ rotateX, rotateY }}
+      /*
+       * `will-change` permanente é exceção aqui, e é justificada: o cartão é
+       * transformado a cada quadro enquanto o ponteiro passa por cima, e sem
+       * a dica o navegador decide isso tarde. O custo é uma camada de
+       * 252×400 — irrelevante para uma seção com um cartão só.
+       */
     >
-      <motion.div
-        className="cc-tilt"
-        style={{ rotateX: values.rotateX, rotateY: values.rotateY }}
-        /*
-         * `will-change` permanente é exceção aqui, e é justificada: o cartão é
-         * transformado a cada quadro enquanto o ponteiro passa por cima, e sem
-         * a dica o navegador decide isso tarde. O custo é uma camada de
-         * 252×400 — irrelevante para uma seção com um cartão só.
-         */
-      >
-        <div
-          ref={cardRef}
-          className="cc-face"
-          data-layout={data.layout}
-          style={faceStyle}
-        >
+      <div className="cc-face" data-layout={data.layout} style={faceStyle}>
           {data.layout === "stack" ? (
             <StackPieces data={data} />
           ) : (
@@ -195,14 +146,10 @@ export function CreditCard({
           <motion.span
             aria-hidden="true"
             className="cc-glare"
-            style={{
-              backgroundImage: values.glareBackground,
-              opacity: values.glareOpacity,
-            }}
+            style={{ backgroundImage: glareBackground, opacity: glareOpacity }}
           />
         </div>
       </motion.div>
-    </motion.div>
   );
 }
 

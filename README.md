@@ -714,6 +714,97 @@ O tom é `Purple/950` e não preto: preto puro sobre o lilás do fundo deixa um 
 cinza que parece sujeira. No hover as duas camadas aprofundam, e é a única parte
 do efeito que custa repaint — o steady state da inclinação é transform.
 
+### A virada é de UM cartão só, e o ângulo só acumula
+
+A troca de pílula **vira o cartão**, e não troca um cartão por outro. `.cc-flip`
+gira 180° a cada vez; dentro dele, `.cc-card--frente` e `.cc-card--verso` ficam
+**sempre montados**, com `backface-visibility: hidden`, e a virada é o que revela
+um ou o outro. O `AnimatePresence` do cartão saiu — o conteúdo de dentro (nome,
+texto, foto) continua trocando por `AnimatePresence`, num container à parte.
+
+```
+.cc-stage   perspectiva, tamanho fixo
+└ .cc-flip      rotateY, transition CSS
+  ├ .cc-card--frente
+  └ .cc-card--verso   rotateY(180deg)
+```
+
+O ângulo **acumula** — 0, 180, 360, 540, 720 — e **quem está visível é derivado
+dele**: frente nos múltiplos de 360, verso nos outros. Isso não é estilo, é o
+que elimina uma classe de bug: a versão anterior zerava o ângulo no fim do giro
+e trocava o par frente/verso junto, o que obrigava os dois a caírem no mesmo
+commit para não dessincronizarem — e quando dessincronizaram, **o título virava
+"Cartão Croma" com o cartão do Nubank na tela**. Sem reset, não há o que
+dessincronizar.
+
+#### A curva é própria, e `EASE_EMPHASIZED` estava errada aqui
+
+`EASE_EMPHASIZED` é a curva de *entrada*. Em meia-volta ela é errada, e o erro é
+mensurável — com a transição ancorada no `transitionrun`:
+
+| momento | quanto do giro já foi feito |
+|---------|---------------------------|
+| 100ms   | 43%                      |
+| 133ms   | 70%                      |
+| 284ms   | 93%                      |
+| 417ms   | 98%                      |
+| 567ms   | 100%                     |
+
+O cartão **passa de perfil (90°) aos 16% da duração**. A troca acontece ali, e
+os ~500ms restantes arrastam nos últimos 7% do giro. Não é lento: é o
+contrário — resolve o gesto em um quinto do tempo e depois finge que continua.
+
+Os 90° importam porque a largura projetada é `w·|cos θ|`: zero a 90°, e é onde
+frente e verso trocam de vez.
+
+`CARD_FLIP` usa `cubic-bezier(0.75, 0.75, 0.8, 1)`, escolhido por busca em grade.
+**Medido com ela:** giro de 667ms, **90° aos 317ms = 47%**, e
+`12% → 22% → 32% → 43% → 54% → 65% → 76% → 87% → 96%`. Os últimos 7% do giro
+caíram de **40% para 13%** da duração.
+
+> **O conflito, e por que ele não tem solução melhor.** Com uma Bézier só,
+> "responde no clique" e "troca no meio" puxam em direções opostas. Exigindo 90°
+> entre 45% e 52%, pouso com `y₂ ≥ 0.85` e cauda até 95% da duração, o conjunto
+> de soluções é **vazio**. O que se sacrifica é o arranque: `EASE_EMPHASIZED` tem
+> 18% do giro aos 50ms, a curva nova tem 7% (≈12°, no terceiro quadro). É a
+> escolha certa porque ~3 quadros de atraso não se veem, e 500ms de arrasto se veem.
+
+#### A interação é medida contra o palco, nunca contra a face
+
+A direção da inclinação vem da caixa do **`.cc-stage`**, que não gira e não é
+remontado, e tem exatamente a mesma caixa do cartão (252,174 × 400).
+
+Duas alternativas quebraram, ambas sem erro:
+
+1. **A `ref` no elemento do cartão.** O `AnimatePresence` mantém o cartão antigo
+   montado durante o `exit`, e o `ref` só é limpo quando o elemento **deixa de
+   existir** — o cartão que saía zerava a ref do que tinha acabado de entrar, e a
+   inclinação morria para sempre. Só voltava com F5.
+2. **`querySelector(".cc-face")`.** Com a virada nova existem **duas** faces, e a
+   primeira do DOM é a da frente — que **durante o giro está de costas**. Pior:
+   `rotateY` estreita o `getBoundingClientRect()`, e a 95° a largura cai de
+   252px para **23px**, então a direção passava a ser medida contra uma caixa
+   quase nula.
+
+> **Filtrar por `backface-visibility` não funciona, e esse é o ponto.** As
+> **duas** faces têm `hidden` — é exatamente isso que faz a virada mostrar só
+> uma. Nenhum filtro em `backface-visibility` separa frente de verso; o que
+> decide é o ângulo da peça.
+
+Medido com o ponteiro **parado** no mesmo ponto, antes, durante e depois do giro:
+**8,18014° → 8,18415° → 8,18415°**. Variação 0,00°.
+
+#### `prefers-reduced-motion` tem caminho próprio
+
+O caminho normal é `transition` CSS, com o fim em `transitionend`. Com movimento
+reduzido a regra global corta a transition para 0.01ms, o navegador **não gera
+transição**, e o `transitionend` nunca dispara — a peça ficava em 180°, a trava
+de reentrância nunca abria, e a seção **ignorava todo clique seguinte**. Seção
+morta no primeiro clique.
+
+O caminho reduzido é **síncrono**, sem evento: `meiaVolta` não seta `virando`
+quando `usePrefersReducedMotion()` é verdadeiro, e o ângulo salta.
+
 ### A entrada é por scroll, e `display: contents` quebrou isso
 
 `whileInView` com `once: true`: a seção surge **na chegada**, e não na montagem,
@@ -1118,8 +1209,10 @@ com `PROVISÓRIO`:
   (Ultraviolet) e `103:383` (Business) existem no Figma e estão ocultos, por
   decisão de processo: a seção é feita um frame por vez. As três pílulas
   restantes aparecem no seletor e são `<button>` com `aria-disabled` e aviso
-  para leitor de tela. **A animação de virada entre cartões está escrita e não
-  foi verificada** — com um só frame não existe troca para executar.
+  para leitor de tela. **A virada entre cartões foi verificada** entre os dois
+  frames liberados — meia-volta de um cartão só, medida nos dois sentidos, com a
+  curva em `CARD_FLIP`, a inclinação estável **durante** o giro e a seção
+  responsiva em movimento normal e reduzido.
 - **Texto do rodapé** com o aviso legal — redigido para este estudo.
 
 Além disso, **não há** números de usuários, taxas, limites, depoimentos nem
@@ -1188,8 +1281,9 @@ redirecionadores — esta página não tem função de cadastro.
 
 ## Próximos passos
 
-1. Liberar o segundo frame da Cards Section (`103:248`, Croma) — e medir a
-   virada, que está escrita mas nunca executou.
+1. Liberar o terceiro frame da Cards Section (`103:318`, Ultravioleta) — a
+   virada já aceita um terceiro cartão: só o slot **escondido** troca, e a
+   troca não aparece porque ele está de costas.
 2. Desenhar no Figma os painéis dos submenus da navegação — é o bloqueio do
    restante da página.
 3. Decidir o contraste da pílula inativa da Cards Section (4,40:1 em 16 px).

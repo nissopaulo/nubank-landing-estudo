@@ -5,13 +5,15 @@ import { AnimatePresence, motion } from "motion/react";
 
 import { CreditCard } from "@/components/cards/CreditCard";
 import { useCardTilt } from "@/components/cards/use-card-tilt";
+import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 import { CtaLink } from "@/components/ui/CtaLink";
+import { CARDS, type ShowcaseCard } from "@/lib/card-showcase";
 import {
-  ACTIVE_INDEX,
-  CARDS,
-  type ShowcaseCard,
-} from "@/lib/card-showcase";
-import { revealScale, revealUp, staggerContainer } from "@/lib/motion";
+  CARD_FLIP,
+  revealScale,
+  revealUp,
+  staggerContainer,
+} from "@/lib/motion";
 
 /**
  * Cards Section — Figma `Cards Section - Nubank` (nó `97:2`), 1920×1086.
@@ -51,23 +53,129 @@ import { revealScale, revealUp, staggerContainer } from "@/lib/motion";
  * forma de saber se o gesto é o que foi pedido é medi-lo no navegador quando
  * houver dois cartões.
  */
+
+/** Índices dos pilares cujo frame já está liberado, na ordem do seletor. */
+function liberados() {
+  return CARDS.map((c, i) => (c.showcase ? i : -1)).filter((i) => i >= 0);
+}
+
+/** O próximo liberado depois de `de`, em ciclo. `-1` se não houver par. */
+function liberadoSeguinte(de: number) {
+  const l = liberados();
+  if (l.length < 2) return -1;
+  return l[(l.indexOf(de) + 1) % l.length];
+}
+
+/** Meia-volta do cartão. A curva e o porquê estão em `CARD_FLIP`. */
+const FLIP_DURATION = CARD_FLIP.duration;
+const FLIP_EASE = CARD_FLIP.ease;
+
 export function CardsSection() {
-  const [active, setActive] = useState(ACTIVE_INDEX);
-  const [direction, setDirection] = useState(1);
-  const card = CARDS[active];
+  /**
+   * `par` é a dupla **montada**: o cartão da frente e o do verso. Os dois ficam
+   * no DOM o tempo todo, e a virada é o que revela um ou outro.
+   *
+   * Com um único frame liberado não há verso: `verso` fica `-1`, o `CreditCard`
+   * daquele lado devolve `null`, e a pílula correspondente é desabilitada. Não é
+   * um estado previsto — é o que segura a seção de pé até o segundo frame
+   * existir, que é o mesmo mecanismo dos pilares do Ecossystem.
+   */
+  const [par, setPar] = useState<{ frente: number; verso: number }>(() => {
+    const l = liberados();
+    return { frente: l[0], verso: liberadoSeguinte(l[0]) };
+  });
+  /*
+   * O ângulo **acumula** e nunca volta a zero, e isso é o que elimina a
+   * dessincronização entre a peça e o par.
+   *
+   * Quem está visível é decidido pelo ângulo, não pelo `par`:
+   *
+   * | ângulo | visível   |
+   * |--------|-----------|
+   * | 0°     | frente    |
+   * | 180°   | verso     |
+   * | 360°   | frente    |
+   * | 540°   | verso     |
+   *
+   * Como a visibilidade é **derivada** do ângulo, não existe nada para
+   * sincronizar. A versão anterior zerava o ângulo no fim do giro e trocava o par
+   * junto — e foi ela que mostrou o cartão errado numa troca Nubank → Croma: o
+   * título virava "Cartão Croma" e o cartão na tela era o Nubank. Para o par
+   * valer no momento certo os dois precisavam cair no mesmo commit, com o
+   * `transform` de 180° para 0° sem transição (`data-travado`). Não há mais o
+   * que sincronizar: o ângulo só cresce e a conta do que se vê é feita dele.
+   *
+   * `virando` sobrou só como trava de reentrância — ignora clique durante o giro.
+   */
+  const [virando, setVirando] = useState(false);
+  const [angulo, setAngulo] = useState(0);
+  const mostrarMovimento = usePrefersReducedMotion();
+
+  /*
+   * A paleta, as pílulas, o título, a descrição e o CTA vêm do cartão
+   * **visível** — e o visível sai do ângulo, não do que está na frente.
+   *
+   * A troca na UI é imediata, no clique: é isso que mantém o painel
+   * (`tabpanel`) honesto para o leitor de tela, que não pode ficar 300ms
+   * mostrando o cartão anterior. E a paleta acompanha na mesma hora, senão o
+   * fundo lilás, o título roxo e a pílula do Nubank ficariam marcados durante
+   * o giro todo, com o cartão do Croma já visível na tela.
+   *
+   * O `??` cobre o estado em que não há verso — `par.verso` é `-1` com um só
+   * frame liberado —, onde o visível é a frente mesmo.
+   */
+  const mostrandoFrente = angulo % 360 === 0;
+  const ativo = mostrandoFrente ? par.frente : par.verso;
+  const visivel = CARDS[ativo] ?? CARDS[par.frente];
 
   // O ponteiro é escutado na seção inteira, e não no cartão — é o que faz a
   // interação parecer com a seção e não com uma caixa de 252px no meio dela.
   const tilt = useCardTilt();
 
   function select(index: number) {
-    if (index === active) return;
-    // A direção é a do **sentido da troca**, não o sinal do índice: indo do
-    // Croma para o Nubank (índice 1 → 0) o cartão também tem de girar para a
-    // esquerda, e não para a direita. Comparar índices daria o gesto invertido
-    // justamente nos saltos para trás.
-    setDirection(index > active ? 1 : -1);
-    setActive(index);
+    if (virando || index === ativo) return;
+
+    // Já está na dupla montada: meia-volta e pronto.
+    if (index === par.frente || index === par.verso) {
+      meiaVolta();
+      return;
+    }
+
+    /*
+     * Não está. Só o slot **escondido** pode mudar, e só ele: mudar o que está
+     * visível apareceria na hora, antes do giro.
+     *
+     * Quando a frente é quem se vê, o escondido é o verso; quando é o verso,
+     * é a frente. Trocar o escondido não aparece — ele está de costas, e
+     * `backface-visibility: hidden` some com ele. Por isso o `requestAnimationFrame`:
+     * o slot novo precisa estar montado antes de o ângulo mudar, senão o primeiro
+     * quadro da virada já mostra o cartão errado girando.
+     */
+    if (mostrandoFrente) {
+      setPar((p) => ({ frente: p.frente, verso: index }));
+    } else {
+      setPar((p) => ({ frente: index, verso: p.verso }));
+    }
+    requestAnimationFrame(meiaVolta);
+  }
+
+  /**
+   * Mais meia-volta.
+   *
+   * Sem `prefers-reduced-motion`, é um `transition` CSS e o fim vem no
+   * `transitionend`. Com ele, a peça salta de uma vez e **não existe
+   * `transitionend`**: a regra global corta a transition para 0.01ms, o navegador
+   * nem chega a gerar transição, e a seção ficava travada no primeiro clique —
+   * ângulo em 0, pílula parada, nada mais respondendo. Por isso o caminho
+   * reduzido é síncrono e não passa por evento nenhum.
+   */
+  function meiaVolta() {
+    if (!mostrarMovimento) setVirando(true);
+    setAngulo((a) => a + 180);
+  }
+
+  function fecharVirada() {
+    setVirando(false);
   }
 
   return (
@@ -75,7 +183,7 @@ export function CardsSection() {
       id="cartoes"
       aria-label="Cartões"
       className="flex flex-col items-center gap-[100px] px-[200px] py-[100px]"
-      style={{ backgroundImage: card.chrome.background }}
+      style={{ backgroundImage: visivel.chrome.background }}
       {...tilt.bind}
     >
       {/*
@@ -116,10 +224,10 @@ export function CardsSection() {
           className="flex items-start gap-[24px]"
           style={
             {
-              "--cc-pill-on-bg": card.chrome.pill.onBg,
-              "--cc-pill-on-ink": card.chrome.pill.onBgInk,
-              "--cc-pill-idle-ink": card.chrome.pill.idleInk,
-              "--cc-pill-idle-border": card.chrome.pill.idleBorder,
+              "--cc-pill-on-bg": visivel.chrome.pill.onBg,
+              "--cc-pill-on-ink": visivel.chrome.pill.onBgInk,
+              "--cc-pill-idle-ink": visivel.chrome.pill.idleInk,
+              "--cc-pill-idle-border": visivel.chrome.pill.idleBorder,
             } as React.CSSProperties
           }
         >
@@ -127,7 +235,7 @@ export function CardsSection() {
             <motion.div key={item.id} variants={revealUp}>
               <CardTab
                 card={item}
-                selected={index === active}
+                selected={index === ativo}
                 onSelect={() => select(index)}
               />
             </motion.div>
@@ -137,57 +245,68 @@ export function CardsSection() {
 
       <div
         role="tabpanel"
-        id={`cartoes-painel-${card.id}`}
-        aria-labelledby={`cartoes-aba-${card.id}`}
+        id={`cartoes-painel-${visivel.id}`}
+        aria-labelledby={`cartoes-aba-${visivel.id}`}
         className="flex w-full flex-1 flex-col items-center justify-center gap-[64px]"
       >
         {/*
-          O palco tem tamanho fixo e `position: relative` porque os dois cartões
-          ficam **montados ao mesmo tempo** durante a virada — em fluxo normal
-          eles empilhariam e a seção cresceria para 800px no meio do gesto. Os
-          cartões são absolutos um sobre o outro por isso.
+          A virada é de UM cartão só, girando — e as costas dele já são o cartão
+          seguinte. É decisão de arquétipo, e é o que foi pedido: com dois cartões
+          se cruzando por 90° lê-se "um cartão sai e outro entra"; com um só
+          girando 180° lê-se "virou o cartão", que é o gesto de um cartão de
+          verdade.
 
-          A `perspective` fica aqui, e não no cartão: é o palco que dá a
-          referência de profundidade, e é ele que não se move quando o cartão
-          gira. Sem `preserve-3d` na cadeia a rotação achata em 2D.
+          Por isso os dois `.cc-face` ficam **sempre montados**, um como frente e
+          outro como verso, e o `AnimatePresence` saiu daqui. Isso também mata o
+          bug da interação: ela vinha de uma ref que o `AnimatePresence` zerava
+          quando o cartão antigo saía de cena. Sem remontagem, não há saída de
+          cena.
+
+          E é por isso que o conteúdo **dentro** de cada face continua trocando
+          por `AnimatePresence`, num container à parte: nome, texto e foto mudam
+          no meio do giro, sem remontar a peça que gira.
 
           A entrada é `revealScale`, e não o `revealUp` das pílulas: o cartão é
-          o centro da seção, e escala é o que dá a sensação de objeto sendo
-          posto no lugar em vez de texto subindo.
+          o centro da seção, e escala é o que dá a sensação de objeto sendo posto
+          no lugar em vez de texto subindo.
         */}
         <motion.div
-          className="cc-stage relative h-[400px] w-[252.174px]"
+          className="cc-stage"
           style={{ perspective: 1400 }}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.25 }}
           variants={revealScale}
         >
-          {/*
-            `custom={direction}` não é detalhe: é o que faz a virada inverter ao
-            voltar.
-
-            O `AnimatePresence` mantém o cartão que sai montado durante o
-            `exit`, mas com as **props do render anterior** — e a direção da
-            transição é uma delas. Sem o `custom`, o cartão que sai usaria a
-            direção antiga e os dois sentidos girariam para o mesmo lado:
-            medindo, Nubank → Croma saía a +90° e Croma → Nubank **também**,
-            quando deveria sair a −90°. A troca de conteúdo funcionava; o gesto,
-            não.
-
-            O `custom` é a via documentada do Motion para isso: ele chega ao
-            `exit` do componente que está saindo, que já está com props velhas.
-            O `initial` continua vindo da prop, porque o cartão que entra é
-            criado agora e recebe a direção atual.
-          */}
-          <AnimatePresence initial={false} custom={direction}>
-            <CreditCard
-              key={card.id}
-              card={card}
-              direction={direction}
-              tilt={tilt}
-            />
-          </AnimatePresence>
+          <motion.div
+            className="cc-flip"
+            style={{
+              rotateY: angulo,
+              "--cc-flip-duration": `${FLIP_DURATION}s`,
+              "--cc-flip-ease": FLIP_EASE,
+            } as React.CSSProperties}
+            onTransitionEnd={(e) => {
+              // `onTransitionEnd`, e **não** `onAnimationComplete`: a peça gira
+              // por transition CSS (ver `.cc-flip` no `globals.css`), e o
+              // `onAnimationComplete` do Motion só dispara para animação que ele
+              // próprio gerencia.
+              //
+              // Só a transição do `transform` dispara, e não qualquer uma: o
+              // `box-shadow` do cartão também transiciona no hover, e fecharia a
+              // virada no meio da sombra. E só o próprio elemento conta — as
+              // faces também transicionam o próprio `transform`.
+              if (e.target !== e.currentTarget) return;
+              if (e.propertyName !== "transform") return;
+              fecharVirada();
+            }}
+          >
+            <div className="cc-card cc-card--frente">
+              <CreditCard card={CARDS[par.frente]} tilt={tilt.values} />
+            </div>
+            <div className="cc-card cc-card--verso">
+              <CreditCard card={CARDS[par.verso]} tilt={tilt.values} />
+            </div>
+          </motion.div>
         </motion.div>
 
         <motion.div
@@ -198,22 +317,22 @@ export function CardsSection() {
           variants={revealUp}
         >
           <h2 className="font-display text-[64px] font-bold leading-[1.22] text-nu-brand">
-            {card.showcase?.title}
+            {visivel.showcase?.title}
           </h2>
           <p
             className="font-display text-[16px] font-medium leading-[1.25]"
-            style={{ color: card.showcase?.descInk }}
+            style={{ color: visivel.showcase?.descInk }}
           >
-            {card.showcase?.desc[0]}
+            {visivel.showcase?.desc[0]}
             <br />
-            {card.showcase?.desc[1]}
+            {visivel.showcase?.desc[1]}
           </p>
         </motion.div>
       </div>
 
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
-          key={card.id}
+          key={visivel.id}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -229,7 +348,7 @@ export function CardsSection() {
             variants={revealUp}
           >
             <CtaLink variant="brand" href="https://www.nubank.com.br/">
-              {card.showcase?.cta}
+              {visivel.showcase?.cta}
             </CtaLink>
           </motion.div>
         </motion.div>

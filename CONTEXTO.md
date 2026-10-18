@@ -1727,3 +1727,125 @@ chip em 86,95/304,34; virada medida nos dois sentidos; contraste dos seis textos
 nos dois pilares; e contra o export do Figma, com o grão desligado, erro médio
 6,98 níveis, dos quais 5,61/5,03/4,68 são offset uniforme, com resíduo de **3,30**
 e inclinação de erro de **0,00001 níveis/px** — a mesma assinatura do Nubank.
+
+### 2026-10-18 — a virada virou um cartão de verdade, e o bug da interação morreu
+
+O relato foi duplo: **trocar para o Croma matava a interação** (a inclinação
+não voltava nem com F5) e **a transição estava ruim**.
+
+#### O que era
+
+A virada era o archetype "dois cartões se cruzando": o `AnimatePresence`
+montava o cartão novo, o antigo saía em `rotateY(+90°)` e o novo entrava de
+`rotateY(-90°)`, cruzando por 90° no meio. É o gesto de *um cartão sai e outro
+entra*, não de *virou o cartão*.
+
+#### A interação morria por causa do `AnimatePresence`, e era a ref
+
+`useCardTilt` segurava uma `ref` no elemento do cartão. O `AnimatePresence`
+mantém o cartão antigo montado durante o `exit`, e o `ref` de um elemento só é
+limpo quando ele **deixa de existir** — então o cartão que saía zerava a ref do
+cartão que tinha acabado de entrar, e a inclinação morria para sempre. Nenhum
+erro, nenhum aviso.
+
+A primeira correção foi trocar a ref por `document.querySelector(".cc-face")`,
+e **isso estava errado por um motivo instructive**: com a virada nova existem
+**duas** `.cc-face` (frente e verso), e a primeira do DOM é a da frente — que
+**durante o giro está de costas**. Pior: `rotateY` estreita o
+`getBoundingClientRect()` da face, e aos 95° a largura cai de 252px para
+**23px**, então a direção passava a ser medida contra uma caixa quase nula.
+
+A tentativa de distinguir as faces por `backface-visibility` também falhou, e é
+o mais instrutivo de todos: **as duas faces têm `hidden`** — é exatamente isso
+que faz a virada mostrar só uma. Não existe filtro em `backface-visibility` que
+separe frente de verso; o que decide é o **ângulo da peça**, e o ângulo já é da
+peça.
+
+**O que resolveu:** medir contra o **palco** (`.cc-stage`). Ele não gira, não é
+remontado, e tem exatamente a mesma caixa do cartão — 252,174 × 400, sem
+padding. Medido com o ponteiro **parado** sobre o mesmo ponto, antes, durante e
+depois do giro: **8,18014° → 8,18415° → 8,18415°**. Variação 0,00°.
+
+#### A transição ruim tinha nome: era `EASE_EMPHASIZED`
+
+`EASE_EMPHASIZED` é a curva certa para *entrada*. Em meia-volta ela é errada, e o
+erro é mensurável. Com a transição ancorada no `transitionrun`:
+
+| momento | quanto do giro já foi feito, com `EASE_EMPHASIZED` |
+|---------|-------------------------------------------------------|
+| 100ms   | 43%                                                     |
+| 133ms   | 70%                                                     |
+| 284ms   | 93%                                                     |
+| 417ms   | 98%                                                     |
+| 567ms   | 100%                                                    |
+
+O cartão **passa de perfil (90°) aos 16% da duração** — 112ms de 700ms. A troca
+de frente e verso acontece ali, e o que sobra são ~500ms arrastando nos últimos
+7% do giro. Não é lento: é o contrário, resolve o gesto em um quinto do tempo e
+depois finge que continua.
+
+Os 90° são o instante decisivo porque a largura projetada é `w·|cos θ|`: zero
+aos 90°, e é onde frente e verso trocam de vez.
+
+**A curva nova é `cubic-bezier(0.75, 0.75, 0.8, 1)`, em `CARD_FLIP`.** Saiu de
+uma busca em grade, não do gosto. E o resultado registra um conflito real:
+
+> Com uma Bézier só, **"responde no clique" e "troca no meio" puxam em direções
+> opostas**. Exigindo 90° entre 45% e 52%, pouso com `y₂ ≥ 0.85` e cauda até
+> 95% da duração, o conjunto de soluções é **vazio**. O que se sacrifica é o
+> arranque: `EASE_EMPHASIZED` tem 18% do giro aos 50ms, a nova tem 7% (≈12°,
+> no terceiro quadro).
+
+Medido com a curva nova: giro de 667ms, **90° aos 317ms = 47%**, e
+`12% → 22% → 32% → 43% → 54% → 65% → 76% → 87% → 96%`. Os últimos 7% do giro
+caíram de **40% para 13%** da duração.
+
+#### A virada é de UM cartão só, e o ângulo só acumula
+
+`.cc-flip` gira 180° a cada troca; `.cc-card--frente` e `.cc-card--verso` ficam
+**sempre montados**, um como frente e outro como verso, com
+`backface-visibility: hidden`. O `AnimatePresence` saiu do cartão.
+
+O ângulo **acumula** — 0, 180, 360, 540, 720 — e quem está visível é **derivado
+dele**: frente nos múltiplos de 360, verso nos outros.
+
+Isso não é detalhe, é o que elimina a classe inteira de bug. A versão anterior
+zerava o ângulo no fim do giro e trocava o par junto, e para o par valer na hora
+os dois precisavam cair no mesmo commit, com o `transform` de 180° para 0° sem
+transição (`data-travado`). **Funcionou, mas com o preço de um dessincronismo
+que apareceu em produção:** numa troca Nubank → Croma o título virava "Cartão
+Croma" e o cartão na tela era o Nubank — a peça em 180° mostrando o verso, que
+já era o antigo. Sem reset, não há o que dessincronizar.
+
+#### `prefers-reduced-motion` prendeva a seção inteira
+
+O caminho normal é `transition` CSS e o fim vem no `transitionend`. Com
+movimento reduzido a regra global corta a transition para 0.01ms, o navegador
+**não chega a gerar transição**, e `transitionend` nunca dispara: a peça ficava
+em 180°, `virando` nunca voltava a `false`, e o `select` ignorava todo clique
+seguinte. Seção morta no primeiro clique.
+
+O caminho reduzido é **síncrono** e não passa por evento nenhum:
+`meiaVolta` não seta `virando` quando `usePrefersReducedMotion()` é verdadeiro,
+e o ângulo salta.
+
+#### Verificação que os bugs anteriores não pegavam
+
+Duas verificações antigas só liam o `h2` e a pílula, e **passaram com o cartão
+errado na tela**. A que pega é `prova-face.mjs`: ela lê a face que o ângulo diz
+que está de frente, e compara com a pílula. E `prova-acumulo.mjs` lê o **style
+inline** (`rotateY(360deg)`, `rotateY(540deg)`…), porque `atan2` devolve o
+ângulo módulo 360 e não distingue 0 de 360.
+
+**Verificado:** `tsc`, `eslint` e build limpos. Inclinação viva nas 3
+voltas (9 medições), estável durante o giro, sinal correto dos dois lados;
+8 trocas coerentes em movimento normal **e** reduzido; ângulo acumulando
+0→180→360→540→720→900→1080 com a face visível sempre acompanhando; curva com
+90° aos 47%; diff contra o export do Figma sem regrão com resíduo 3,30 e
+inclinação 0,00001 níveis/px; contraste dos oito textos inalterado.
+
+**Lição que custou tempo:** `npm start` é **`next start`**, não `next dev`.
+Ele serve o `.next` da **última build** — vários testes rodaram código velho sem
+nenhum sinal, e um `setVirando(false)` que eu tinha acabado de adicionar "não
+funcionava". A sequência correta de verificação é `npm run build` **antes** de
+`npm start`.

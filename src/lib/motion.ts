@@ -240,3 +240,62 @@ export const CARD_TILT = {
   spring: { stiffness: 220, damping: 26, mass: 0.6 },
   glareSpring: { stiffness: 120, damping: 26, mass: 0.7 },
 } as const;
+
+/**
+ * A meia-volta do cartão, quando a pílula troca de pilar.
+ *
+ * Não é `EASE_EMPHASIZED`, e a curva é própria por uma razão medida: **as duas
+ * curvas são a curva de entradas, não a de uma rotação de 180°.**
+ *
+ * ## O defeito de `EASE_EMPHASIZED` aqui
+ *
+ * Medido no navegador, com a transição ancorada no `transitionrun`:
+ *
+ * | momento | quanto do giro já foi feito, com `EASE_EMPHASIZED` |
+ * |---------|------------------------------------------------------|
+ * | 100ms   | 43%                                                    |
+ * | 133ms   | 70%                                                    |
+ * | 284ms   | 93%                                                    |
+ * | 417ms   | 98%                                                    |
+ * | 567ms   | 100%                                                   |
+ *
+ * O cartão **passa de perfil aos 16% da duração** — 112ms de 700ms. A troca de
+ * frente e verso acontece ali, e o que sobra são 500ms arrastando nos últimos
+ * 7% do giro. É o "transição ruim": não é lenta, é o contrário — ela resolve o
+ * gesto em um quinto do tempo e depois finge que continua.
+ *
+ * O ponto de 90° não é detalhe: é o instante em que o cartão é mais estreito na
+ * tela (a largura projetada é `w·cos θ`, zero aos 90°), e é onde frente e verso
+ * trocam de vez. Fora do meio, o gesto não lê como "virou o cartão".
+ *
+ * ## A curva escolhida
+ *
+ * `cubic-bezier(0.75, 0.75, 0.8, 1)` põe os 90° em **48%** da duração e mantém
+ * um pouso amortecido. Saiu de uma busca em grade, não do gosto: entre as curvas
+ * que passam pelo meio, é a de maior arranque nos primeiros 50ms com
+ * `y₂ ≥ 0.85` — ou seja, que chega tangenciando o fim em vez de parar de seco.
+ *
+ * ## O conflito, e por que ele é resolvido assim
+ *
+ * Com uma Bézier só, **"responde no clique" e "troca no meio" puxam em direções
+ * opostas**, e nenhuma curva satisfaz os três pedidos ao mesmo tempo. A grade
+ * confirma: exigindo 90° entre 45% e 52%, pouso com `y₂ ≥ 0.85` e cauda até 95%
+ * da duração, o conjunto de soluções é **vazio**.
+ *
+ * O que se sacrifica é o arranque: `EASE_EMPHASIZED` já tem 18% do giro aos
+ * 50ms, e a curva escolhida tem 7% — cerca de 12°, visível no terceiro quadro.
+ * É a escolha certa porque o atraso é de ~3 quadros e não se vê, enquanto os
+ * 500ms de arrasto se vêem.
+ *
+ * ## A perceção do giro não é linear no ângulo
+ *
+ * A largura projetada é `w·|cos θ|`: o cartão **estreita** de 0° a 90° e
+ * **alarga** de 90° a 180°, simétrico em torno dos 90°. Por isso uma curva
+ * praticamente linear acompanha melhor o movimento percebido do que uma ease-out,
+ * que acerta a primeira metade e erra a segunda.
+ */
+export const CARD_FLIP = {
+  /** Meia-volta. 0,7s é `DURATION.base`. */
+  duration: DURATION.base,
+  ease: "cubic-bezier(0.75, 0.75, 0.8, 1)",
+} as const;

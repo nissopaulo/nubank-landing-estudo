@@ -482,15 +482,16 @@
  * Três elementos, três papéis:
  *
  *   .cc-stage   palco, tamanho fixo e `perspective` (inline no componente)
- *   .cc-flip    a virada da troca de cartão — `rotateY` com keyframes
+ *   .cc-flip    a meia-volta do cartão — `rotateY` acumulada, 0 / 180 / 360
+ *   .cc-card    frente e verso, os dois sempre montados, `backface-visibility`
  *   .cc-tilt    a inclinação sob o ponteiro — `rotateX`/`rotateY` reativas
  *
  * A virada e a inclinação precisaram ficar separadas porque **as duas usam
  * `rotateY`** — um `transform` só não comporta os dois gestos, e o segundo
  * cancelaria o primeiro no meio do gesto.
  *
- * O `preserve-3d` está nos dois intermediários e **não** no cartão: `.cc-face`
- * tem `overflow: clip` para arredondar os cantos, e `overflow` diferente de
+ * O `preserve-3d` está em `.cc-flip` e **não** no cartão: `.cc-face` tem
+ * `overflow: clip` para arredondar os cantos, e `overflow` diferente de
  * `visible` achata a 3D dos filhos (é o comportamento do spec, e é o que se
  * quer aqui — as peças do cartão são planas).
  *
@@ -558,11 +559,60 @@
     0 34px 72px -12px rgb(46 16 101 / 0.4);
 }
 
-.cc-flip,
-.cc-tilt {
+/*
+ * O palco, a peça que gira e as duas faces.
+ *
+ * `.cc-card` é `position: absolute; inset: 0` e as duas faces ficam **sempre**
+ * montadas, uma como frente e outra como verso. Sem isso — com um cartão por
+ * vez e `AnimatePresence` — havia dois bugs: a virada lia como "um cartão sai e
+ * outro entra" em vez de "virou o cartão", e o `AnimatePresence` zerava a ref do
+ * cartão ao desmontar o antigo, matando a inclinação até o próximo F5.
+ *
+ * O `backface-visibility: hidden` é o que faz o verso só aparecer quando a peça
+ * passou dos 90°. E o `preserve-3d` precisa estar no `.cc-flip` **e** nas faces
+ * estáveis; a face não o recebe porque tem `overflow: clip`, que achata a 3D dos
+ * filhos de propósito — as peças do cartão são planas.
+ */
+.cc-stage {
+  position: relative;
+  width: 252.174px;
+  height: 400px;
+}
+
+.cc-flip {
   position: absolute;
   inset: 0;
   transform-style: preserve-3d;
+  /*
+   * A virada é uma transition CSS, e não uma animação do Motion.
+   *
+   * Motivo concreto: a peça gira por `.set()` numa MotionValue, e essa rota não
+   * passa pelo `animate` do Motion — então o `MotionConfig reducedMotion="user"`
+   * não a alcança. Por transition, o bloco global de movimento reduzido deste
+   * arquivo a cobre sem tratamento extra, e a troca de frente e verso continua
+   * acontecendo porque é o `transitionend` que dispara.
+   *
+   * E é `transform`, e não `rotateY`: o Motion escreve o `rotateY` **dentro** do
+   * `transform` (`transform: rotateY(180deg)`), e é lá que a transition vive.
+   * Declarada em `rotate-y`, ela não valida nada e o `transitionend` nunca
+   * dispara — medido: o ângulo subia para 180 e a frente e o verso nunca
+   * trocavam de lugar.
+   *
+   * A curva vem de custom property porque a duração e a curva estão explicadas
+   * em `CardsSection`, junto com a razão de cada uma.
+   */
+  transition:
+    transform var(--cc-flip-duration, 0.7s) var(--cc-flip-ease, ease);
+}
+
+.cc-card {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+
+.cc-card--verso {
+  transform: rotateY(180deg);
 }
 
 .cc-tilt {
