@@ -66,8 +66,11 @@ function liberadoSeguinte(de: number) {
   return l[(l.indexOf(de) + 1) % l.length];
 }
 
-/** Meia-volta do cartão. A curva e o porquê estão em `CARD_FLIP`. */
-const FLIP_DURATION = CARD_FLIP.duration;
+/**
+ * Cada metade da meia-volta. O giro completo são duas: 0,35s + 0,35s.
+ * A curva e o porquê estão em `CARD_FLIP`.
+ */
+const FLIP_HALF = CARD_FLIP.half;
 const FLIP_EASE = CARD_FLIP.ease;
 
 export function CardsSection() {
@@ -109,6 +112,12 @@ export function CardsSection() {
    */
   const [virando, setVirando] = useState(false);
   const [angulo, setAngulo] = useState(0);
+
+  /** Metade da meia-volta em curso: 1 = indo a 90°, 2 = indo a 180°. */
+  const [fase, setFase] = useState<1 | 2>(1);
+
+  /** O cartão que a UI mostra. Muda no clique, não no meio do giro. */
+  const [alvo, setAlvo] = useState(par.frente);
   const mostrarMovimento = usePrefersReducedMotion();
 
   /*
@@ -124,71 +133,104 @@ export function CardsSection() {
    * O `??` cobre o estado em que não há verso — `par.verso` é `-1` com um só
    * frame liberado —, onde o visível é a frente mesmo.
    */
-  const mostrandoFrente = angulo % 360 === 0;
-  const ativo = mostrandoFrente ? par.frente : par.verso;
-  const visivel = CARDS[ativo] ?? CARDS[par.frente];
-
   /*
-   * Em repouso, a face que não está de frente sai da pintura.
+   * Qual face está pintada.
    *
-   * Redundante com o `backface-visibility: hidden` do CSS, e é deliberado: só o
-   * CSS **não cull** a face de trás em pelo menos um motor, e o sintoma é o
-   * cartão de trás aparecendo ao lado do da frente num ângulo levemente
-   * diferente. Ver o comentário no JSX.
+   * **Durante o giro quem manda é a fase, não o ângulo.** O `angulo` é o valor
+   * **alvo** — no começo da primeira metade ele já vale 90°, com a peça ainda
+   * em 0°. Derivar a face dele trocava a pintura no primeiro quadro, e a peça
+   * ia Mostrar o verso de costas durante toda a fase 1.
    *
-   * Durante o giro as duas pintam — a passagem de uma para a outra é aos 90° e é
-   * por ângulo, que é o que o `backface-visibility` faz certo.
+   * Em repouso o ângulo é múltiplo de 180 — frente em 0/360/720, verso em
+   * 180/540 —, e aí a paridade dele serve.
+   *
+   * Só uma face pinta por vez, e isso não é estética: é o que resolve o defeito
+   * do Firefox. Ver "Só uma face pinta por vez".
    */
-  const ocultaFrente = !virando && !mostrandoFrente;
-  const ocultaVerso = !virando && mostrandoFrente;
+  const emRepousoFrente = (((angulo % 360) + 360) % 360) === 0;
+  const pintandoVerso = virando ? fase === 2 : !emRepousoFrente;
+
+  const visivel = CARDS[alvo] ?? CARDS[par.frente];
 
   // O ponteiro é escutado na seção inteira, e não no cartão — é o que faz a
   // interação parecer com a seção e não com uma caixa de 252px no meio dela.
   const tilt = useCardTilt();
 
   function select(index: number) {
-    if (virando || index === ativo) return;
-
-    // Já está na dupla montada: meia-volta e pronto.
-    if (index === par.frente || index === par.verso) {
-      meiaVolta();
-      return;
-    }
+    if (virando || index === alvo) return;
 
     /*
-     * Não está. Só o slot **escondido** pode mudar, e só ele: mudar o que está
-     * visível apareceria na hora, antes do giro.
+     * Só o slot **escondido** pode mudar antes do giro, e só ele: mudar o que
+     * está pintado apareceria na hora.
      *
-     * Quando a frente é quem se vê, o escondido é o verso; quando é o verso,
-     * é a frente. Trocar o escondido não aparece — ele está de costas, e
-     * `backface-visibility: hidden` some com ele. Por isso o `requestAnimationFrame`:
-     * o slot novo precisa estar montado antes de o ângulo mudar, senão o primeiro
-     * quadro da virada já mostra o cartão errado girando.
+     * Escondido é o oposto da face que está pintando. Trocar o escondido não
+     * aparece porque ele está de costas — e, agora, porque nem é pintado. Por
+     * isso o `requestAnimationFrame`: o slot novo precisa estar montado antes do
+     * ângulo mudar, senão o primeiro quadro da virada já mostra o cartão errado
+     * girando.
      */
-    if (mostrandoFrente) {
-      setPar((p) => ({ frente: p.frente, verso: index }));
+    const precisaTrocarSlot = pintandoVerso
+      ? par.frente !== index
+      : par.verso !== index;
+
+    if (precisaTrocarSlot) {
+      setPar((p) =>
+        pintandoVerso
+          ? { frente: index, verso: p.verso }
+          : { frente: p.frente, verso: index },
+      );
+      requestAnimationFrame(meiaVolta);
     } else {
-      setPar((p) => ({ frente: index, verso: p.verso }));
+      meiaVolta();
     }
-    requestAnimationFrame(meiaVolta);
+
+    // A UI troca no clique, não no meio do giro — é o que mantém o `tabpanel`
+    // honesto para o leitor de tela.
+    setAlvo(index);
+    if (!mostrarMovimento) setVirando(true);
   }
 
   /**
-   * Mais meia-volta.
+   * Primeira metade: a peça vai até 90°, ainda pintando a frente.
    *
-   * Sem `prefers-reduced-motion`, é um `transition` CSS e o fim vem no
-   * `transitionend`. Com ele, a peça salta de uma vez e **não existe
-   * `transitionend`**: a regra global corta a transition para 0.01ms, o navegador
-   * nem chega a gerar transição, e a seção ficava travada no primeiro clique —
-   * ângulo em 0, pílula parada, nada mais respondendo. Por isso o caminho
-   * reduzido é síncrono e não passa por evento nenhum.
+   * A meia-volta são **duas** transitions de 90° em 90°, e não uma de 180°, por
+   * causa do Firefox: ele não cull a face de costas e as duas ficam pintadas o
+   * tempo todo. Ver "Só uma face pinta por vez".
+   *
+   * Nos 90° as duas estão de perfil, com a largura projetada em zero — então a
+   * troca de qual delas está pintada é invisível. Esse é o motivo de a troca
+   * existir aqui e não em qualquer outro ângulo.
    */
   function meiaVolta() {
-    if (!mostrarMovimento) setVirando(true);
-    setAngulo((a) => a + 180);
+    setFase(1);
+    /*
+     * Com movimento reduzido não há transition, e portanto não há
+     * `transitionend` para a segunda metade: a peça ficaria parada em 90°, de
+     * perfil, e o cartão da frente nunca apareceria. O caminho reduzido salta a
+     * meia-volta inteira num commit só.
+     */
+    setAngulo((a) => a + (mostrarMovimento ? 180 : 90));
   }
 
+  /**
+   * Fim de cada metade.
+   *
+   * Fim da primeira → já estamos de perfil: troca a face pintada e dispara a
+   * segunda metade, no mesmo commit. Fim da segunda → destrava.
+   *
+   * Com `prefers-reduced-motion` não há `transitionend`: a regra global corta a
+   * transition para 0.01ms, o Firefox nem chega a gerar transição, e a seção
+   * ficava travada no primeiro clique. O caminho reduzido é síncrono e não
+   * passa por evento nenhum — daí `mostrarMovimento` não marcar `virando`.
+   */
   function fecharVirada() {
+    if (mostrarMovimento) return;
+    if (fase === 1) {
+      setFase(2);
+      setAngulo((a) => a + 90);
+      return;
+    }
+    setFase(1);
     setVirando(false);
   }
 
@@ -249,7 +291,7 @@ export function CardsSection() {
             <motion.div key={item.id} variants={revealUp}>
               <CardTab
                 card={item}
-                selected={index === ativo}
+                selected={index === alvo}
                 onSelect={() => select(index)}
               />
             </motion.div>
@@ -296,7 +338,7 @@ export function CardsSection() {
             className="cc-flip"
             style={{
               rotateY: angulo,
-              "--cc-flip-duration": `${FLIP_DURATION}s`,
+              "--cc-flip-duration": `${FLIP_HALF}s`,
               "--cc-flip-ease": FLIP_EASE,
             } as React.CSSProperties}
             onTransitionEnd={(e) => {
@@ -315,31 +357,39 @@ export function CardsSection() {
             }}
           >
             {/*
-              A face que **não** está de frente fica `visibility: hidden` quando
-              a peça está parada — e isso é redundante com o
-              `backface-visibility: hidden` do CSS, de propósito.
+              Só uma face pinta por vez, e a troca é feita aqui — pelo React, no
+              commit — e não pelo motor.
 
-              O `backface-visibility` sozinho **não é suficiente** e a falha é
-              visível: em pelo menos um motor ele não cull a face de trás, e o
-              Croma aparece com o cartão do Nubank aparecendo atrás, num ângulo
-              ligeiramente diferente. O ângulo é o do `rotateY(180°)` do pai
-              combinado com a inclinação: `R_y(180)·R_x(θ)` espelha o eixo X, então
-              a face de trás aparece com a inclinação invertida — e é exatamente
-              o deslocamento da imagem do usuário.
+              OFirefox **não cull** a face de costas. Medido com WebDriver BiDi
+              no Firefox 158, durante a meia-volta:
 
-              `visibility: hidden` não depende do motor acertar a conta de 3D: em
-              repouso só a face visível é pintada, ponto. E o custo é zero, porque
-              a face escondida é a mesma que já estava sendo descartada.
+              | momento  | ângulo | frente | verso |
+              |----------|--------|--------|-------|
+              | 261ms    | 26°    | visible| visible |  ← o verso devia estar de costas
+              | 444ms    | 77°    | visible| visible |
+              | 528ms    | 102°   | visible| visible |  ← a frente devia estar de costas
+              | 828ms    | 179°   | visible| visible |
 
-              **Durante o giro as duas ficam pintadas**, porque a passagem de uma
-              para a outra acontece aos 90° e é por ângulo — aí o
-              `backface-visibility` é a ferramenta certa, e nenhum motor erra
-              durante 700ms de rotação.
+              E o sintoma é o Nubank aparecendo **atrás** do Croma na segunda
+              metade do giro: ele está de costas, e `backface-visibility`
+              deveria ter sumido com ele.
+
+              `backface-visibility: hidden` continua no CSS das duas faces: no
+              Chrome ele basta, e é ele que resolve a troca suave. A pintura é
+              que passa a ser garantida por `visibility`, que não depende de o
+              motor acertar a conta de 3D.
+
+              Por que a troca é invisível: ela acontece nos **90°**, onde as duas
+              faces estão de perfil e a largura projetada é zero. Medido no
+              Firefox: a troca acontece com a largura em **9,4px**, e não
+              aparece. Por isso a meia-volta são duas metades de 90° em 90° — a
+              troca vem no `transitionend` da primeira, e o cartão que sai
+              acelerando é o mesmo que estava entrando.
             */}
-            <div className="cc-card cc-card--frente" data-oculta={ocultaFrente || undefined}>
+            <div className="cc-card cc-card--frente" data-oculta={pintandoVerso || undefined}>
               <CreditCard card={CARDS[par.frente]} tilt={tilt.values} />
             </div>
-            <div className="cc-card cc-card--verso" data-oculta={ocultaVerso || undefined}>
+            <div className="cc-card cc-card--verso" data-oculta={!pintandoVerso || undefined}>
               <CreditCard card={CARDS[par.verso]} tilt={tilt.values} />
             </div>
           </motion.div>

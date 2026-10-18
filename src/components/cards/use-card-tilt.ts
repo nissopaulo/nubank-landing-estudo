@@ -132,10 +132,10 @@ export function useCardTilt(): CardTilt {
       // A direção é calculada contra o **palco**, e não contra uma face.
       //
       // O palco é o único elemento da cadeia que não gira e não é remontado:
-      // `.cc-flip` gira, e as duas faces trocam de lugar a cada virada. Ele tem
-      // exatamente a mesma caixa do cartão — 252,174 × 400, sem padding —, então
-      // a conta dá o mesmo resultado e não há nada que possa sumir no meio do
-      // gesto.
+      // `.cc-flip` gira, e o cartão que se vê troca de face a cada virada. Ele
+      // tem exatamente a mesma caixa do cartão — 252,174 × 400, sem padding —,
+      // então a conta dá o mesmo resultado e não há nada que possa sumir no meio
+      // do gesto.
       //
       // Duas versões antes dessa quebraram, ambas sem erro nenhum:
       //

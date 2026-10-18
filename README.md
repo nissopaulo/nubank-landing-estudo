@@ -769,38 +769,69 @@ caíram de **40% para 13%** da duração.
 > 18% do giro aos 50ms, a curva nova tem 7% (≈12°, no terceiro quadro). É a
 > escolha certa porque ~3 quadros de atraso não se veem, e 500ms de arrasto se veem.
 
-#### A face de trás não pode depender só de `backface-visibility`
+#### Só uma face pinta por vez — o Firefox não cull a face de costas
 
-O `backface-visibility: hidden` nas duas faces é o que faz a virada mostrar só
-uma — e ele **não basta** em repouso. Reportado: no Croma o cartão do Nubank
-aparecia **atrás**, num ângulo levemente diferente.
+Reportado: **no Firefox**, durante a virada, o cartão do Nubank aparecia atrás do
+Croma. No Chrome nunca.
 
-Esse ângulo é a assinatura do defeito. A face de trás fica em
-`R_y(180°)·R_tilt`, e a rotação de 180° **espelha o eixo X** — então a
-inclinação da face oculta aparece invertida, e o cartão de trás fica deslocado
-para o lado oposto do que a face da frente faz. É exatamente o que a imagem
-mostra.
+Medido com WebDriver BiDi no Firefox 158, quadro a quadro durante a meia-volta:
 
-**Não reproduz no Chrome headless** — nem parado, nem inclinado, nem em seis
-configurações de bissecção. Então a correção não é um conserto de navegador: é
-uma remoção da dependência.
+| momento | ângulo | frente | verso |
+|---------|--------|--------|-------|
+| 261ms   | 26°    | visible | visible | ← o verso está de costas
+| 444ms   | 77°    | visible | visible |
+| 528ms   | 102°   | visible | visible | ← a frente está de costas
+| 828ms   | 179°   | visible | visible |
+
+`backface-visibility: hidden` está no estilo computado das duas faces e
+**não é cumprido**. O motor pinta as duas o giro inteiro, e a que não devia
+aparece por trás.
+
+Não é só do `will-change`: testado no próprio Firefox, e **nenhuma** destas
+resolve — remover o `will-change: transform` do `.cc-tilt`, propagar o
+`backface-visibility` para `.cc-tilt` e `.cc-face`, ou as duas juntas. As três
+continuam pintando as duas faces.
+
+A correção é **remover a dependência**: a pintura é decidida pelo React, e só uma
+face pinta por vez.
 
 ```jsx
-<div className="cc-card cc-card--frente" data-oculta={ocultaFrente || undefined}>
-<div className="cc-card cc-card--verso"  data-oculta={ocultaVerso  || undefined}>
+<div className="cc-card cc-card--frente" data-oculta={pintandoVerso || undefined}>
+<div className="cc-card cc-card--verso"  data-oculta={!pintandoVerso || undefined}>
 ```
 
 ```css
 .cc-card[data-oculta] { visibility: hidden; }
 ```
 
-Em repouso só a face visível é pintada, sem depender de o motor acertar a conta
-de 3D. E não custa nada: a face escondida é a mesma que já estava sendo
-descartada.
+**E é por isso que a meia-volta são duas metades de 90° em 90°**, e não uma
+transition de 180°. A troca de qual face está pintada acontece no
+`transitionend` da primeira metade — nos **90°**, onde as duas faces estão de
+perfil e a largura projetada é zero, então a troca não aparece.
 
-**Durante o giro as duas pintam**, porque a passagem de uma para a outra é aos
-90° e é por ângulo — que é exatamente o caso em que `backface-visibility` é a
-ferramenta certa, e nenhum motor erra durante 700ms de rotação.
+Medido no Firefox depois da correção:
+
+| ângulo | frente | verso | largura projetada |
+|--------|--------|-------|-------------------|
+| 0°     | painted | hidden | 252,2px |
+| 56°    | painted | hidden | 142,3px |
+| 85°    | painted | hidden | **22,4px** |
+| 94°    | hidden | painted | **19,1px** |
+| 146°   | hidden | painted | 209,3px |
+| 180°   | hidden | painted | 252,2px |
+
+A troca acontece entre 22px e 19px de largura — de sliver para sliver, e não se
+vê.
+
+O `backface-visibility` **continua no CSS**: no Chrome ele basta, e é ele que
+resolve a troca suave. A garantia é que a pintura não depende do motor.
+
+#### Quem manda na pintura é a fase, não o ângulo
+
+`angulo` é o valor **alvo**: no começo da primeira metade ele já vale 90°, com a
+peça ainda em 0°. Derivar a face dele trocava a pintura no primeiro quadro e a
+peça mostrava o verso de costas durante toda a fase 1. Quem manda é `fase`; o
+ângulo só decide em repouso, onde é múltiplo de 180.
 
 #### A interação é medida contra o palco, nunca contra a face
 

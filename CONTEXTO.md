@@ -1728,6 +1728,86 @@ nos dois pilares; e contra o export do Figma, com o grão desligado, erro médio
 6,98 níveis, dos quais 5,61/5,03/4,68 são offset uniforme, com resíduo de **3,30**
 e inclinação de erro de **0,00001 níveis/px** — a mesma assinatura do Nubank.
 
+### 2026-10-18 — o Firefox não cull a face de costas, e a meia-volta virou duas
+
+O defeito anterior reapareceu, agora identificado: **no Firefox, e durante o giro**.
+No Chrome nunca acontecia — e é por isso que a correção anterior (que só tratava o
+repouso) não resolveu.
+
+#### Medido no Firefox de verdade
+
+Firefox 158 instalado aqui, dirigido por **WebDriver BiDi**
+(`--remote-debugging-port`), com `browsingContext.captureScreenshot`. Isso
+importa: sem ele a hipótese anterior não seria testável, e o padrão do projeto —
+verificar antes de mexer — seria inviável fora do Chrome.
+
+Estado das duas faces, quadro a quadro, na meia-volta:
+
+| momento | ângulo | frente | verso |
+|---------|--------|--------|-------|
+| 261ms   | 26°    | visible | visible |
+| 444ms   | 77°    | visible | visible |
+| 528ms   | 102°   | visible | visible |
+| 828ms   | 179°   | visible | visible |
+
+`backface-visibility: hidden` no estilo computado das duas faces, e **não
+cumprido**. As duas pintam o giro inteiro.
+
+#### Nenhuma das correções de CSS resolve — testadas no próprio Firefox
+
+| candidata | resultado |
+|---|---|
+| remover `will-change: transform` do `.cc-tilt` | as duas continuam pintando |
+| propagar `backface-visibility` para `.cc-tilt` e `.cc-face` | as duas continuam pintando |
+| as duas juntas | as duas continuam pintando |
+
+A correção é **remover a dependência**: a pintura é decidida pelo React, com
+`visibility: hidden` na face que não está de frente.
+
+#### E por isso a meia-volta passou a ser DUAS metades de 90°
+
+A troca de face pintada acontece no `transitionend` da primeira metade — nos
+**90°**, onde as duas faces estão de perfil e a largura projetada é zero. Medido
+depois da correção: a troca acontece entre **22,4px e 19,1px** de largura, de
+sliver para sliver, e não se vê.
+
+`CARD_FLIP.half` substitui `CARD_FLIP.duration`: são `0,35s + 0,35s`, o mesmo
+`DURATION.base` de antes. A curva é a mesma nas duas metades, o que coloca uma
+quebra de velocidade exatamente nos 90° — onde a largura é zero.
+
+#### Dois erros meus no caminho
+
+**O primeiro:** derivei a face pintada do `angulo`, que é o valor **alvo**. No
+começo da primeira metade ele já vale 90°, com a peça ainda em 0° — a pintura
+trocava no primeiro quadro e a peça mostrava o verso de costas a meia volta
+inteira. Quem manda é a fase.
+
+**O segundo, mais caro:** no primeiro frame do Firefox eu vi "fundo roxo do
+Nubank com nome, chip e marca do Croma" e escrevi que o motor estava
+**intercalando** as duas faces. É falso — **os dois cartões dizem "PAULO
+VINICIUS"**. O quadro roxo era o cartão do Nubank, correto. Só a face do Nubank
+aparecendo era o defeito, e nada mais. Fui checar `card-showcase.ts` e os dois
+`holder` são iguais.
+
+Vale pelos dois: um diagnóstico que parece mais grave e mais interessante do que
+o real é pior que nenhum, porque leva a uma correção errada com confiança.
+
+#### Movimento reduzido
+
+Sem transition não há `transitionend` para a segunda metade: a peça ficava
+parada em 90°, de perfil, e o cartão da frente nunca aparecia. O caminho reduzido
+salta os 180° num commit só.
+
+**Verificado:** Chrome e Firefox, movimento normal e reduzido. 8 trocas
+coerentes nos quatro casos; curva com 90° aos 49% do giro; tilt estável durante o
+giro (8,18014° → 8,18415° → 8,18415°); diff contra o Figma sem regrão com resíduo
+3,30 e inclinação 0,00001 níveis/px; contraste com as três reprovações de sempre
+(4,40 / 2,44 / 4,12).
+
+**Ferramenta nova:** o Firefox é dirigível por WebDriver BiDi nesta máquina, e
+`browsingContext.captureScreenshot` existe no 158. Qualquer defeito de render
+que só apareça fora do Chrome agora é verificável aqui — antes de mexer.
+
 ### 2026-10-18 — a face de trás aparecia, e a culpa não era do `backface-visibility`
 
 Relatório: no Croma o cartão do Nubank aparecia **atrás**, num ângulo levemente

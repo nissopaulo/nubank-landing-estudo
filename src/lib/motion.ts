@@ -295,7 +295,22 @@ export const CARD_TILT = {
  * que acerta a primeira metade e erra a segunda.
  */
 export const CARD_FLIP = {
-  /** Meia-volta. 0,7s é `DURATION.base`. */
-  duration: DURATION.base,
+  /**
+   * Duração de **uma metade** da meia-volta, em segundos.
+   *
+   * A meia-volta são duas transições de 90° em 90°, e não uma de 180°, porque o
+   * Firefox não cull a face de costas e as duas ficam pintadas durante o giro
+   * inteiro. A troca de qual delas está pintada acontece no `transitionend` da
+   * primeira metade — nos 90°, onde as duas estão de perfil e a largura projetada
+   * é zero, então a troca não aparece.
+   *
+   * Como são duas, cada uma leva metade: 0,35s + 0,35s = 0,7s de giro, que é o
+   * `DURATION.base` que a meia-volta teria com uma transition só.
+   *
+   * E a curva é a mesma nas duas, o que coloca uma quebra de velocidade exatamente
+   * nos 90° — onde o cartão tem largura zero. A desaceleração de uma metade e a
+   * aceleração da seguinte acontecem no ponto morto.
+   */
+  half: DURATION.fast,
   ease: "cubic-bezier(0.75, 0.75, 0.8, 1)",
 } as const;
