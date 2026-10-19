@@ -2357,3 +2357,27 @@ Ele serve o `.next` da **última build** — vários testes rodaram código velh
 nenhum sinal, e um `setVirando(false)` que eu tinha acabado de adicionar "não
 funcionava". A sequência correta de verificação é `npm run build` **antes** de
 `npm start`.
+
+### 2026-10-19 — commit e push da Cards Section completa (Empresas liberado)
+
+Commit `d772a87` no `main`, push para o GitHub (`origin/main`). O deploy na
+Vercel é disparado automaticamente pelo push (produção:
+https://nubank-landing-estudo.vercel.app).
+
+**Fluxo "pode commitar" executado na íntegra:** `tsc --noEmit` (limpo),
+`npm run lint` (limpo), `npm run build` (limpo, produção estática na rota `/`),
+commit com mensagem longa em arquivo (`git commit -F`), push.
+
+**O que foi commitado:** a Cards Section fecha com o quarto e último frame
+(Empresas / `103:383`), a camada de paleta que entra/sai na troca de pilar
+(`cc-bg-entra`, `isolation: isolate`, `z-index: -1`), o `revealUp` do CTA em
+wrapper estável, e a constante `CARD_BG` em `lib/motion.ts`. Quatro novos SVGs
+em `public/images/credit-card/empresas-*`. README.md e CONTEXTO.md atualizados
+com a tabela de divergência dos quatro frames, contraste de Empresas (zero
+reprovações) e próximos passos (navegação/submenus é o próximo bloco).
+
+**Próximo passo natural:** desenhar no Figma os painéis dos submenus da
+navegação (pendência #2, bloqueio do restante da página) e, em seguida,
+implementá-los em `SiteHeader.tsx` substituindo `NAV_ITEMS` /
+`aria-disabled` por painéis reais. Enquanto não existe no Figma, não há código
+para escrever aqui — conteúdo não se inventa.
