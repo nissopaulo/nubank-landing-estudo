@@ -5,9 +5,8 @@
  *
  * A seção tem quatro frames (`97:2` Nubank, `103:248` Croma, `103:318`
  * Ultravioleta e `103:383` Business) e o trabalho é feito **um frame por vez**.
- * Hoje há três: Nubank, Croma e Ultravioleta. O quarto (Empresas) segue oculto,
- * e a pílula correspondente aparece no seletor como `<button>` com
- * `aria-disabled` e aviso para leitor de tela.
+ * Hoje há **quatro**: Nubank, Croma, Ultravioleta e Empresas. A seção está
+ * completa, e nenhuma pílula fica `aria-disabled`.
  *
  * A ausência do campo `showcase` é o que torna a pílula não-clicável, e não uma
  * flag separada: é o mesmo mecanismo do `ecosystem-pillars.ts`, e é o que impede
@@ -15,7 +14,8 @@
  *
  * ## Nada aqui é cor genérica: cada frame traz a sua
  *
- * O que o segundo frame mostrou, e que é o motivo deste arquivo ter Crescido:
+ * Os quatro frames estão liberados e a seção está completa. O que eles
+ * mostraram, e que é o motivo deste arquivo ter crescido:
  *
  * - **O fundo da seção é por pilar.** Roxo radial de 8 paradas no Nubank,
  *   creme radial de 5 paradas no Croma.
@@ -37,9 +37,12 @@
  *   e é a única peça que **falta**: o frame não tem logo de rede, e o vão de
  *   cima fica vazio. Ver `network`, `holderGradient` e `holderBox`.
  *
- * O que **não** virou campo, porque é igual nos três e seria chute:
- * `Action/action-primary` no CTA e a caixa do chip. Se o frame de Empresas
- * divergir, o campo entra na hora — não antes.
+ * O que **não** virou campo, porque é igual nos quatro e seria chute: a caixa do
+ * cartão e a do chip, e o gradiente do chip.
+ *
+ * E o que é divergência **de layout** continua sendo dos dois tipos, porque
+ * são as duas árvores que o Figma tem: `stack` (Nubank e Empresas), `stack` com
+ * o nome absoluto e `justify-end` (Ultravioleta) e `rotated` (Croma).
  */
 
 /**
@@ -167,6 +170,28 @@ export type ShowcaseCard = {
      */
     network?: string;
     nuLogo: string;
+
+    /**
+     * Rótulo ao lado da marca `nu`, no rodapé do cartão.
+     *
+     * Só o frame do Business tem: `business`, em `Text/text-brand` (#820ad1) e
+     * 17,391 px, alinhado à base da marca numa linha de largura cheia
+     * (`items-end justify-between`, nó `103:428`).
+     *
+     * Ausente nos outros três, onde a marca `nu` é a peça sozinha na base da
+     * coluna.
+     */
+    rowLabel?: string;
+
+    /**
+     * Tinta do rótulo, quando ele existe.
+     *
+     * Entra separada porque o rótulo **não** herda a tinta do cartão: no Business
+     * a `ink` do cartão é `Text/text-primary` (#111) porque o cartão é claro,
+     * e o rótulo é `Text/text-brand` (#820ad1). Herdar daria cinza-escuro no
+     * lugar do roxo — que é o que aconteceu na primeira versão.
+     */
+    rowLabelInk?: string;
 
     /**
      * O chip, que é por pilar em posição e em peça.
@@ -377,9 +402,74 @@ export const CARDS: ShowcaseCard[] = [
     id: "empresas",
     label: "Empresas",
     chrome: {
-      background: "#ffffff",
-      pill: { onBg: "#820ad1", onBgInk: "#ffffff", idleInk: "#820ad1", idleBorder: "#820ad1" },
+      /**
+       * Radial de **duas** paradas, branco para cinza claro — e é a única seção
+       * da página com o miolo branco: as outras três são coloridas de ponta a
+       * ponta.
+       *
+       * O `gradientTransform` é `matrix(96 54.3 -54.3 96 ...)`, idêntico ao do
+       * Ultravioleta, e por isso vai como data URI pelo mesmo motivo.
+       *
+       * `#d1d5db` é `Neutral/300` e `#ffffff` é `Neutral/100`: as duas são
+       * tokens, ao contrário das cinco paradas do Croma.
+       */
+      background: `url("data:image/svg+xml;utf8,<svg viewBox='0 0 1920 1086' xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none'><rect x='0' y='0' height='100%' width='100%' fill='url(%23grad)' opacity='1'/><defs><radialGradient id='grad' gradientUnits='userSpaceOnUse' cx='0' cy='0' r='10' gradientTransform='matrix(96 54.3 -54.3 96 960 543)'><stop stop-color='rgba(255,255,255,1)' offset='0'/><stop stop-color='rgba(209,213,219,1)' offset='1'/></radialGradient></defs></svg>")`,
+      pill: {
+        /** `Action/action-primary` — volta a ser a cor da marca, como no Nubank. */
+        onBg: "#820ad1",
+        onBgInk: "#ffffff",
+        /**
+         * Aqui a inativa é `Border/border-brand` e `Text/text-brand` — o par do
+         * design system, ao contrário do Ultravioleta (branco) e do Croma
+         * (`#8f7f64`, que não é token).
+         */
+        idleInk: "#820ad1",
+        idleBorder: "#820ad1",
+      },
       titleInk: "#820ad1",
+    },
+    showcase: {
+      /**
+       * `stack` com `justify-between` — **não** o `flex-end` do Ultravioleta.
+       * Aqui são três peças no fluxo (rede, nome, pé), e o eixo principal é o de
+       * sempre.
+       */
+      layout: "stack",
+      /**
+       * Radial de duas paradas, `Neutral/100` para `Neutral/300`.
+       *
+       * A matriz é `matrix(0.043629 27.015 ...)` — a **mesma degenerada** do
+       * cartão do Nubank, em que a elipse (`r=10`) é esticada por 27 e vira
+       * praticamente uma reta: o gradiente é quase vertical e a rotação dela é o
+       * desenho. Vai como data URI pelo mesmo motivo.
+       */
+      gradient: `url("data:image/svg+xml;utf8,<svg viewBox='0 0 252.17 400' xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='none'><rect x='0' y='0' height='100%' width='100%' fill='url(%23grad)' opacity='1'/><defs><radialGradient id='grad' gradientUnits='userSpaceOnUse' cx='0' cy='0' r='10' gradientTransform='matrix(0.043629 27.015 -17.031 0.027435 126.09 200)'><stop stop-color='rgba(243,244,246,1)' offset='0'/><stop stop-color='rgba(209,213,219,1)' offset='1'/></radialGradient></defs></svg>")`,
+      /** `Text/text-primary` — cinza-escuro sobre cartão claro, o inverso do resto. */
+      ink: "#111111",
+      holder: "Paulo Vinicius",
+      network: "/images/credit-card/empresas-network.svg",
+      nuLogo: "/images/credit-card/empresas-nu-logo.svg",
+      /**
+       * A única peça que só este frame tem: `business` ao lado da marca `nu`,
+       * alinhado à base dela, em `Text/text-brand`.
+       */
+      rowLabel: "business",
+      rowLabelInk: "#820ad1",
+      chip: {
+        /** Mesmos valores dos outros três: mesma peça, mesmo lugar. */
+        left: 130.43,
+        top: 47.83,
+        contactInset: "31.92% 26.67% 31.45% 28.69%",
+        contact: "/images/credit-card/empresas-chip-contact.svg",
+        lines: "/images/credit-card/empresas-chip-lines.svg",
+      },
+      title: "Cartão Empresas",
+      desc: [
+        "Cartão empresarial sem anuidade, com controle de gastos,",
+        "pagamentos digitais e recursos para simplificar a gestão financeira do negócio.",
+      ],
+      descInk: "#820ad1",
+      cta: "Conheça o Cartão Empresas",
     },
   },
 ];

@@ -1,0 +1,24 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="86.8656" height="53.6896" viewBox="0 0 86.8656 53.6896" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="logo-for-twitter">
+<path id="Rectangle-path" d="M55.1774 5.73938H31.6882V47.9501H55.1774V5.73938Z" fill="url(#paint0_linear_0_12)"/>
+<path id="XMLID_107_" d="M33.1796 26.8448C33.1796 18.2815 37.1891 10.6548 43.4328 5.73945C38.8666 2.14478 33.1051 3.6169e-05 26.8428 3.6169e-05C12.018 3.6169e-05 0 12.0188 0 26.8448C0 41.6706 12.018 53.6896 26.8428 53.6896C33.1051 53.6896 38.8666 51.5449 43.4328 47.9502C37.1891 43.0346 33.1796 35.4082 33.1796 26.8448Z" fill="url(#paint1_linear_0_12)"/>
+<path id="Shape" d="M86.8656 26.8448C86.8656 41.6706 74.8477 53.6896 60.0228 53.6896C53.7606 53.6896 47.9991 51.5448 43.4328 47.9502C49.6766 43.0346 53.6859 35.4081 53.6859 26.8448C53.6859 18.2815 49.6766 10.6548 43.4328 5.73941C47.9991 2.14475 53.7606 0 60.0228 0C74.8477 0 86.8656 12.0188 86.8656 26.8448Z" fill="url(#paint2_linear_0_12)"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_12" x1="43.4328" y1="5.73938" x2="43.4328" y2="47.9501" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FD9E76"/>
+<stop offset="0.5" stop-color="#F16022"/>
+<stop offset="1" stop-color="#FD9E76"/>
+</linearGradient>
+<linearGradient id="paint1_linear_0_12" x1="21.7164" y1="3.6169e-05" x2="21.7164" y2="53.6896" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FF5B60"/>
+<stop offset="0.5" stop-color="#E91D25"/>
+<stop offset="1" stop-color="#FF8B8F"/>
+</linearGradient>
+<linearGradient id="paint2_linear_0_12" x1="65.1492" y1="0" x2="65.1492" y2="53.6896" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FFC063"/>
+<stop offset="0.5" stop-color="#F69E1E"/>
+<stop offset="1" stop-color="#FFC063"/>
+</linearGradient>
+</defs>
+</svg>

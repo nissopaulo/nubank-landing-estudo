@@ -314,3 +314,52 @@ export const CARD_FLIP = {
   half: DURATION.fast,
   ease: "cubic-bezier(0.75, 0.75, 0.8, 1)",
 } as const;
+
+/**
+ * A virada do fundo da seção ao trocar de pilar.
+ *
+ * O Figma **não define** animação para os frames da Cards Section — e também não
+ * define para o resto do arquivo. Então isto é desvio autoral, como a sombra do
+ * cartão e o grão da página.
+ *
+ * ## Por que uma camada a mais, e não uma transição
+ *
+ * `background-image` **não é animável**. `transition: background-image` no
+ * `globals.css` não dá erro nenhum e não acontece nada — o mesmo modo de falha do
+ * reflexo e do texto em gradiente, e é por isso que este arquivo é cheio de
+ * advertências desse tipo.
+ *
+ * A saída é a de sempre neste projeto: duas camadas empilhadas.
+ *
+ * ## Qual camada carrega o quê — e por que importa
+ *
+ * **Durante** a virada, o `background-image` da `<section>` é o do pilar que
+ * está **saindo**, e a camada por cima é a do que está **entrando**. No fim, o
+ * `background-image` vira o do que entrou e a camada é desmontada.
+ *
+ * A escolha é deliberada, e é o que a torna invisível: no instante da desmontagem
+ * a camada de cima já está com `opacity: 1` e `scale: 1`, exatamente sobre o que
+ * passa a ser o fundo da seção. Trocar um pelo outro é indistinguível. Se fosse o
+ * inverso — a seção assumindo o novo e a camada carregando o antigo — haveria um
+ * instante em que as duas estão a 50% e o fundo pisca no meio.
+ *
+ * ## A escala é o que dá o movimento
+ *
+ * Opacidade sozinha é um *dissolve*: liso, e parado. A camada que entra vem de
+ * `1.02` e assenta em `1` — a paleta nova **chega** em vez de aparecer, e o gesto
+ * da meia-volta, que gira para fora, continua para dentro.
+ *
+ * ## A duração é a do giro, de propósito
+ *
+ * `DURATION.base` é exatamente `2 × CARD_FLIP.half`, e o cartão leva isso para
+ * completar a meia-volta. Fazer a paleta durar mais deixaria o cartão parado no
+ * destino com o fundo ainda chegando; fazer durar menos cortaria o gesto em dois.
+ *together é o que faz parecer um gesto só.
+ */
+export const CARD_BG = {
+  /** 0,7s — o mesmo `DURATION.base`, e o que a meia-volta inteira leva. */
+  duration: DURATION.base,
+  ease: EASE_EMPHASIZED,
+  /** De quanto a camada que entra vem "acima". 2% é o limite do visível. */
+  from: 1.02,
+} as const;

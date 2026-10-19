@@ -9,6 +9,7 @@ import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 import { CtaLink } from "@/components/ui/CtaLink";
 import { CARDS, type ShowcaseCard } from "@/lib/card-showcase";
 import {
+  CARD_BG,
   CARD_FLIP,
   revealScale,
   revealUp,
@@ -113,6 +114,19 @@ export function CardsSection() {
   const [virando, setVirando] = useState(false);
   const [angulo, setAngulo] = useState(0);
 
+  /*
+   * O pilar cuja paleta está **saindo**, enquanto a do que entra é lavada por
+   * cima.
+   *
+   * Existe porque `background-image` não é animável, e a alternativa — uma
+   * camada por paleta, com as duas sempre montadas — deixaria a seção pintando
+   * dois gradientes o tempo todo e exigiria um estado por camada. Uma camada só
+   * temporária é o custo menor, e some sozinha no `onAnimationComplete`.
+   *
+   * Ver `CARD_BG` para o porquê de a seção segurar o fundo que SAI.
+   */
+  const [saindo, setSaindo] = useState<ShowcaseCard | null>(null);
+
   /** Metade da meia-volta em curso: 1 = indo a 90°, 2 = indo a 180°. */
   const [fase, setFase] = useState<1 | 2>(1);
 
@@ -193,6 +207,22 @@ export function CardsSection() {
     // A UI troca no clique, não no meio do giro — é o que mantém o `tabpanel`
     // honesto para o leitor de tela.
     setAlvo(index);
+    /*
+     * A camada do fundo **só existe sem movimento reduzido**, e não é
+     * escolha de estilo: é que o `MotionConfig reducedMotion="user"` não cobre
+     * esse caso.
+     *
+     * Medido: com `prefers-reduced-motion: reduce`, a camada fica **congelada em
+     * `opacity: 0.007` e `scale(1.02)`** e o `onAnimationComplete` nunca
+     * dispara — a camada não some nunca, e a seção fica mostrando a paleta
+     * antiga para sempre. O Motion pula animação de *transform* sob movimento
+     * reduzido, e pula deixando o valor inicial; a de `opacity` continua
+     * rodando, e nenhuma das duas chega ao fim.
+     *
+     * Sem a camada a paleta troca na hora, que é o que o usuário pediu ao
+     * ativar a preferência.
+     */
+    if (!mostrarMovimento) setSaindo(visivel);
     if (!mostrarMovimento) setVirando(true);
   }
 
@@ -253,10 +283,39 @@ export function CardsSection() {
     <section
       id="cartoes"
       aria-label="Cartões"
-      className="flex flex-col items-center gap-[100px] px-[200px] py-[100px]"
-      style={{ backgroundImage: visivel.chrome.background }}
+      className="relative flex flex-col items-center gap-[100px] px-[200px] py-[100px]"
+      style={{
+        // Durante a virada a seção segura o fundo que está SAINDO, e a camada de
+        // baixo é a que entra. Ver `CARD_BG`.
+        backgroundImage: (saindo ?? visivel).chrome.background,
+      }}
       {...tilt.bind}
     >
+      {/*
+        A paleta que entra, lavada por cima.
+
+        `pointer-events: none` porque é uma camada de fundo: sem isso ela
+        interceptaria o `pointermove` da seção e a inclinação do cartão deixaria
+        de responder na metade da área onde a transição acontece.
+
+        `aria-hidden` porque é decoração — a mesma razão do cartão.
+
+        A escala vem de `1.02` e assenta em `1`, e é ela que dá o movimento:
+        opacidade sozinha é um dissolve liso e parado. Como a camada termina com
+        `opacity: 1` e `scale: 1` exatamente sobre o fundo que a seção passa a
+        assumir, a desmontagem no fim não aparece.
+      */}
+      {saindo ? (
+        <motion.div
+          aria-hidden="true"
+          className="cc-bg-entra"
+          style={{ backgroundImage: visivel.chrome.background }}
+          initial={{ opacity: 0, scale: CARD_BG.from }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: CARD_BG.duration, ease: CARD_BG.ease }}
+          onAnimationComplete={() => setSaindo(null)}
+        />
+      ) : null}
       {/*
         Container da entrada. `whileInView` com `once` — a seção surge **na
         chegada**, e não na montagem: quem já abre a página no meio da rolagem
@@ -440,22 +499,32 @@ export function CardsSection() {
         </motion.div>
       </div>
 
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={visivel.id}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.26, ease: "easeOut" }}
-        >
-          {/* Entrada por conta própria: o `AnimatePresence` acima troca a
-              opacidade por cartão, e as duas coisas no mesmo elemento brigariam
-              — uma virada poderia reverter a entrada da seção. */}
+      {/*
+        O reveal do CTA fica num wrapper **estável**, e não dentro do elemento
+        que o `AnimatePresence` remonta a cada troca.
+
+        Estava no lado de dentro, e por isso o CTA **re-desliava 24px para cima a
+        cada clique** — `revealUp` é `y: 24 → 0`, e um elemento novo com
+        `initial="hidden"` recomeça nele. Medido: o CTA em y = 968 no meio da
+        troca, contra 948 no repouso.
+
+        Com o wrapper fora, o reveal acontece uma vez, quando a seção chega na
+        tela, e a troca de pilar faz só o *cross-fade* de opacidade — que é o que
+        o `AnimatePresence` sabe fazer.
+      */}
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.25 }}
+        variants={revealUp}
+      >
+        <AnimatePresence mode="wait" initial={false}>
           <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.25 }}
-            variants={revealUp}
+            key={visivel.id}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.26, ease: "easeOut" }}
           >
             {/*
               A variante é do frame visível. `brand` é o `Action/action-primary`
@@ -469,8 +538,8 @@ export function CardsSection() {
               {visivel.showcase?.cta}
             </CtaLink>
           </motion.div>
-        </motion.div>
-      </AnimatePresence>
+        </AnimatePresence>
+      </motion.div>
     </section>
   );
 }

@@ -633,13 +633,50 @@ procedimento das artes dos cartões). Todos são reexportáveis do Figma.
 
 ## Cards Section
 
-Figma `Cards Section` — três frames liberados: `97:2` (Nubank), `103:248`
-(Croma) e `103:318` (Ultravioleta), todos 1920×1086. O quarto, `103:383`
-(Empresas), segue oculto. Um seletor de pílulas
+Figma `Cards Section` — **os quatro frames liberados**: `97:2` (Nubank),
+`103:248` (Croma), `103:318` (Ultravioleta) e `103:383` (Empresas), todos
+1920×1086. A seção está completa: nenhuma pílula fica `aria-disabled`, e as
+quatro trocam de verdade. Um seletor de pílulas
 (Nubank · Croma · Ultravioleta · Empresas), o cartão de crédito, o nome, a
 descrição e o CTA. **Só o frame do Nubank está liberado**: os outros três
 existem no arquivo (nós `103:248`, `103:318` e `103:383`) e estão ocultos, e o
 trabalho é feito um frame por vez.
+
+### Cada frame diverge, e nenhuma divergência é estilo
+
+Os quatro frames são **quatro árvores diferentes** no Figma, e a lista abaixo é o
+resumo do que muda entre elas. Nenhum item aqui é escolha de implementação:
+
+| | Nubank `97:2` | Croma `103:248` | Ultravioleta `103:318` | Empresas `103:383` |
+|---|---|---|---|---|
+| layout | `stack` | `rotated` | `stack` | `stack` |
+| eixo principal | `space-between` | `space-between` | **`flex-end`** | `space-between` |
+| logo de rede | sim | sim | **não** | sim |
+| nome | no fluxo | girado 90° | **absoluto, com gradiente** | no fluxo |
+| rótulo no pé | não | não | não | **"business"** |
+| fundo da seção | 8 paradas, roxo | 5 paradas, creme | 5 paradas, roxo | **2 paradas, branco** |
+| pílula ativa | `#820ad1` | `#eeece9` | **`#2e1065`** | `#820ad1` |
+| pílula inativa | `#820ad1` | **`#8f7f64`** | **branco** | `#820ad1` |
+| título | `#820ad1` | `#820ad1` | **branco** | `#820ad1` |
+| nome no cartão | `PAULO VINICIUS` | `PAULO VINICIUS` | **`Paulo Vinicius`** | `Paulo Vinicius` |
+| CTA | `action-primary` | idem | **`Purple/950`** | `action-primary` |
+
+Sete campos novos no total, e **nenhum é abstração**: `holderBox`,
+`holderGradient`, `network` opcional, `rowLabel`/`rowLabelInk`, `titleInk` no
+`chrome` e `ctaVariant`. O eixo principal entra pelo mesmo atributo do
+`holderBox` porque no Figma os dois fatos vêm juntos no nó `103:363`.
+
+**O vão de cima do Ultravioleta fica vazio**, e é assim que o design mostra: não
+tem logo de rede. Inventar uma seria conteúdo que o Figma não tem.
+
+**O rótulo do pé não herda a tinta do cartão.** No Business a `ink` do cartão é
+`Text/text-primary` (#111) porque o cartão é claro, e o rótulo é
+`Text/text-brand` (#820ad1). Herdar dava cinza-escuro no lugar do roxo — que foi
+o que aconteceu na primeira versão, e é a razão de `rowLabelInk` existir.
+
+**O nome em gradiente** (`background-clip: text`) é o do Ultravioleta, e é o único
+gradiente de **texto** da seção. Precisa de `color: transparent` junto — sem ele o
+gradiente fica atrás do texto e não aparece.
 
 ### O Ultravioleta diverge em cinco pontos, e quatro viraram campo
 
@@ -669,6 +706,88 @@ tem logo de rede. Inventar uma seria conteúdo que o Figma não tem.
 `Neutral/100`), e é o único gradiente de **texto** da seção. Precisa de
 `color: transparent` junto — sem ele o gradiente fica atrás do texto e não
 aparece, o mesmo modo de falha do reflexo.
+
+### A paleta da seção também vira, e `background-image` não dá para isso
+
+Trocar de pilar trocava o fundo de uma vez. `background-image` **não é animável**:
+`transition: background-image` no CSS não dá erro nenhum e não acontece nada — o
+mesmo modo de falha do reflexo e do texto em gradiente.
+
+A saída são duas camadas empilhadas. Durante a virada, o `background-image` da
+`<section>` é o do pilar que está **saindo**, e uma `<div>` por cima é a do que
+está **entrando**; no fim a seção assume o novo e a camada é desmontada.
+
+**Qual camada carrega o quê é o que a torna invisível.** No instante da desmontagem
+a camada de cima já está com `opacity: 1` e `scale: 1`, exatamente sobre o que
+passa a ser o fundo. Se fosse o inverso, haveria um quadro em que as duas estão a
+50% e o fundo pisca no meio.
+
+A **escala** é o que dá o movimento: opacidade sozinha é um *dissolve*, liso e
+parado. A camada que entra vem de `1.02` e assenta em `1` — a paleta nova
+**chega** em vez de aparecer, e o gesto da meia-volta, que gira para fora, continua
+para dentro. Medido na virada Nubank → Croma:
+
+| momento | opacidade | escala |
+|---------|-----------|--------|
+| logo após o clique | 0 | 1,020 |
+| +90ms | 0,414 | — |
+| +180ms | 0,827 | — |
+| +450ms | 0,987 | — |
+| +630ms | 1 | — |
+| último quadro | 1 | **1,000** |
+| +720ms | *(camada desmontada)* | — |
+
+A duração é `DURATION.base`, que é exatamente `2 × CARD_FLIP.half` — o que a
+meia-volta inteira leva. É o que faz o cartão e a paleta chegarem **juntos**.
+
+Dois detalhes que custaram:
+
+- `pointer-events: none` na camada. Sem isso ela intercepta o `pointermove` da
+  seção e a inclinação do cartão morre na área onde a transição acontece —
+  verificado com `elementFromPoint` e com a inclinação ainda viva a 320ms da
+  virada.
+#### E a camada não pode ser uma filha como as outras
+
+A primeira versão resolveu a ordem de pintura com `#cartoes > * { position:
+relative; z-index: 1 }` — e foi um desastre: a regra casa **também** com a
+camada, porque ela é filha direta da seção, e `#cartoes > *` tem especificidade de
+**ID**, que ganha do `.cc-bg-entra`. A camada perdeu o `position: absolute`, saiu
+do fluxo e virou item do flex da coluna: **todo o conteúdo desceu 200px** (a
+altura da camada mais o `gap`), a seção ficou inutilizável, e nada acusou erro.
+
+A correção inverte a estratégia: a camada é `z-index: -1` e a seção cria contexto
+de empilhamento com `isolation: isolate`. Assim ela pinta acima do fundo da seção e
+abaixo de todo o conteúdo **sem nenhuma regra nos filhos** — e não há regra cega
+para errar de novo.
+
+> **Nenhuma verificação de geometria pegaria isso**, porque as caixas de cada peça
+> continuam certas: o que mudou foi a posição delas na seção. A verificação que
+> pega mede a geometria *da seção* — altura, e a posição das pílulas, do cartão,
+> do título e do CTA — e afirma que elas **não mudam durante a virada**.
+
+A seção também precisa de `position: relative`, sem o que o `inset: 0` da
+camada resolve contra a viewport e não contra a seção.
+
+> **Com `prefers-reduced-motion` a camada não existe, e isso é corrigir um bug.**
+> O `MotionConfig reducedMotion="user"` não cobre esse caso: medido, a camada
+> ficava **congelada em `opacity: 0.007` e `scale(1.02)`**, o
+> `onAnimationComplete` nunca disparava e a seção mostrava a paleta antiga para
+> sempre. O Motion pula animação de *transform* sob movimento reduzido, e pula
+> deixando o valor inicial; a de `opacity` continua rodando, e nenhuma das duas
+> chega ao fim. Sem a camada, a paleta troca na hora — que é o que a preferência
+> pede.
+
+#### O CTA re-desliava a cada troca — e isso era antigo
+
+O `revealUp` do CTA (`y: 24 → 0`) estava **dentro** do elemento que o
+`AnimatePresence` remonta a cada troca de pilar. Um elemento novo com
+`initial="hidden"` recomeça nele — então o CTA subia 24px a cada clique, por
+cima do *cross-fade* de opacidade que o `AnimatePresence` já fazia. Medido: CTA em
+y = 968 no meio da troca, contra 948 no repouso.
+
+O reveal foi para um wrapper **estável** em volta do `AnimatePresence`: ele
+acontece uma vez, quando a seção chega na tela, e a troca de pilar faz só o
+*cross-fade*.
 
 ### O cartão é DOM, e não uma imagem exportada
 
@@ -1293,9 +1412,23 @@ medir o que está de fato atrás do glifo:
 | Pílula ativa 16 px | 12,68:1 | 4,5:1 | ✅ |
 | Pílula inativa 16 px | 7,10:1 | 4,5:1 | ✅ |
 
-O Ultravioleta é o **único dos três em que a pílula inativa passa** — e com
-folga, porque ela é branca sobre um fundo roxo escuro. Era justamente o que
-estava em questão nos outros dois.
+**Empresas** (`103:383`) — **todas passam**:
+
+| Elemento | Razão | Mínimo | |
+|---|---|---|---|
+| Título 64 px (texto grande) | 5,93:1 | 3:1 | ✅ |
+| Descrição 16 px | 5,93:1 | 4,5:1 | ✅ |
+| Nome no cartão 17,4 px | 13,62:1 | 4,5:1 | ✅ |
+| CTA 16 px | 6,53:1 | 4,5:1 | ✅ |
+| Pílula ativa 16 px | 6,57:1 | 4,5:1 | ✅ |
+| Pílula inativa 16 px | 5,76:1 | 4,5:1 | ✅ |
+
+**Empresas é o único pilar sem nenhuma reprovação**, e não por acaso: é o único
+com fundo claro. A pílula inativa roxa sobre branco dá 5,76:1, enquanto a mesma
+tinta sobre o lilás do Nubank dá 4,40:1 e sobre o creme do Croma dá 2,44:1.
+
+O Ultravioleta é o **único em que a pílula inativa passa entre os coloridos**, e
+com folga, porque ela é branca sobre roxo escuro.
 
 **O nome em gradiente do Ultravioleta é a pior reprovação do projeto (nº 16).**
 O texto é `background-clip: text` indo de `Neutral/400` (`#9ca3af`) a
@@ -1367,13 +1500,11 @@ com `PROVISÓRIO`:
   desenhados no Figma (`52:3`, `76:3`, `77:40`, `80:77`) e os quatro abrem.
   A regra do bloco `active` ausente continua no `ecosystem-pillars.ts` porque é
   ela que impede a próxima adição de virar conteúdo inventado por omissão.
-- **O quarto cartão da Cards Section** — o frame `103:383` (Empresas) existe no
-  Figma e segue oculto, por decisão de processo: a seção é feita um frame por
-  vez. A pílula correspondente aparece no seletor como `<button>` com
-  `aria-disabled` e aviso para leitor de tela, e o clique não tem efeito.
-  **A virada foi verificada com os três liberados**, inclusive nos saltos que
-  forçam a troca do slot escondido (Nubank → Ultravioleta → Croma), em Chrome e
-  Firefox, movimento normal e reduzido.
+- **A Cards Section está completa** — os quatro frames (`97:2`, `103:248`,
+  `103:318`, `103:383`) estão liberados, as quatro pílulas trocam e nenhuma fica
+  `aria-disabled`. A virada foi verificada com os quatro, inclusive nos saltos
+  que forçam a troca do slot escondido, em Chrome e Firefox, movimento normal e
+  reduzido.
 - **Texto do rodapé** com o aviso legal — redigido para este estudo.
 
 Além disso, **não há** números de usuários, taxas, limites, depoimentos nem
@@ -1442,9 +1573,8 @@ redirecionadores — esta página não tem função de cadastro.
 
 ## Próximos passos
 
-1. Liberar o quarto frame da Cards Section (`103:383`, Empresas) — a virada já
-   aceita um quarto cartão: só o slot **escondido** troca, e a troca não
-   aparece porque ele não está pintado.
+1. **A Cards Section está completa** — os quatro frames estão liberados e
+   verificados. O próximo bloco é a navegação.
 2. Desenhar no Figma os painéis dos submenus da navegação — é o bloqueio do
    restante da página.
 3. Decidir as quatro reprovações de contraste da Cards Section, que são **do

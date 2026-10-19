@@ -1974,6 +1974,214 @@ seis transições, inclusive os saltos que forçam a troca do slot escondido
 (Nubank → Ultravioleta → Croma), sempre com uma face pintada e de frente para
 quem olha. Contraste dos dezoito textos, com as quatro reprovações de design.
 
+### 2026-10-18 — Empresas liberado (`103:383`): a Cards Section está completa
+
+O quarto e último frame. **Seção fechada**: as quatro pílulas trocam, nenhuma fica
+`aria-disabled`, e o aviso para leitor de tela some de todos.
+
+#### Uma peça que só este frame tem
+
+O rodapé do cartão do Business não é a marca `nu` sozinha: divide a linha com o
+rótulo `business`, em `Text/text-brand` (#820ad1), alinhado à **base** da marca
+(`items-end`) e na largura toda do conteúdo — 252,174 − 2 × 20,87 = **210,435px**
+(nó `103:428`).
+
+Entrou como `rowLabel` + `rowLabelInk`.
+
+**O `rowLabelInk` é um campo separado, e por um motivo concreto.** A primeira
+versão deixou o rótulo herdar a `ink` do cartão — e saiu `rgb(17,17,17)`, porque
+no Business a tinta do cartão é `Text/text-primary` (#111), já que o cartão é
+claro. O Figma põe o rótulo em `Text/text-brand`. Um campo só não dá conta: a
+tinta do rótulo e a do cartão **são diferentes por design**, e só nesta combinação
+(o cartão claro com rótulo roxo) é que a herança errada aparece.
+
+#### E o eixo principal volta a ser `space-between`
+
+O Business tem **três peças no fluxo** (rede, nome, pé) e volta ao
+`space-between`. Só o Ultravioleta é `flex-end`, porque tem uma peça só. A regra
+continua entrando pelo atributo do `holderBox`, e aqui ele não aparece — o que é
+a prova de que o atributo está ligada ao fato certo e não ao cartão.
+
+#### Empresas é o único pilar sem nenhuma reprovação
+
+| | |
+|---|---|
+| Título 64 px | 5,93:1 ✅ |
+| Descrição 16 px | 5,93:1 ✅ |
+| Nome no cartão | 13,62:1 ✅ |
+| CTA | 6,53:1 ✅ |
+| Pílula ativa | 6,57:1 ✅ |
+| Pílula inativa | 5,76:1 ✅ |
+
+E não por acaso: é o **único com fundo claro**. A mesma tinta roxa da pílula
+inativa dá 5,76:1 sobre o branco do Business, 4,40:1 sobre o lilás do Nubank e
+2,44:1 sobre o creme do Croma. **A mesma escolha de design, três resultados
+diferentes** — e o contraste do texto não é propriedade da tinta, é do par tinta
+sobre fundo.
+
+#### Sobre o offset uniforme do diff
+
+O diff acusa −5,95 / −5,91 / −6,17 contra o export do Figma, e vale registrar
+que **é sistemático**: o Croma acusa −5,61 / −5,03 / −4,68 e o Ultravioleta
+−2,76 / −1,09 / −4,48. É o resíduo do método (grão desligado por custom property
+no `:root`, que não é o elemento onde a regra do `.nu-grain` é lida), não uma
+diferença do Business.
+
+O número que compara entre frames é o **resíduo depois do offset**, e o Business
+fica em **2,82** — melhor que o Croma e o Nubank (3,30), na mesma linha do
+Ultravioleta (2,59), com a mesma inclinação de erro de 0,00001 níveis/px.
+
+#### Verificação
+
+`tsc`, `eslint` e build limpos.
+
+Geometria contra os nós do frame: cartão 252,17 × 400 em (833,91; 242);
+`justify-content: space-between`; nome em 20,86 / 192,27; rede 86,86 × 53,67 em
+20,86; linha de base 210,45 × 47,42 em 20,86 / 331,72; rótulo "business" em
+152,89 / 357,41 (a base dele fecha com a da marca, em 379,14); chip em
+130,42 / 47,83; título e descrição em `#820ad1`; CTA `#820ad1` com texto branco;
+quatro assets, todos `empresas-`; **sem** `data-nome-absoluto`, que é o que
+confirma o `space-between`.
+
+Virada com **quatro** cartões, em Chrome e Firefox, movimento normal e reduzido:
+**doze transições**, inclusive os saltos que forçam a troca do slot escondido
+(Croma → Ultravioleta → Empresas → Nubank → Ultravioleta → …), sempre com uma face
+pintada e de frente para quem olha.
+
+Contraste dos **vinte e quatro** textos dos quatro pilares. Diff com resíduo
+2,82 e inclinação 0,00001 níveis/px.
+
+**Uma verificação ficou obsoleta e teve de ser invertida:** `prova-ocultas.mjs`
+afirmava que as pílulas sem frame eram `aria-disabled` sem efeito — o que deixou de
+ser verdade. Passou a afirmar o oposto: **zero** pílulas bloqueadas e as quatro
+trocando. Uma verificação que não acompanha o produto passa a garantir o
+contrário do que diz.
+
+### 2026-10-18 — a paleta da seção também passou a virar
+
+Pedido: a troca de pilar trocava o fundo de uma vez. E "talvez algo mais dinâmico
+e suave".
+
+#### `background-image` não é animável, e isso não dá erro
+
+`transition: background-image` no `globals.css` **não dá erro nenhum e não
+acontece nada** — o mesmo modo de falha do reflexo e do texto em gradiente, e a
+terceira vez que a mesma armadilha aparece nesta seção.
+
+A saída são duas camadas empilhadas.
+
+#### Qual camada carrega o quê — e por que é a que importa
+
+**Durante** a virada, o `background-image` da `<section>` é o do pilar que está
+**saindo**, e a camada por cima é a do que está **entrando**. No fim, a seção
+assume o novo e a camada é desmontada.
+
+Isso é o que torna a desmontagem **invisível**: no instante em que ela acontece a
+camada já está com `opacity: 1` e `scale: 1`, exatamente sobre o que passa a ser o
+fundo. Se fosse o inverso — a seção assumindo o novo e a camada carregando o
+antigo — haveria um quadro em que as duas estão a 50% e o fundo pisca no meio.
+
+**Medido no último quadro em que a camada existe: `opacity: 1`,
+`transform: none`.** É a prova de que a saída não é um pulo.
+
+E para medir isso a verificação quase passou errado: eu media o `style` **inline**
+da camada, que mostra `opacity: 0; scale: 1.02` porque o Motion escreve os
+valores animados por **WAAPI** e o atributo fica nos do `initial` a vida toda. O
+certo é o `getComputedStyle` no último quadro — o que está visível no quadro
+seguinte.
+
+#### A escala é o que dá o movimento
+
+Opacidade sozinha é um *dissolve*: liso, e parado. A camada que entra vem de
+`1.02` e assenta em `1` — a paleta nova **chega** em vez de aparecer, e o gesto da
+meia-volta, que gira para fora, continua para dentro.
+
+A duração é `DURATION.base`, que é exatamente `2 × CARD_FLIP.half` — o que a
+meia-volta inteira leva. É o que faz cartão e paleta chegarem **juntos**; fazer a
+paleta durar mais deixaria o cartão parado no destino com o fundo ainda chegando.
+
+#### Dois detalhes que só aparecem medidos
+
+- **`pointer-events: none` na camada.** Sem isso ela intercepta o `pointermove` da
+  seção e a inclinação do cartão morre exatamente na área onde a transição
+  acontece. Verificado por `elementFromPoint` (o alvo tem que ser a própria seção)
+  e pela inclinação ainda viva a 320ms da virada.
+- **`#cartoes > * { position: relative; z-index: 1 }`.** Na ordem de pintura, um
+  descendente posicionado com `z-index: 0` pinta **depois** do conteúdo em fluxo.
+  A camada sozinha cobriria as pílulas e o cartão — e nenhuma verificação de
+  geometria pegaria isso, porque as caixas continuam certas.
+
+#### E o movimento reduzido congelava a seção
+
+`MotionConfig reducedMotion="user"` governa as animações do Motion, e eu assumi
+que cobria a camada. **Não cobre.** Medido: com `prefers-reduced-motion: reduce` a
+camada fica **congelada em `opacity: 0.007` e `scale(1.02)`**, o
+`onAnimationComplete` nunca dispara, a camada nunca some — e a seção fica
+mostrando a paleta antiga **para sempre**, em duas trocas de cada quatro.
+
+O Motion pula animação de *transform* sob movimento reduzido, e pula **deixando
+o valor inicial**; a de `opacity` continua rodando, e nenhuma das duas chega ao
+fim.
+
+Correção: a camada **não existe** sob movimento reduzido, e a paleta troca na
+hora — que é o que a preferência pede. É o mesmo caminho síncrono que a meia-volta
+já usava, e pela mesma razão: nenhum evento dependable numa animação que o
+usuário pediu para não ver.
+
+**Verificado:** Chrome e Firefox, movimento normal e reduzido. A camada entra
+(0 → 0,414 → 0,827 → 0,919 → 0,966 → 0,987 → 0,996 → 1), não intercepta o
+ponteiro, assenta em `opacity: 1` / `scale: 1` no último quadro e some sem pulo.
+A inclinação continua respondendo durante a virada do fundo. Curva do cartão,
+contraste dos vinte e quatro textos e as doze transições de quatro cartões, sem
+regressão.
+
+#### E aí quebrou a seção inteira, por uma regra cega
+
+Relatado logo depois: **todo o conteúdo desce na troca, o cartão gira e não tem
+animação nenhuma**.
+
+A causa foi a regra que eu mesmo escrevi para resolver a ordem de pintura —
+`#cartoes > * { position: relative; z-index: 1 }`. Ela casa **também** com a
+camada, porque a camada é filha direta da seção, e `#cartoes > *` tem
+especificidade de **ID**, que ganha do `.cc-bg-entra`. A camada perdeu o
+`position: absolute`, saiu do fluxo e virou item do flex da coluna: os 100px de
+`gap` mais a altura dela empurraram tudo para baixo.
+
+**Nenhuma verificação de geometria pegaria.** As caixas de cada peça continuam
+certas — o que mudou foi a posição delas na seção. E eu medi geometria de
+peça, não geometria de seção.
+
+A correção inverte a estratégia em vez de consertar a regra: `z-index: -1` na
+camada e `isolation: isolate` na seção. A camada passa a pintar entre o fundo da
+seção e o conteúdo sem nenhuma regra nos filhos — e não há mais regra cega para
+errar de novo.
+
+#### E um segundo defeito, mais antigo, que eu nunca tinha visto
+
+O `revealUp` do CTA (`y: 24 → 0`) estava **dentro** do elemento que o
+`AnimatePresence` remonta a cada troca. Elemento novo com `initial="hidden"`
+recomeça nele — então o CTA **subia 24px a cada clique**, por cima do
+cross-fade que o `AnimatePresence` já fazia.
+
+Isto não foi introduzido agora: está na seção desde o primeiro frame. Eu nunca
+tinha medido a posição do CTA **durante** a troca, só em repouso — e em repouso
+ele sempre esteve certo.
+
+O reveal foi para um wrapper estável em volta do `AnimatePresence`.
+
+#### A verificação que pega os dois
+
+`prova-fluxo.mjs` mede a geometria **da seção** — altura, e a posição das pílulas,
+do cartão, do título e do CTA — e afirma que **nenhuma delas muda durante a
+virada**, em cinco instantes. É a contraparte de todas as outras, que medem as
+peças: uma caixa de peça continua certa quando a peça inteira é deslocada.
+
+**Verificado:** geometria da seção constante (altura 1088; pílulas 100; cartão 242;
+título 706; CTA 948) em repouso e em cinco instantes da virada. Camada
+`absolute` / `z-index: -1` / `pointer-events: none`, assentando em `opacity: 1` e
+`scale: 1`. Movimento reduzido sem camada. Chrome e Firefox. Curva, contraste e
+as doze transições sem regressão.
+
 ### 2026-10-18 — a face de trás aparecia, e a culpa não era do `backface-visibility`
 
 Relatório: no Croma o cartão do Nubank aparecia **atrás**, num ângulo levemente

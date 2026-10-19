@@ -225,15 +225,46 @@ function StackPieces({ data }: { data: NonNullable<ShowcaseCard["showcase"]> }) 
         )}
       </span>
 
-      <Image
-        src={data.nuLogo}
-        alt=""
-        aria-hidden="true"
-        width={86.9561}
-        height={47.4322}
-        className="h-auto w-[86.9561px] max-w-none"
-        unoptimized
-      />
+      {/*
+        A peça da base. No frame do Business (`103:383`) a marca `nu` não está
+        sozinha: divide a linha com o rótulo `business`, alinhado à **base** dela
+        (`items-end`) e na largura toda do conteúdo — 252,174 − 2 × 20,87 =
+        210,435px.
+
+        Nos outros três frames não há rótulo, e a marca fica como peça solta da
+        coluna, que é o que o Figma tem.
+      */}
+      {data.rowLabel ? (
+        <div className="flex w-full items-end justify-between">
+          <Image
+            src={data.nuLogo}
+            alt=""
+            aria-hidden="true"
+            width={86.9561}
+            height={47.4322}
+            className="h-auto w-[86.9561px] max-w-none"
+            unoptimized
+          />
+          {/* `leading-[1.25]` pela mesma razão do nome: é a altura natural do
+              Montserrat a esta caixa, e a altura da linha distribui a base. */}
+          <span
+            className="cc-rowlabel font-display text-[17.391px] font-semibold leading-[1.25]"
+            style={{ color: data.rowLabelInk }}
+          >
+            {data.rowLabel}
+          </span>
+        </div>
+      ) : (
+        <Image
+          src={data.nuLogo}
+          alt=""
+          aria-hidden="true"
+          width={86.9561}
+          height={47.4322}
+          className="h-auto w-[86.9561px] max-w-none"
+          unoptimized
+        />
+      )}
     </>
   );
 }

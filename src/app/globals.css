@@ -477,9 +477,20 @@
 /**
  * Cards Section — o cartão de crédito e o seletor de pílulas.
  *
+ * ## A paleta da seção é uma camada, e não o `background-image`
+ *
+ * `background-image` não é animável, então a virada do fundo é uma camada por
+ * cima que entra e some. Ver `CARD_BG`.
+ *
+ * A camada é posicionada com `z-index: -1`, e a seção cria contexto de
+ * empilhamento com `isolation: isolate` para isso dar certo: ela então pinta
+ * acima do fundo da seção e abaixo de todo o conteúdo, sem nenhuma regra nos
+ * filhos. Ver o comentário da `.cc-bg-entra` para por que a alternativa — `0`
+ * mais uma regra em `#cartoes > *` — foi um desastre.
+ *
  * ## O cartão é DOM, e por isso a cadeia é 3D de verdade
  *
- * Três elementos, três papéis:
+ * Quatro elementos, quatro papéis:
  *
  *   .cc-stage   palco, tamanho fixo e `perspective` (inline no componente)
  *   .cc-flip    a meia-volta do cartão — `rotateY` acumulada, 0 / 180 / 360
@@ -625,6 +636,78 @@
   position: absolute;
   inset: 0;
   backface-visibility: hidden;
+}
+
+/*
+ * A paleta que entra, por cima da que sai.
+ *
+ * `background-size`/`repeat` explícitos pelo mesmo motivo do `.cc-face`: o SVG do
+ * gradiente tem `viewBox` e não tem `width`/`height`, e o Chrome estica até a
+ * caixa enquanto o Firefox usa as dimensões do viewBox e **repete**.
+ *
+ * `scale` precisa de uma origem explícita: o padrão é o centro, que é o que se
+ * quer, mas deixar escrito evita que um `transform-origin` herdado de algum lugar
+ * mude o gesto sem ninguém perceber.
+ */
+.cc-bg-entra {
+  position: absolute;
+  inset: 0;
+  /*
+   * `z-index: -1`, e **não** `0`.
+   *
+   * Com `0` a camada pinta DEPOIS do conteúdo em fluxo (a ordem de pintura
+   * posicionada vem depois dos blocos em fluxo), e resolver isso exigia uma regra
+   * em todos os filhos da seção.
+   *
+   * Essa regra existiu e foi um desastre: `#cartoes > *` casa **também** com a
+   * camada, porque ela é filha direta da seção — e `#cartoes > *` tem
+   * especificidade de **ID**, que ganha do `.cc-bg-entra`. A camada perdeu o
+   * `position: absolute`, saiu do fluxo e virou item do flex da seção: **todo o
+   * conteúdo desceu 100px** (o `gap` da coluna) e a seção ficou inutilizável.
+   *
+   * Nenhum teste de geometria pegou, porque as caixas de cada peça continuavam
+   * certas — o que mudou foi a posição delas na seção.
+   *
+   * Com `-1` a ordem de pintura resolve sozinha: a seção cria contexto de
+   * empilhamento com `isolation: isolate` (abaixo), a camada pinta logo **acima**
+   * do fundo da seção e **abaixo** de todo o conteúdo. Nenhuma regra nos filhos.
+   */
+  z-index: -1;
+  pointer-events: none;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  transform-origin: 50% 50%;
+  will-change: opacity, transform;
+}
+
+/*
+ * Contexto de empilhamento da seção — é o que permite a camada ficar entre o
+ * fundo da seção e o conteúdo sem nenhuma regra nos filhos.
+ *
+ * Sem isto a camada de `z-index: -1` passaria **atrás** do `background-image` da
+ * própria seção, que é onde ela precisa aparecer.
+ *
+ * E `overflow: hidden` pelo mesmo motivo: a camada entra com `scale(1.02)`, e a
+ * escala é sobre o centro, então uma camada de 1088px vira 1110px e
+ * **transborda ~6px para cada lado**. A seção não recortava, e esse excesso
+ * pintava na faixa entre a seção e a Ecossystem — visível como uma banda na
+ * divisao, que é como o defeito foi reportado.
+ *
+ * O recorte é seguro, e isso foi medido antes de aplicar: varrendo todos os
+ * descendentes da seção e comparando cada caixa com a dela —
+ *
+ * | estado            | quem está fora da caixa |
+ * |-------------------|-------------------------|
+ * | em repouso        | **nenhum** |
+ * | cartão inclinado  | **nenhum** |
+ * | camada em 1,02    | só a própria camada (6px em cima e embaixo, 11px nas laterais) |
+ *
+ * O cartão não escapa porque a rotação só **reduz** a largura projetada
+ * (`w·|cos θ|`), e ele fica a 242px do topo e a 446px da base — longe das bordas.
+ */
+#cartoes {
+  isolation: isolate;
+  overflow: hidden;
 }
 
 /*
