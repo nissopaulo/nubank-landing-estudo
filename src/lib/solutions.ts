@@ -299,10 +299,43 @@ export type SlotName = "centro" | "esquerda" | "direita";
  * da que está entrando.
  */
 export function foraPara(direcao: number): { x: number; y: number; scale: number } {
-  return direcao > 0
-    ? { x: -1173.444 - 135.445, y: SLOTS.esquerda.y, scale: PREVIEW_SCALE }
-    : { x: 1784.556 + 135.444, y: SLOTS.direita.y, scale: PREVIEW_SCALE };
+  return direcao > 0 ? FORA_ESQ : FORA_DIR;
 }
+
+/**
+ * As duas posições de fora.
+ *
+ * A **saída** é do lado para onde a faixa anda; a **entrada** é do lado
+ * contrário, porque quem entra vem de onde a faixa vai.
+ */
+export const FORA_ESQ = {
+  x: -1173.444 - 135.445,
+  y: SLOTS.esquerda.y,
+  scale: PREVIEW_SCALE,
+};
+
+export const FORA_DIR = {
+  x: 1784.556 + 135.444,
+  y: SLOTS.direita.y,
+  scale: PREVIEW_SCALE,
+};
+
+/**
+ * A duração de **um degrau** do carrossel, em ms.
+ *
+ * Uma troca de uma em uma é o caso comum, e é lenta — foi o que o usuário
+ * pediu ("mais lenta, mais suave").
+ */
+export const DURACAO_PASSO = 1000;
+
+/**
+ * A duração de um degrau **dentro de uma rolagem**, em ms.
+ *
+ * Rolando três opções, três segundos seria impaciente. Com 380 ms por degrau a
+ * rolagem inteira leva pouco mais de um segundo, e ainda se lê como
+ * carrossel.
+ */
+export const DURACAO_ROLAGEM = 380;
 
 /**
  * O slot de uma composição, em relação à opção ativa.

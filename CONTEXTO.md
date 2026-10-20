@@ -216,7 +216,19 @@ provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
     O slot é a **diferença de índice** entre a composição e a opção ativa: 0 é o
     centro, −1 a miniatura esquerda, +1 a direita, e o resto é "fora", do lado
     para onde o gesto vai.
-23. **O seletor de opções é o mesmo componente nas duas seções.** A Cards
+23. **O carrossel NUNCA salta — ele rola.**
+    Clicar na terceira opção a partir da primeira não troca a página: o
+    carrossel **rola**, uma opção por vez, e cada degrau é exatamente a mesma
+    transição de um degrau.
+    É essa a decisão que elimina os dois defeitos mais chatos: as composições
+    não se cruzam (num salto as intermediárias teriam de atravessar a janela, e
+    o resultado é "todas as imagens aparecendo"), e **cada composição se move
+    uma vez** — a que sai tem a saída, a que entra tem a entrada, e as duas que
+    trocam de papel têm a viagem.
+    Uma troca de uma em uma é o caso comum e é lenta (1000 ms); uma rolagem de
+    vários degraus é rápida (380 ms por degrau), senão três degraus levariam
+    três segundos.
+24. **O seletor de opções é o mesmo componente nas duas seções.** A Cards
     Section e a Solutions Section têm o mesmo seletor, e agora são o mesmo
     código: `components/ui/PillTab.tsx` + a regra `.pill-tab`. O que muda
     entre elas é só a paleta, e ela chega por custom property — as duas seções
@@ -3248,6 +3260,87 @@ O badge no centro fica em x 1513 (Conta e Pix), 1483 (Investimentos), 1492
 (Empréstimos) e 1530 (Caixinhas) — os números do Figma, opção por opção.
 
 Movimento reduzido: a arte **já** está no destino em 150 ms, e o badge e o
+painel chegam a opacidade 1 sem atraso.
+
+tsc --noEmit, eslint e next build limpos.
+
+### 2026-10-20 — o carrossel refeito do zero (nunca salta, rola)
+
+O usuário reportou que estava "tudo bugado": ao trocar da primeira para a
+terceira todas as imagens apareciam, e ao trocar de uma para a outra o gesto
+acontecia **duas vezes**. E pediu: "refaça esse componente do zero e torne
+esse componente funcional".
+
+#### O diagnóstico
+
+Os três sintomas tinham a mesma raiz: eu estava tentando fazer um **salto**
+renderizar as composições intermediárias, e elas se cruzam no meio da janela.
+Pior, a posição de "fora" (de onde a composição entra e para onde sai) era
+calculada por uma **variant que dependia do `custom`** do Motion — e o
+`custom` chega na **saída** e **não chega na entrada**. Resultado: a composição
+que entrava pelo lado errado, e o gesto virava um varrido.
+
+#### A decisão que resolve: o carrossel nunca salta, ele rola
+
+Clicar na terceira opção a partir da primeira **rola**, uma opção por vez, e
+cada degrau é exatamente a mesma transição de um degrau. Com isso:
+
+- as composições **não se cruzam** — num salto, as intermediárias teriam de
+  atravessar a janela; rolando, cada degrau move uma composição de papel e só
+  uma;
+- **cada composição se move uma vez** — a que sai tem a saída, a que entra tem
+  a entrada, e as duas que trocam de papel têm a viagem.
+
+Duas durações: **1000 ms** para a troca de uma em uma (o caso comum, e lento,
+como pedido) e **380 ms** por degrau dentro de uma rolagem — senão três degraus
+levariam três segundos.
+
+#### O primeiro degrau é IMEDIATO — e isso era um bug meu
+
+A primeira versão avançava o índice **no efeito**, com um `setTimeout` do
+tamanho da duração. O resultado era um **tempo morto** do tamanho da duração
+antes de a animação começar: um segundo parado, e só depois o gesto. Medido.
+
+Agora o clique avança um degrau na hora, e o efeito só **continua** a rolagem
+(esperando a animação anterior terminar).
+
+E a **direção** virou estado: no clique, `alvo` e `indice` ficam iguais, e o
+sentido derivado deles se perdia — voltar para a anterior era lido como
+avançar.
+
+#### As posições de fora, calculadas no render
+
+Em vez de depender do `custom` do Motion, as duas posições de fora são
+calculadas no render, onde a direção já está:
+
+- a **saída** é do lado para onde a faixa anda;
+- a **entrada** é do lado contrário, porque quem entra vem de onde a faixa
+  vai.
+
+#### Verificação no Firefox, dirigido por BiDi
+
+O Firefox foi aberto com a porta de depuração e a página dirigida de verdade —
+o clique é um `click()` de verdade e a medição é do DOM real.
+
+Uma troca de uma em uma, amostrada a 120 / 320 / 570 / 820 ms:
+
+| t | a que sai | a que chega | a que entra |
+|---|---|---|---|
+| 120 ms | 200 → 162 | 1785 → 1740 | entra em 1916 |
+| 570 ms | 200 → −116 | 1785 → 515 | 1916 → 1811 |
+| 820 ms | 200 → −1153 | 1785 → 223 | 1916 → 1787 |
+
+O salto da primeira para a terceira, em dois degraus:
+
+| degrau | à esquerda | no centro | à direita |
+|---|---|---|---|
+| 1 | safe → −1171 | serenity → 203 | upstairs → 1785 |
+| 2 | safe sai (op → 0) | serenity → −1173 | upstairs → 201 | trade → 1785 |
+
+Estado final: serenity em −1173, upstairs em 200, trade em 1785 — e o título,
+a pílula, o badge e o painel no Investimentos.
+
+Movimento reduzido: a arte **já** está no destino em 150 ms e o badge e o
 painel chegam a opacidade 1 sem atraso.
 
 tsc --noEmit, eslint e next build limpos.
