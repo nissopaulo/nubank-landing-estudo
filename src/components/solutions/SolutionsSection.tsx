@@ -1,48 +1,63 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import { CaretRight } from "@phosphor-icons/react/dist/ssr/CaretRight";
 
 import {
   ACTIVE_INDEX,
   PREVIEW_BLUR,
+  PREVIEW_OVERFLOW,
   PREVIEW_RADIUS,
   SOLUTIONS,
   WINDOW_H,
   WINDOW_RADIUS,
+  type SolutionPreview,
 } from "@/lib/solutions";
-import { revealFade, revealUp, staggerContainer } from "@/lib/motion";
+import {
+  EASE_OUT_EXPO,
+  revealFade,
+  revealUp,
+  SOLUTIONS_SLIDE,
+  staggerContainer,
+} from "@/lib/motion";
 import { PillTab } from "@/components/ui/PillTab";
 import { useBackgroundParallax } from "@/components/solutions/use-background-parallax";
 
 /**
- * Solutions Section — Figma `Solutions Section - Safe` (nó `144:2`), 1920×1316.
+ * Solutions Section — Figma `Solutions Section - Safe` (`144:2`) e
+ * `Solutions Section - Account` (`151:92`), 1920×1176.
  *
- * ## Só o primeiro frame está liberado
+ * ## A seção é um carrossel
  *
- * O Figma tem quatro frames desta seção e **três continuam ocultos**: o
- * processo é um de cada vez, o mesmo dos quatro frames da Cards Section. As
- * quatro pílulas aparecem no seletor desde o começo — é o que o `144:2` mostra —
- * mas só a do Caixinhas responde. As outras três são `<button>` reais com
- * `aria-disabled` e aviso para leitor de tela, a mesma regra dos pilares do
- * Ecossystem e dos itens da navegação: **um botão que não faz nada não existe
- * em silêncio.**
+ * A janela central mostra a opção **ativa** e as duas bordas mostram as
+ * **vizinhas**: 135 px à esquerda são a opção anterior, 135 px à direita são a
+ * seguinte. O frame do Safe não tem prévia esquerda — é a primeira opção.
  *
- * Nenhum texto, cor ou geometria foi inventado para as três. Quando o frame
- * entrar, o trabalho é preencher o campo `active` em `lib/solutions.ts` e
- * nada mais muda aqui.
+ * ## A troca é um gesto, e não uma substituição
+ *
+ * Quando a opção troca, **tudo anda na mesma direção**: a arte que estava na
+ * prévia da direita entra na janela, a que estava na janela sai para a
+ * prévia da esquerda, e uma nova entra pela direita.
+ *
+ * Isso é possível porque **a prévia é a arte da vizinha**: a prévia direita do
+ * Safe é a arte do Conta e Pix, que é exatamente o que entra na janela na
+ * troca seguinte. O olho segue a mesma arte e lê o movimento.
+ *
+ * ## O painel de texto surge a cada troca
+ *
+ * O pedido foi explícito, e é o mesmo reveal do resto da landing: o painel
+ * sobe 24 px e aparece, com a curva do `revealUp`. Ele **repete** a cada
+ * troca — não é a entrada da seção, é a da opção.
  *
  * ## Três âncoras diferentes, e por quê
  *
- * O Figma posiciona as peças em três referenciais distintos, e confundi-los
- * desloca tudo:
- *
- * | Peça              | Âncora no Figma        | Por quê                              |
- * |-------------------|------------------------|--------------------------------------|
- * | badge e painel    | `Main Content` (`144:3`) | mesma largura da janela, 256 px acima |
- * | prévia desfocada  | a **seção**            | é irmã do `Main Content`, não filha   |
- * | seletor de pílulas | o fluxo da seção       | centralizado, não posicionado        |
+ * | Peça              | Âncora          | Por quê                                 |
+ * |-------------------|-----------------|-----------------------------------------|
+ * | badge e painel    | a **janela**    | mesma largura do `Main Content`, 256 px acima |
+ * | prévias           | a **seção**     | são irmãs do `Main Content`, não filhas  |
+ * | seletor de pílulas | o `Title`       | `justify-between`: flush à direita      |
  *
  * O badge e o painel são posicionados **pela janela**, e não pelo `Main
  * Content`: a janela tem a mesma largura e começa 256 px mais abaixo, então
@@ -51,28 +66,27 @@ import { useBackgroundParallax } from "@/components/solutions/use-background-par
  * Figma mesmo com o título renderizando 0,16 px mais alto (o `leading-[1.22]`
  * do projeto contra o `leading: normal` do design).
  *
- * A prévia é a exceção: no Figma ela é **irmã** do `Main Content`, então a
- * origem da coordenada é a seção, e não a janela. Ancorá-la na janela a
- * empurraria 200 px para a direita — para fora do frame de 1920, onde ela
- * sumiria por completo.
- *
- * ## A prévia é a próxima opção, não uma decoração
- *
- * No frame do Safe a prévia desfocada é a imagem do **Conta e Pix**, que é a
- * imagem principal do frame `151:92`. É a mesma ideia do card recolhido da
- * Ecossystem: o que vem depois aparece ao lado.
- *
  * ## O CTA é um link de texto, e não um `CtaLink`
  *
  * O `CtaLink` tem um `BASE` com `px-[18px] py-2.5` e `rounded-full`, e o
- * design deste CTA é só o texto com o caret — sem fundo e sem padding. Acrescentar
- * uma variante ao `CtaLink` brigaria com o `BASE` no CSS gerado (utilitários
- * base vencem utilitários base), então o link é montado aqui, com o mesmo
- * tratamento de link externo que o `CtaLink` faz.
+ * design deste CTA é só o texto com o caret — sem fundo e sem padding.
+ * Acrescentar uma variante ao `CtaLink` brigaria com o `BASE` no CSS gerado
+ * (utilitários base vencem utilitários base), então o link é montado aqui,
+ * com o mesmo tratamento de link externo.
  */
 export function SolutionsSection() {
-  const solution = SOLUTIONS[ACTIVE_INDEX];
-  const active = solution.active;
+  const [indice, setIndice] = useState(ACTIVE_INDEX);
+  /**
+   * A direção da troca: 1 = avançando, −1 = voltando.
+   *
+   * Ela é o que decide de que lado a arte nova entra. E precisa ser estado,
+   * e não derivado do índice, porque dois índices podem ter a mesma diferença
+   * com sinais opostos.
+   */
+  const [direcao, setDirecao] = useState(1);
+
+  const solucao = SOLUTIONS[indice];
+  const active = solucao.active;
 
   /*
    * A arte de fundo segue o ponteiro. O ouvinte é a **janela** — é o que
@@ -92,8 +106,12 @@ export function SolutionsSection() {
   if (!active) return null;
 
   const image = active.imageBox;
-  const preview = active.previewBox;
-  const previewImage = active.previewImageBox;
+
+  function select(i: number) {
+    if (i === indice) return;
+    setDirecao(i > indice ? 1 : -1);
+    setIndice(i);
+  }
 
   return (
     <section
@@ -101,13 +119,6 @@ export function SolutionsSection() {
       aria-labelledby="solucoes-titulo"
       className="relative flex flex-col items-center gap-[100px] overflow-clip bg-white px-[200px] py-[100px]"
     >
-      {/*
-        `overflow-clip` na seção porque a prévia desfocada vai **além** da
-        borda direita: ela começa em 1784,56 e tem 1308,889 de largura, ou seja,
-        termina em 3093,45 — 1173 px fora do frame de 1920. No Figma o frame
-        recorta; aqui é a seção que recorta. Sem isso a página ganharia uma
-        barra de rolagem horizontal.
-      */}
       <motion.div
         initial="hidden"
         whileInView="visible"
@@ -121,8 +132,7 @@ export function SolutionsSection() {
 
           No Figma (`150:48`) o Navigation virou **filho do Title**, em
           `justify-between` — e é por isso que ele sai em x = 902: 1520 − 618,
-          ou seja, flush com a borda direita da coluna de conteúdo. Antes ele
-          era irmão do `Main Content`, no pé da seção.
+          ou seja, flush com a borda direita da coluna de conteúdo.
         */}
         <motion.div
           variants={revealUp}
@@ -130,11 +140,17 @@ export function SolutionsSection() {
         >
           <h2
             id="solucoes-titulo"
-            className="font-display text-[64px] font-bold leading-[1.22] text-nu-brand"
+            /*
+             * `whitespace-pre` porque o Figma traz um espaço no fim da primeira
+             * linha do título, e ele conta na largura da caixa de texto: o nó
+             * `151:95` mede 554 e a linha sem o espaço mede 535,25. O espaço
+             * é invisível, mas a medida é a do design.
+             */
+            className="font-display text-[64px] font-bold leading-[1.22] whitespace-pre text-nu-brand"
           >
-            Cada objetivo
+            {active.sectionTitle[0]}
             <br />
-            merece seu espaço.
+            {active.sectionTitle[1]}
           </h2>
 
           {/*
@@ -153,12 +169,15 @@ export function SolutionsSection() {
             aria-orientation="horizontal"
             className="sol-nav flex items-start gap-[24px]"
           >
-            {SOLUTIONS.map((item, index) => (
+            {SOLUTIONS.map((item, i) => (
               <PillTab
                 key={item.id}
                 label={item.label}
-                selected={index === ACTIVE_INDEX}
+                selected={i === indice}
                 liberado={Boolean(item.active)}
+                id={`solucoes-aba-${item.id}`}
+                controls={`solucoes-painel-${item.id}`}
+                onSelect={() => select(i)}
               />
             ))}
           </div>
@@ -173,76 +192,102 @@ export function SolutionsSection() {
           esta tela**, e passar pelo título ou pelas pílulas não move nada.
         */}
         <motion.div
+          role="tabpanel"
+          id={`solucoes-painel-${solucao.id}`}
+          aria-labelledby={`solucoes-aba-${solucao.id}`}
           variants={revealUp}
           className="sol-window relative w-full overflow-clip"
           style={{ height: WINDOW_H, borderRadius: WINDOW_RADIUS }}
           {...parallax.bind}
         >
           {/*
-            A imagem não é dimensionada pela janela: o Figma a põe num
-            retângulo maior (1882,348 × 1020,567 a partir de −289, −118) e deixa
-            a janela recortar. É o que dá o enquadramento da arte, e o mesmo
-            motivo pelo qual a sombra dos cards da Hero vai na `<img>` e não
-            na caixa do slot.
+            A arte não é dimensionada pela janela: o Figma a põe num retângulo
+            maior e deixa a janela recortar. É o que dá o enquadramento, e o
+            mesmo motivo pelo qual a sombra dos cards da Hero vai na `<img>` e
+            não na caixa do slot.
 
             **A arte é a única coisa que se move.** O badge e o painel ficam
-            ancorados na janela, e a ilustração desliza por baixo deles — é o
-            que faz a leitura ser de "janela" e não de "cartão inteiro mexendo".
+            ancorados na janela, e a ilustração desliza por baixo deles.
 
             `will-change: transform` é o custo consciente de mover uma arte de
             1882 × 1020: sem uma camada própria, cada quadro do ponteiro
-            repintaria a região recortada. Com a camada, o compositor só move a
-            textura.
+            repintaria a região recortada.
           */}
-          <motion.div
-            aria-hidden="true"
-            className="absolute will-change-transform"
-            style={{
-              left: image.x,
-              top: image.y,
-              width: image.w,
-              height: image.h,
-              x: parallax.values.x,
-              y: parallax.values.y,
-            }}
-          >
-            <Image
-              src={active.image}
-              alt=""
-              fill
-              className="object-cover"
-              sizes="(min-width: 1920px) 1882px, 100vw"
-              unoptimized
-            />
-          </motion.div>
+          <AnimatePresence initial={false} custom={direcao}>
+            <motion.div
+              key={solucao.id}
+              custom={direcao}
+              aria-hidden="true"
+              className="absolute will-change-transform"
+              style={{
+                left: image.x,
+                top: image.y,
+                width: image.w,
+                height: image.h,
+              }}
+              /*
+               * A saída é uma **variant**, e não um objeto literal — porque só
+               * uma variant recebe o `custom`, e é o `custom` que carrega a
+               * direção.
+               *
+               * A primeira versão usava `exit={{ opacity: 0, x: -direcao * 48 }}`,
+               * e ela errava a direção **na volta**: o `exit` do elemento que
+               * sai é o do render antigo, com a direção antiga. Medido: indo
+               * para trás, a arte saía pela esquerda (tx = −35) quando
+               * devia sair pela direita. Com a variant, o `custom` do
+               * `AnimatePresence` chega ao `exit` e a direção fica certa.
+               */
+              variants={{
+                sai: (d: number) => ({
+                  opacity: 0,
+                  x: -d * SOLUTIONS_SLIDE.distance,
+                }),
+              }}
+              initial={{ opacity: 0, x: direcao * SOLUTIONS_SLIDE.distance }}
+              animate={{ opacity: 1, x: 0 }}
+              exit="sai"
+              transition={{
+                duration: SOLUTIONS_SLIDE.duration,
+                ease: SOLUTIONS_SLIDE.ease,
+              }}
+            >
+              <Image
+                src={active.image}
+                alt=""
+                fill
+                className="object-cover"
+                sizes="(min-width: 1920px) 1882px, 100vw"
+                unoptimized
+              />
+            </motion.div>
+          </AnimatePresence>
 
           {/*
-            O badge. `revealFade` e não `revealUp`: ele é posicionado em
-            absoluto dentro da janela, que já está subindo com o reveal — e
-            somar os dois deslocamentos o faria andar 48 px em vez de 24.
-
-            **O padding é 22 e não 24.** No Figma (`151:75`) o quadro tem 148 de
-            largura e o texto fica a 24 da borda: 2 do traço + 22 de padding.
-            O `border` do CSS **soma na caixa**, e o traço do Figma não — o
-            auto-layout do Figma exclui o traço do tamanho. Sem compensar, o
-            badge sairia 4 px mais largo (151,27 contra 148) e o texto
-            2 px mais para a direita.
+            O badge. Cruza com a arte, sem se mover: ele está ancorado na
+            janela, e é a ilustração que passa por baixo dele.
           */}
-          <motion.div
-            variants={revealFade}
-            className="sol-badge absolute flex items-center justify-center rounded-[100px] border-2 border-nu-brand bg-nu-bg-secondary px-[22px] py-[10px]"
-            style={{ left: active.badgeBox.x, top: active.badgeBox.y }}
-          >
-            {/*
-              `leading-[1.2]`: o texto do Figma (`151:76`) tem 24 px de caixa
-              para 20 de fonte, e é essa altura que fecha o quadro em 48
-              (2 + 10 + 24 + 10 + 2). Com o `leading-[1.25]` do projeto ele
-              seria 25 e o badge teria 53.
-            */}
-            <p className="font-display text-[20px] font-semibold leading-[1.2] whitespace-nowrap text-nu-brand">
-              {active.badge}
-            </p>
-          </motion.div>
+          <AnimatePresence initial={false} custom={direcao}>
+            <motion.div
+              key={solucao.id}
+              custom={direcao}
+              className="sol-badge absolute flex items-center justify-center rounded-[100px] border-2 border-nu-brand bg-nu-bg-secondary px-[22px] py-[10px]"
+              style={{ left: active.badgeBox.x, top: active.badgeBox.y }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: SOLUTIONS_SLIDE.fade }}
+            >
+              {/*
+                `leading-[1.2]`: o texto do Figma (`151:76`) tem 24 px de caixa
+                para 20 de fonte, e é essa altura que fecha o quadro em 48
+                (2 + 10 + 24 + 10 + 2). Com o `leading-[1.25]` do projeto ele
+                seria 25 e o badge teria 53.
+              */}
+              <p className="font-display text-[20px] font-semibold leading-[1.2] whitespace-nowrap text-nu-brand">
+                {active.badge}
+              </p>
+            </motion.div>
+          </AnimatePresence>
 
           {/*
             O painel de texto.
@@ -252,96 +297,175 @@ export function SolutionsSection() {
             A altura não é — no Figma ela é a sobra do auto-layout (235 px), e
             declará-la com `overflow-clip` passaria a cortar o CTA por uma
             fração de pixel, já que o `leading` do projeto não é o do Figma.
-          */}
-          <motion.div
-            variants={revealFade}
-            className="sol-textbox absolute flex flex-col items-start gap-[64px] rounded-[42px] bg-nu-bg-secondary px-[42px] py-[32px]"
-            style={{ left: active.textBox.x, top: active.textBox.y, width: active.textBox.w }}
-          >
-            <p className="font-display text-[24px] font-bold leading-[1.21] whitespace-pre text-nu-brand">
-              {active.title[0]}
-              <br />
-              {active.title[1]}
-              <br />
-              {active.title[2]}
-            </p>
 
-            {/*
-              O caret do Figma é um `CaretDown` girado −90°, que é um caret
-              para a direita — e é o `CaretRight` do Phosphor, o mesmo que a
-              Ecossystem usa no CTA dela.
-            */}
-            <a
-              href="https://www.nubank.com.br/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-[10px] text-nu-brand transition-opacity hover:opacity-75"
+            **A entrada é o `revealUp`**, o mesmo reveal do resto da landing
+            (sobe 24 px e aparece), e ele **repete a cada troca** — é o que o
+            pedido foi: o texto tem que surgir de novo sempre que se troca de
+            uma opção para a outra.
+          */}
+          <AnimatePresence initial={false} custom={direcao}>
+            <motion.div
+              key={solucao.id}
+              custom={direcao}
+              className="sol-textbox absolute flex flex-col items-start gap-[64px] rounded-[42px] bg-nu-bg-secondary px-[42px] py-[32px]"
+              style={{
+                left: active.textBox.x,
+                top: active.textBox.y,
+                width: active.textBox.w,
+              }}
+              variants={revealUp}
+              initial="hidden"
+              animate="visible"
+              exit={{
+                opacity: 0,
+                y: -12,
+                transition: { duration: SOLUTIONS_SLIDE.textExit, ease: "easeOut" },
+              }}
             >
-              <span className="font-display text-[16px] font-semibold leading-[1.25] whitespace-nowrap">
-                {active.cta}
-              </span>
-              <CaretRight size={20} weight="regular" aria-hidden="true" />
-            </a>
-          </motion.div>
+              <p className="font-display text-[24px] font-bold leading-[1.21] whitespace-pre text-nu-brand">
+                {active.title[0]}
+                <br />
+                {active.title[1]}
+                <br />
+                {active.title[2]}
+              </p>
+
+              {/*
+                O caret do Figma é um `CaretDown` girado −90°, que é um caret
+                para a direita — e é o `CaretRight` do Phosphor, o mesmo que a
+                Ecossystem usa no CTA dela.
+              */}
+              <a
+                href="https://www.nubank.com.br/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-[10px] text-nu-brand transition-opacity hover:opacity-75"
+              >
+                <span className="font-display text-[16px] font-semibold leading-[1.25] whitespace-nowrap">
+                  {active.cta}
+                </span>
+                <CaretRight size={20} weight="regular" aria-hidden="true" />
+              </a>
+            </motion.div>
+          </AnimatePresence>
         </motion.div>
       </motion.div>
 
       {/*
-        A prévia desfocada da opção seguinte.
-
-        `aria-hidden` porque é decorativa — a informação que ela carrega é a
-        de uma opção que ainda não está liberada.
-
-        O `blur` é do Figma (4,306 px) e fica no **contêiner**, não na imagem:
-        no design o desfoque é da camada, e é ele que produz a borda suave.
-
-        **Ancorada pela direita, não pela esquerda.** No Figma a borda esquerda
-        dela fica em 1784,56 num frame de 1920, então só 135,44 px aparecem. Se
-        a âncora fosse a esquerda, abaixo de 1785 px de viewport a prévia
-        ficaria inteira fora da seção — e é a seção que recorta. Pela direita,
-        o mesmo pixel em 1920 e o pedaço continua visível em qualquer largura.
-
-        **`amount: "some"` e não 0,25.** O `IntersectionObserver` herda o
-        recorte do `overflow-clip` da seção: a prévia tem 1308,889 de largura
-        mas só 135,44 são visíveis, e a razão fica em 10,3% — nunca alcançando
-        os 25%, que é o que a deixou em `opacity: 0` para sempre.
+        As prévias das opções vizinhas.
       */}
+      <Preview
+        key="prev"
+        slot={active.prev}
+        lado="esquerda"
+        direcao={direcao}
+        indice={indice}
+      />
+      <Preview
+        key="next"
+        slot={active.next}
+        lado="direita"
+        direcao={direcao}
+        indice={indice}
+      />
+    </section>
+  );
+}
+
+/**
+ * Prévia de uma opção vizinha, sangrando pela borda da seção.
+ *
+ * `aria-hidden` porque é decorativa — a informação que ela carrega é a de uma
+ * opção vizinha, e essa informação está no seletor.
+ *
+ * O `blur` é do Figma (4,306 px) e fica no **contêiner**, não na imagem: no
+ * design o desfoque é da camada, e é ele que produz a borda suave.
+ */
+function Preview({
+  slot,
+  lado,
+  direcao,
+  indice,
+}: {
+  slot: SolutionPreview | undefined;
+  lado: "esquerda" | "direita";
+  direcao: number;
+  indice: number;
+}) {
+  if (!slot) return null;
+
+  /*
+   * O quadro é **ancorado pela borda** da seção, e não pela esquerda.
+   *
+   * A prévia é mais larga que a faixa visível e o que sobra sai do frame. Se
+   * a âncora fosse a esquerda, abaixo de 1785 px de viewport a prévia ficaria
+   * inteira fora da seção — e é a seção que recorta. Pela borda, o mesmo pixel
+   * em 1920 e o pedaço continua visível em qualquer largura.
+   */
+  const posicao =
+    lado === "direita"
+      ? { right: -PREVIEW_OVERFLOW }
+      : { left: -PREVIEW_OVERFLOW };
+
+  return (
+    <AnimatePresence initial={false} custom={direcao}>
       <motion.div
+        key={indice}
+        custom={direcao}
         aria-hidden="true"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: "some" }}
-        variants={revealFade}
-        className="sol-preview absolute overflow-clip"
+        className="absolute overflow-clip"
         style={{
-          right: -active.previewOverflowRight,
-          top: preview.y,
-          width: preview.w,
-          height: preview.h,
+          ...posicao,
+          top: slot.frame.y,
+          width: slot.frame.w,
+          height: slot.frame.h,
           borderRadius: PREVIEW_RADIUS,
           filter: `blur(${PREVIEW_BLUR}px)`,
         }}
+        variants={revealFade}
+        initial="hidden"
+        animate="visible"
+        exit={{ opacity: 0 }}
+        transition={{ duration: SOLUTIONS_SLIDE.fade, ease: EASE_OUT_EXPO }}
       >
-        <div
+        {/*
+          A arte dentro do quadro desliza na direção da troca. É ela que dá a
+          leitura de carrossel: a arte que estava na borda é a mesma que entra
+          na janela, e o olho segue o deslocamento.
+
+          A saída é uma **variant** pelo mesmo motivo da arte da janela: só uma
+          variant recebe o `custom` da direção.
+        */}
+        <motion.div
+          custom={direcao}
           className="absolute"
           style={{
-            left: previewImage.x,
-            top: previewImage.y,
-            width: previewImage.w,
-            height: previewImage.h,
+            left: slot.crop.x,
+            top: slot.crop.y,
+            width: slot.crop.w,
+            height: slot.crop.h,
+          }}
+          variants={{
+            sai: (d: number) => ({ x: -d * SOLUTIONS_SLIDE.distance }),
+          }}
+          initial={{ x: direcao * SOLUTIONS_SLIDE.distance }}
+          animate={{ x: 0 }}
+          exit="sai"
+          transition={{
+            duration: SOLUTIONS_SLIDE.duration,
+            ease: SOLUTIONS_SLIDE.ease,
           }}
         >
           <Image
-            src={active.preview}
+            src={slot.src}
             alt=""
             fill
             className="object-cover"
             sizes="(min-width: 1920px) 1553px, 100vw"
             unoptimized
           />
-        </div>
+        </motion.div>
       </motion.div>
-    </section>
+    </AnimatePresence>
   );
 }
-

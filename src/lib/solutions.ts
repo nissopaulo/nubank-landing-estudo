@@ -8,43 +8,65 @@
  * | Opção         | Frame   | Nó        | Estado |
  * |---------------|---------|-----------|--------|
  * | Caixinhas     | Safe    | `144:2`   | liberado |
- * | Conta e Pix   | —       | `151:92`  | oculto |
+ * | Conta e Pix   | Account | `151:92`  | liberado |
  * | Investimentos | —       | `153:125` | oculto |
  * | Empréstimos   | —       | `153:167` | oculto |
  *
  * (No Figma os três últimos estão **todos** nomeados "Solutions Section -
  * Account" — a identidade deles vem do badge, não do nome do frame.)
  *
- * Só o primeiro está liberado, e é o mesmo processo dos quatro frames da Cards
- * Section: um de cada vez, os outros presentes no seletor mas sem resposta.
+ * ## A seção é um carrossel, e o design mostra isso
  *
- * ## A ausência de `active` é o que marca a opção
+ * A janela central mostra a opção **ativa**, e as duas bordas da seção
+ * mostram as **vizinhas**: 135 px do lado esquerdo são a opção anterior, e
+ * 135 px do lado direito são a seguinte. No frame do Safe não há prévia
+ * esquerda — é a primeira opção, não tem vizinha anterior.
  *
- * Não existe flag separada. A opção sem `active` aparece no seletor, não é
- * clicável e avisa o leitor de tela — a mesma regra dos pilares do Ecossystem
- * e dos itens da navegação. Nenhum texto, cor ou geometria foi inventado para
- * elas.
+ * A prévia é a **arte da vizinha**, e a arte dela é a mesma que vai estar na
+ * janela na próxima troca. É por isso que a transição pode ser lida como
+ * "a arte saiu da borda e entrou na janela".
  *
  * ## Geometria
  *
  * Todos os valores vêm do frame, em px do canvas de 1920, e foram conferidos
- * **contra o render do Figma**, não só contra a árvore de nós:
+ * **contra o render do Figma**, não só contra a árvore de nós.
  *
- * | Elemento            | Figma                  | Medido no render      |
- * |---------------------|------------------------|-----------------------|
- * | janela da imagem    | x 200 · y 356          | x 198,8 · y 356,2     |
- * | badge               | x 1530 · y 398         | x 1530,0 · y 397,4    |
- * | badge               | 148 × 48               | 148,1 × 48,7          |
- * | painel de texto     | x 1294 · y 799         | x 1293,8 · y 800,5    |
- * | prévia desfocada    | x 1784,56 (na seção)   | x 1783,1              |
+ * As âncoras são três, e confundi-las desloca tudo:
  *
- * A prévia é medida na borda esquerda porque é a única borda visível: ela
- * começa em 1784,56 e vai até 3093,45 — bem fora do frame de 1920, e é
- * recortada por ele.
+ * | Peça              | Âncora no Figma      |
+ * |-------------------|----------------------|
+ * | badge e painel    | a **janela**         |
+ * | prévia esquerda   | a **seção**          |
+ * | prévia direita    | a **seção**          |
+ * | seletor de pílulas | o `Title`            |
+ *
+ * O badge e o painel são posicionados **pela janela**, e não pelo `Main
+ * Content`: a janela tem a mesma largura e começa 256 px mais abaixo, então
+ * `(1330, 298)` no `Main Content` é `(1330, 42)` na janela. Ancorar na janela
+ * deixa a composição ligada à imagem, e é o que faz o resultado bater com o
+ * Figma mesmo com o título renderizando 0,16 px mais alto.
  */
 
-/** Largura do `Main Content` no frame de 1920 (1920 − 2 × 200). */
-const MAIN_W = 1520;
+/**
+ * Uma prévia: a arte de uma opção vizinha, sangrando pela borda da seção.
+ *
+ * O quadro e o recorte são **por frame**, e não por vizinha: o Figma mostra
+ * uma fatia diferente de cada arte em cada frame, e quem manda é o design.
+ */
+export type SolutionPreview = {
+  /** Arte que aparece na prévia. */
+  src: string;
+  /**
+   * Quadro da prévia, em px do frame de 1920 (a seção).
+   *
+   * A prévia é mais larga que a faixa visível: 1308,889 de quadro para
+   * 135,44 visíveis. O resto sai do frame — é o que dá a leitura de "a
+   * imagem vem de fora".
+   */
+  frame: { x: number; y: number; w: number; h: number };
+  /** Recorte da arte dentro do quadro. */
+  crop: { x: number; y: number; w: number; h: number };
+};
 
 export type Solution = {
   id: string;
@@ -58,6 +80,20 @@ export type Solution = {
    * a torna não-clicável.
    */
   active?: {
+    /**
+     * Título da seção, nas duas linhas em que o design quebra.
+     *
+     * É por opção e não fixo: o do Caixinhas é "Cada objetivo merece seu
+     * espaço." e o do Conta e Pix é "Tudo flui no seu dia a dia.".
+     *
+     * **O espaço no fim da primeira linha é do Figma, e ele conta.** O nó de
+     * texto `151:95` tem 554 de largura, e a linha "Tudo flui no seu" sem o
+     * espaço mede 535,25 — os 18,75 que faltam são o espaço. Ele é invisível
+     * (está no fim da linha), mas a caixa do texto o inclui, e por isso o
+     * título precisa de `whitespace-pre` para reproduzir a medida.
+     */
+    sectionTitle: [string, string];
+
     /** Texto do badge sobre a imagem. */
     badge: string;
 
@@ -72,25 +108,15 @@ export type Solution = {
     /** Rótulo do CTA. */
     cta: string;
 
-    /** Imagem principal da composição. */
+    /** Arte principal da composição. */
     image: string;
 
     /**
-     * Imagem desfocada à direita.
+     * Recorte da arte principal dentro da janela.
      *
-     * É a **prévia da opção seguinte**, e não uma decoração: no frame do Safe
-     * ela é a imagem do Conta e Pix, que é a imagem principal do frame
-     * `151:92`.
-     */
-    preview: string;
-
-    /**
-     * Recorte da imagem principal dentro da janela.
-     *
-     * O Figma não dimensiona a imagem pela janela: ele a põe num retângulo
-     * maior e deixa a janela recortar. Em `144:2` a imagem ocupa
-     * 1882,348 × 1020,567 a partir de (−289, −118) dentro de uma janela de
-     * 1520 × 720.
+     * O Figma não dimensiona a arte pela janela: ele a põe num retângulo
+     * maior e deixa a janela recortar. Em `144:2` são 1882,348 × 1020,567 a
+     * partir de (−289, −118) dentro de uma janela de 1520 × 720.
      */
     imageBox: { x: number; y: number; w: number; h: number };
 
@@ -100,50 +126,24 @@ export type Solution = {
      * O Figma posiciona o badge e o painel de texto em relação ao `Main
      * Content` (`144:3`), que tem a mesma largura da janela mas 256 px mais
      * acima — então `(1330, 298)` no `Main Content` é `(1330, 42)` na janela.
-     *
-     * Ancorar na janela deixa a composição ligada à imagem, e é o que faz o
-     * resultado bater com o Figma mesmo com o título renderizando 0,16 px mais
-     * alto do que lá (o `leading-[1.22]` do projeto contra o `leading: normal`
-     * do design).
      */
     badgeBox: { x: number; y: number };
 
     /**
      * Painel de texto, em relação à janela.
      *
-     * A largura é a do Figma (`150:69`): **384**, e não 443 — o 443 é o do
-     * painel do frame vizinho (`151:105`), que é outra opção. Aqui o painel
-     * tem a largura do seu conteúdo: o texto ocupa 300 e o padding são 42 de
-     * cada lado, 300 + 84 = 384.
+     * A largura é a do Figma e **difere por frame**: 384 no Safe e 443 no
+     * Conta e Pix, porque no primeiro o texto é mais estreito e o painel
+     * encolhe com ele (o auto-layout do Figma dá a largura do conteúdo mais o
+     * padding).
      */
     textBox: { x: number; y: number; w: number };
 
-    /**
-     * Prévia desfocada, em relação à **seção**.
-     *
-     * Diferente do badge e do painel: no Figma ela é irmã do `Main Content`,
-     * não filha dele. Isso muda a origem da coordenada em 200 px e 100 px — e
-     * é por isso que ela precisa de uma âncora própria.
-     *
-     * A posição é dada pela **borda esquerda**, como no Figma (1784,56 num
-     * frame de 1920). Só que isso prende a prévia a uma largura mínima de
-     * viewport: abaixo de 1785 px ela ficaria inteiramente fora da seção, e
-     * sumiria. O componente ancorá-la pela **direita**, que dá o mesmo pixel em
-     * 1920 e mantém o pedaço visível em qualquer largura.
-     */
-    previewBox: { x: number; y: number; w: number; h: number };
+    /** Prévia da opção **anterior**, sangrando pela borda esquerda. */
+    prev?: SolutionPreview;
 
-    /**
-     * Quanto a prévia passa da borda direita da seção, em px.
-     *
-     * No Figma a borda esquerda dela fica em 1784,56 e o quadro tem 1920 —
-     * então só 135,44 px aparecem, e o resto sai do frame. A distância da
-     * borda direita é 1920 + 1308,889 − 1784,56 − 1308,889 = 1173,445.
-     */
-    previewOverflowRight: number;
-
-    /** Recorte da imagem da prévia dentro dela. */
-    previewImageBox: { x: number; y: number; w: number; h: number };
+    /** Prévia da opção **seguinte**, sangrando pela borda direita. */
+    next?: SolutionPreview;
   };
 };
 
@@ -156,6 +156,7 @@ export const SOLUTIONS: Solution[] = [
     id: "caixinhas",
     label: "Caixinhas",
     active: {
+      sectionTitle: ["Cada objetivo ", "merece seu espaço."],
       badge: "Caixinhas",
       title: ["Separe seu dinheiro por", "metas e acompanhe", "seu progresso."],
       cta: "Saiba Mais",
@@ -166,37 +167,73 @@ export const SOLUTIONS: Solution[] = [
        * está no README.
        */
       image: "/images/backgrounds/safe-image.webp",
-      preview: "/images/backgrounds/serenity-image.webp",
       imageBox: { x: -289, y: -118, w: 1882.348, h: 1020.567 },
       badgeBox: { x: 1330, y: 42 },
       textBox: { x: 1094, y: 443, w: 384 },
-      previewBox: { x: 1784.556, y: 406, w: 1308.889, h: 620 },
-      previewOverflowRight: 1173.445,
-      previewImageBox: { x: -150.694, y: -121.417, w: 1552.583, h: 866.558 },
+      // Sem prévia esquerda: é a primeira opção.
+      next: {
+        src: "/images/backgrounds/serenity-image.webp",
+        frame: { x: 1784.556, y: 406, w: 1308.889, h: 620 },
+        crop: { x: -150.694, y: -121.417, w: 1552.583, h: 866.558 },
+      },
+    },
+  },
+
+  {
+    id: "conta-e-pix",
+    label: "Conta e Pix",
+    active: {
+      sectionTitle: ["Tudo flui no seu ", "dia a dia."],
+      badge: "Conta e Pix",
+      title: [
+        "Acompanhe seu dinheiro,",
+        "faça pagamentos e transfira",
+        "valores pelo aplicativo.",
+      ],
+      cta: "Saiba Mais",
+      image: "/images/backgrounds/serenity-image.webp",
+      imageBox: { x: -175, y: -141, w: 1803, h: 1006.326 },
+      badgeBox: { x: 1313, y: 42 },
+      textBox: { x: 1035, y: 443, w: 443 },
+      // A prévia esquerda é a arte do Caixinhas — a opção anterior.
+      prev: {
+        src: "/images/backgrounds/safe-image.webp",
+        frame: { x: -1173.444, y: 408, w: 1308.889, h: 620 },
+        crop: { x: -248.861, y: -101.611, w: 1620.911, h: 878.821 },
+      },
+      // E a direita é a arte do Investimentos — a opção seguinte.
+      next: {
+        src: "/images/backgrounds/upstairs-image.webp",
+        frame: { x: 1784.556, y: 408, w: 1308.889, h: 620 },
+        crop: { x: -113.667, y: -26.694, w: 1536.222, h: 857.426 },
+      },
     },
   },
 
   /*
-   * As três opções seguintes entram uma de cada vez, com o frame correspondente
+   * As duas opções seguintes entram uma de cada vez, com o frame correspondente
    * liberado no Figma. O que já se sabe do design delas, para quando chegar:
    *
-   * | Opção         | Frame   | Imagem principal | Prévia           |
-   * |---------------|---------|------------------|------------------|
-   * | Conta e Pix   | `151:92`| serenity-image   | upstairs-image   |
-   * | Investimentos | `153:125`| upstairs-image | serenity-image   |
-   * | Empréstimos   | `153:167`| trade-image     | upstairs-image   |
+   * | Opção         | Frame     | Arte principal  | Prévia esquerda   | Prévia direita |
+   * |---------------|-----------|-----------------|-------------------|----------------|
+   * | Investimentos | `153:125` | upstairs-image  | serenity-image    | trade-image    |
+   * | Empréstimos   | `153:167` | trade-image     | upstairs-image    | —              |
+   *
+   * E as prévias **não** estão todas no mesmo lugar: a do Investimentos está
+   * 200 px mais à esquerda (x = −1373,444) e 102 px mais acima (y = 306) do
+   * que a do Conta e Pix, porque o Figma mostra uma fatia diferente da arte.
+   * É por isso que a posição do quadro é por frame e não uma constante.
    *
    * Os títulos, badges e CTAs de cada uma estão nos frames correspondentes —
    * e nenhum texto vai ser inventado: tudo é lido do Figma no momento da
    * implementação.
    */
 
-  { id: "conta-e-pix", label: "Conta e Pix" },
   { id: "investimentos", label: "Investimentos" },
   { id: "emprestimos", label: "Empréstimos" },
 ];
 
-/** Índice da opção liberada. */
+/** Índice da primeira opção liberada. */
 export const ACTIVE_INDEX = 0;
 
 /**
@@ -211,8 +248,7 @@ export const WINDOW_H = 720;
 export const WINDOW_RADIUS = 25;
 
 /**
- * Raio de arredondamento da prévia desfocada, lido do nó `151:77`
- * (21,528 px — o mesmo `radius/2` do retângulo de 1308,889 px).
+ * Raio de arredondamento da prévia, lido do nó `151:77` (21,528 px).
  */
 export const PREVIEW_RADIUS = 21.528;
 
@@ -220,7 +256,11 @@ export const PREVIEW_RADIUS = 21.528;
 export const PREVIEW_BLUR = 4.306;
 
 /**
- * Largura do `Main Content`, exportada porque a verificação de geometria
- * precisa dela para conferir a soma da linha do seletor.
+ * Quanto da prévia sangra para fora da seção, em px.
+ *
+ * A prévia é mais larga que a faixa visível, e o que sobra sai do frame: o
+ * quadro da prévia direita começa em 1784,556 e tem 1308,889 — ou seja, passa
+ * 1173,449 px da borda direita. A da esquerda é o mesmo número pelo outro
+ * lado, o que deixa a composição simétrica.
  */
-export { MAIN_W };
+export const PREVIEW_OVERFLOW = 1173.449;

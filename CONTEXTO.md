@@ -34,13 +34,16 @@ inclina em 3D sob o ponteiro, e o nome, a descrição e o CTA. A Cards Section
 nenhuma fica `aria-disabled`. A virada do cartão foi medida em Chrome e
 Firefox, em movimento normal e reduzido.
 
-Depois dela vem a **Solutions Section**, **no primeiro frame dos quatro**: só o
-`144:2` (Caixinhas) está liberado, e as outras três pílulas são botões
-desativados com aviso para leitor de tela. É decisão de processo, não falta de
-design — os quatro frames existem no Figma, três deles ocultos. A seção é uma
-composição: a imagem principal em janela arredondada, o badge e o painel de
-texto sobre ela, a prévia desfocada da opção seguinte sangrando pela borda
-direita, e o seletor de pílulas no pé.
+Depois dela vem a **Solutions Section**, **um carrossel**, e ela está **no
+segundo frame dos quatro**: o `144:2` (Caixinhas) e o `151:92` (Conta e
+Pix) estão liberados, e as outras duas pílulas são botões desativados com aviso
+para leitor de tela. É decisão de processo, não falta de design — os quatro
+frames existem no Figma, dois deles ocultos.
+
+A composição: a imagem principal em janela arredondada, o badge e o painel de
+texto sobre ela, e as **prévias das vizinhas sangrando pelas bordas** — 135 px
+à esquerda e 135 px à direita. E o seletor de pílulas no pé, com o parallax do
+ponteiro na arte.
 
 Entre as seções e o rodapé existe um bloco **"Em construção"** que é
 provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
@@ -177,7 +180,24 @@ provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
     janela, o ponteiro nunca está fora dela quando o handler roda, e uma
     distância de alcance seria um número morto. O que modula a resposta é só a
     **direção**, que cresce do centro para as bordas.
-18. **O seletor de opções é o mesmo componente nas duas seções.** A Cards
+18. **A Solutions Section é um carrossel, e a troca é um gesto.**
+    A janela central mostra a opção ativa e as duas bordas mostram as vizinhas.
+    Quando a opção troca, **tudo anda na mesma direção**: a arte que estava na
+    prévia da direita entra na janela, a que estava na janela sai para a prévia
+    da esquerda, e uma nova entra pela direita.
+    Isso é possível porque **a prévia É a arte da vizinha** — a prévia direita
+    do Caixinhas é a arte do Conta e Pix, que é exatamente o que entra na
+    janela na troca seguinte. O olho segue a mesma arte e lê o movimento.
+19. **O painel de texto repete o reveal a cada troca.** O pedido foi explícito,
+    e é o mesmo `revealUp` do resto da landing: sobe 24 px e aparece. Ele
+    **repete** a cada troca — não é a entrada da seção, é a da opção.
+20. **A saída direcional é uma _variant_, e não um objeto.**
+    O `custom` do Motion é o que carrega a direção, e ele **só chega a uma
+    variant**. Com `exit={{ opacity: 0, x: -direcao * 48 }}` a arte saía pelo
+    lado errado **na volta** — medido, tx = −35 quando devia ser +36. Com a
+    variant, o `custom` do `AnimatePresence` chega ao `exit`. É a mesma
+    armadilha que a Cards Section já tinha encontrado na virada do cartão.
+21. **O seletor de opções é o mesmo componente nas duas seções.** A Cards
     Section e a Solutions Section têm o mesmo seletor, e agora são o mesmo
     código: `components/ui/PillTab.tsx` + a regra `.pill-tab`. O que muda
     entre elas é só a paleta, e ela chega por custom property — as duas seções
@@ -2764,5 +2784,90 @@ batendo com o que foi implementado.
 Os outros dois (`153:125` Investimentos e `153:167` Empréstimos) seguem
 ocultos. Note que os dois ainda estão nomeados "Solutions Section - Account"
 no Figma — a identidade deles vem do badge, e o nome merece correção.
+
+tsc --noEmit, eslint e next build limpos.
+
+### 2026-10-20 — Solutions Section: Conta e Pix, e a virada de carrossel
+
+O usuário liberou o `151:92` (Conta e Pix) no Figma e pediu duas coisas:
+uma transição **fluida e dinâmica** entre um preview e o outro, e o painel de
+texto com **a animação de surgir repetida a cada troca**.
+
+#### A descoberta: a seção é um carrossel, e o design já mostrava
+
+O `151:92` não é o `144:2` com outro conteúdo. A estrutura mudou: a janela
+central mostra a opção ativa e **as duas bordas da seção mostram as vizinhas** —
+135 px à esquerda são a opção anterior, 135 px à direita são a seguinte. O
+frame do Safe não tem prévia esquerda porque é a primeira opção.
+
+E a prévia **é a arte da vizinha**: a prévia direita do Caixinhas é a arte do
+Conta e Pix, que é exatamente o que entra na janela na troca seguinte. Isso é
+o que torna a virada de carrossel possível — o olho segue a mesma arte.
+
+#### A virada
+
+| o quê | como entra | como sai |
+|---|---|---|
+| arte da janela | desliza 48 px na direção da troca | desliza 48 px para o lado oposto |
+| painel de texto | sobe 24 px e aparece (o `revealUp`) | sobe 12 px e some |
+| badge | opacidade 0 → 1 | opacidade 1 → 0 |
+| prévias | opacidade 0 → 1 | opacidade 1 → 0 |
+
+O deslocamento de 48 px é o maior que a prévia da direita aguenta sem invadir
+a janela: a prévia começa em 1784,556 e a janela termina em 1720, e a folga é
+de 64,56 px.
+
+#### O bug que a medição pegou: a direção da saída
+
+A primeira implementação usava `exit={{ opacity: 0, x: -direcao * 48 }}`. Indo
+para frente, funcionava. **Voltando, a arte saía pelo lado errado** — medido:
+tx = −35, quando devia ser +36.
+
+A causa é estrutural: o `exit` do elemento que sai é o do **render antigo**,
+e é por isso que ele precisa da direção de agora. E o `custom` do Motion — que
+é exatamente o mecanismo para isso — **só chega a uma variant**, nunca a um
+objeto literal.
+
+Com uma variant (`sai: (d) => ({ opacity: 0, x: -d * 48 })`) e o `custom`
+no `AnimatePresence`, a direção fica certa. É a **mesma armadilha** que a
+Cards Section já tinha encontrado na virada do cartão, e a correção é a mesma.
+
+#### Dois detalhes que só a medição mostra
+
+- **A largura do painel de texto muda por frame**: 384 no Caixinhas e 443 no
+  Conta e Pix. Não é constante do design — o auto-layout do Figma dá a largura
+  do conteúdo mais o padding, e o texto do Caixinhas é mais estreito. O dado
+  é por opção.
+- **O título do Conta e Pix tem um espaço no fim da primeira linha**, e ele
+  conta: o nó `151:95` mede 554 e a linha sem o espaço mede 535,25. O espaço
+  é invisível, mas a caixa do texto o inclui — por isso o título usa
+  `whitespace-pre` e o dado traz o espaço.
+
+#### Verificação
+
+Chrome e Firefox, dentro de 0,05 px.
+
+Estado do Caixinhas: seção 1920 × 1176,16; título 200/100 (660,86 de
+largura); seletor 1104,27/216,15 (615,73 × 40); janela 200/356,15; badge
+1530/398,15 (147,27 × 48); painel 1294/799,15 (384 × 235,09); prévia
+direita 1784,56/406,15.
+
+Estado do Conta e Pix: título 200/100 (**553,36** — o Figma dá 554); badge
+**1513**/398,15 (164,03 × 48); painel **1235**/799,15 (**443** × 235,09);
+imagem em **25**/3300,23 (1803 × 1006,31, ou seja −175/−141 na janela);
+prévias em **−1173,44** e **1784,56**.
+
+Virada medida nos dois sentidos: avançando, a arte sai pela esquerda (tx = −38
+a −37) e o painel sobe (ty = −10); voltando, a arte sai pela **direita**
+(tx = +36) e o painel sobe (ty = −9,9). A prévia esquerda entra com
+opacidade 0 → 1 e a direita faz cross-fade (0,07 / 0,79 a 140 ms).
+
+Movimento reduzido: sem transform grudado (tx = 0) e sem opacidade pendente,
+e a troca é instantânea.
+
+Acessibilidade conferida: as quatro pílulas com `role="tab"`,
+`aria-selected` só nas duas liberadas, `aria-disabled` + aviso em `sr-only`
+nas outras duas, e o `tabpanel` com `id` e `aria-labelledby` apontando para
+a aba ativa.
 
 tsc --noEmit, eslint e next build limpos.

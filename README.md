@@ -1149,33 +1149,63 @@ sombra.
 
 ## Solutions Section
 
-Figma `Solutions Section - Safe` (nó `144:2`), 1920×1316. É a seção que vem
-**abaixo** da Cards Section.
+Figma `Solutions Section - Safe` (nó `144:2`) e `Solutions Section -
+Account` (nó `151:92`), 1920×1176. É a seção que vem **abaixo** da Cards
+Section.
 
-### Só o primeiro frame está liberado
+### A seção é um carrossel
 
-O Figma tem **quatro** frames desta seção, e três continuam ocultos: é o mesmo
-processo dos quatro frames da Cards Section — um de cada vez. As quatro pílulas
-aparecem no seletor desde o começo, porque é assim que o `144:2` mostra, mas
-só a do Caixinhas responde. As outras três são `<button>` reais com
-`aria-disabled` e aviso para leitor de tela: **um botão que não faz nada não
-existe em silêncio.**
+A janela central mostra a opção **ativa**, e as duas bordas da seção mostram as
+**vizinhas**: 135 px à esquerda são a opção anterior, 135 px à direita são a
+seguinte. O frame do Safe não tem prévia esquerda — é a primeira opção, não
+tem vizinha anterior.
 
 | Opção | Frame | Nó | Estado |
 |---|---|---|---|
 | Caixinhas | Safe | `144:2` | liberado |
-| Conta e Pix | — | `151:92` | oculto |
+| Conta e Pix | Account | `151:92` | liberado |
 | Investimentos | — | `153:125` | oculto |
 | Empréstimos | — | `153:167` | oculto |
 
-(No Figma os três últimos estão **todos** nomeados "Solutions Section -
+(No Figma os dois últimos estão **todos** nomeados "Solutions Section -
 Account" — a identidade deles vem do badge, não do nome do frame.)
 
-### A prévia desfocada é a opção seguinte
+### A troca é um gesto, e não uma substituição
 
-No frame do Safe a prévia à direita é a imagem do **Conta e Pix**, que é a
-imagem principal do frame `151:92`. É a mesma ideia do card recolhido da
-Ecossystem: o que vem depois aparece ao lado.
+Quando a opção troca, **tudo anda na mesma direção**: a arte que estava na
+prévia da direita entra na janela, a que estava na janela sai para a prévia da
+esquerda, e uma nova entra pela direita.
+
+Isso é possível porque **a prévia é a arte da vizinha**: a prévia direita do
+Safe é a arte do Conta e Pix, que é exatamente o que entra na janela na troca
+seguinte. O olho segue a mesma arte e lê o movimento.
+
+| o quê | como entra | como sai |
+|---|---|---|
+| arte da janela | desliza 48 px na direção da troca, opacidade 0 → 1 | desliza 48 px para o lado oposto, opacidade 1 → 0 |
+| painel de texto | **sobe 24 px e aparece** (o `revealUp` da landing) | sobe 12 px e some |
+| badge | opacidade 0 → 1 | opacidade 1 → 0 |
+| prévias | opacidade 0 → 1 | opacidade 1 → 0 |
+
+O deslocamento de 48 px é o maior que a prévia da direita aguenta sem invadir
+a janela: a prévia começa em 1784,556 e a janela termina em 1720, e a folga é
+de 64,56 px.
+
+**O painel de texto repete o reveal a cada troca.** É o mesmo `revealUp` do
+resto da landing (sobe 24 px, curva expo, 1,1 s) — e ele **repete** sempre que
+se troca de uma opção para a outra, que é o que foi pedido.
+
+### A direção da saída é uma *variant*, e não um objeto
+
+O `exit` do elemento que sai é o do **render antigo**, e é por isso que ele
+precisa da direção de agora. O `custom` do Motion é o que resolve isso — e ele
+só chega a uma **variant**, nunca a um objeto literal.
+
+Com `exit={{ opacity: 0, x: -direcao * 48 }}`, a arte saía **pelo lado
+errado na volta**: medido, indo para trás ela saía pela esquerda (tx = −35)
+quando devia sair pela direita. Com a variant, o `custom` do `AnimatePresence`
+chega ao `exit` e a direção fica certa (tx = +36). É a mesma armadilha que a
+Cards Section já tinha encontrado na virada do cartão.
 
 ### Três âncoras, e por que confundi-las desloca tudo
 
@@ -1347,23 +1377,35 @@ padding, as pílulas da Cards Section passaram de 520,33 × 42 para
 **512,33 × 40** — o Figma dá 514 × 40, e a diferença que resta é a métrica do
 texto.
 
-### Fidelidade medida contra o frame `144:2`
+### Fidelidade medida contra os dois frames
 
 Geometria lida do DOM (`getBoundingClientRect`), em coordenadas de documento,
-nos dois motores:
+nos dois motores. As duas colunas de estado são o **Caixinhas** (`144:2`) e o
+**Conta e Pix** (`151:92`).
 
-| | Figma | Chrome | Firefox |
-|---|---|---|---|
-| Seção | 1920 × 1176 | 1920 × **1176,16** | idem |
-| Título | x 200 · y 100 · 156 | idem (+0,16 de altura) | idem |
-| Janela da imagem | x 200 · y 356 · 1520×720 | **200 · 356,15 · 1520×720** | **200 · 356,17** |
-| Badge | x 1530 · y 398 · 148×48 | **1530 · 398,15 · 147,27×48** | **1530 · 398,17 · 147,25×48** |
-| Painel de texto | x 1294 · y 799 · 384×235 | **1294 · 799,15 · 384×235,09** | **1294 · 799,17 · 384×235,1** |
-| CTA (relativo ao painel) | x 42 · y 183 · 118×20 | **42 · 183,1 · 117,25×20** | idem |
-| Prévia | x 1784,56 · y 406 · 1308,889×620 | **1784,56 · 406,15 · 1308,88×620** | **1784,57** |
-| Seletor | x 902 (no Title) · y 116 · 618×40 | **x 1104,27 · y 216,15 · 615,73×40** | idem |
-| Pílulas | 116 / 129 / 154 / 147 | 115,41 / 128,83 / 153,36 / 146,14 | idem |
-| Imagem (relativo à janela) | −289 · −118 · 1882,348×1020,567 | **−89 · −118 · 1882,34×1020,56** | idem |
+| | Figma (Safe) | Figma (Account) | Chrome | Firefox |
+|---|---|---|---|---|
+| Seção | 1920 × 1176 | 1920 × 1176 | **1920 × 1176,16** | idem |
+| Título | x 200 · y 100 | x 200 · y 100 · **554** | **200 · 100** (660,86 / 553,36) | idem |
+| Janela da imagem | x 200 · y 356 · 1520×720 | idem | **200 · 356,15 · 1520×720** | **200 · 356,17** |
+| Badge | x 1530 · 148×48 | x 1513 · 165×48 | **1530 · 147,27×48** / **1513 · 164,03×48** | idem |
+| Painel de texto | x 1294 · **384**×235 | x 1235 · **443**×235 | **1294 · 384×235,09** / **1235 · 443×235,09** | idem |
+| Prévia esquerda | — | x −1173,44 | — / **−1173,44** | idem |
+| Prévia direita | x 1784,56 | x 1784,56 | **1784,56** | **1784,57** |
+| Seletor | x 902 (no Title) · 618×40 | idem | **x 1104,27 · 615,73×40** | idem |
+| Pílulas | 116 / 129 / 154 / 147 | idem | 115,41 / 128,83 / 153,36 / 146,14 | idem |
+| Imagem (relativo à janela) | −289 · −118 | −175 · −141 | **−89 · −118** / **25 · −141** | idem |
+
+**Dois detalhes que só a medição mostra:**
+
+- **A largura do painel de texto muda por frame**: 384 no Caixinhas e 443 no
+  Conta e Pix. Não é uma constante do design — o auto-layout do Figma dá a
+  largura do conteúdo mais o padding, e o texto do Caixinhas é mais estreito.
+- **O título do Conta e Pix tem um espaço no fim da primeira linha**, e ele
+  conta: o nó `151:95` mede 554 e a linha sem o espaço mede 535,25. O espaço
+  é invisível, mas a caixa do texto o inclui — por isso o título usa
+  `whitespace-pre`.
+
 
 **Nenhum delta de posição é de 1px.** Os deltas de tamanho que restam são de
 ±0,86 px e vêm da métrica do texto: o viewer do Figma mede a largura de avance
@@ -1849,9 +1891,11 @@ redirecionadores — esta página não tem função de cadastro.
 
 ## Próximos passos
 
-1. **A Solutions Section está no primeiro frame** — o `144:2` (Caixinhas) está
-   liberado e verificado. O próximo bloco é liberar o `151:92` (Conta e Pix), e
-   o preenchimento é o campo `active` em `lib/solutions.ts`.
+1. **A Solutions Section está no segundo frame** — o `144:2` (Caixinhas) e o
+   `151:92` (Conta e Pix) estão liberados e verificados. O próximo bloco é
+   liberar o `153:125` (Investimentos), e o preenchimento é o campo `active`
+   em `lib/solutions.ts` — com a posição da prévia esquerda, que nesse frame
+   é 200 px mais à esquerda e 102 px mais acima que nos outros.
 2. Decidir as quatro reprovações de contraste da Cards Section, que são **do
    design** e estão implementadas como o Figma pede: nº 12 (pílula inativa do
    Nubank, 4,40:1), nº 14 (pílula inativa do Croma, 2,44:1), nº 15 (nome no

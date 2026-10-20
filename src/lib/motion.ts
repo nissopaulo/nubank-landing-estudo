@@ -411,6 +411,40 @@ export const BACKGROUND_PARALLAX = {
 } as const;
 
 /**
+ * A troca de opção da Solutions Section.
+ *
+ * ## A seção é um carrossel, e a arte sai da borda para a janela
+ *
+ * Quando a opção troca, **tudo anda na mesma direção**: a arte que estava na
+ * prévia da direita entra na janela, a que estava na janela sai para a prévia
+ * da esquerda, e uma nova entra pela direita. É o gesto de um carrossel, e é
+ * o que faz a troca ser lida como "a imagem saiu de lá e veio para cá" em vez
+ * de "o conteúdo foi trocado".
+ *
+ * ## O deslocamento é curto, e por um motivo geométrico
+ *
+ * 48 px é o maior deslocamento que a prévia da direita aguenta sem invadir a
+ * janela: a prévia começa em 1784,556 e a janela termina em 1720, e a folga
+ * é de 64,56 px. Passar dela faria a prévia desfocada invadir a arte nítida.
+ *
+ * ## A curva é a enfática
+ *
+ * A mesma do resto do projeto em trocas de conteúdo: ela é rápida no começo
+ * (o clique responde na hora) e chega tangenciando o fim (sem corte seco).
+ */
+export const SOLUTIONS_SLIDE = {
+  /** Distância do deslocamento horizontal, em px. */
+  distance: 48,
+  /** Duração do deslize da arte, em segundos. */
+  duration: 0.6,
+  ease: EASE_EMPHASIZED,
+  /** Duração do cross-fade das prévias, em segundos. */
+  fade: 0.4,
+  /** Duração da saída do painel de texto, em segundos. */
+  textExit: 0.22,
+} as const;
+
+/**
  * A virada do fundo da seção ao trocar de pilar.
  *
  * O Figma **não define** animação para os frames da Cards Section — e também não
