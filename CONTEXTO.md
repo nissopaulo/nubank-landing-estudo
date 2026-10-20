@@ -2381,3 +2381,32 @@ navegação (pendência #2, bloqueio do restante da página) e, em seguida,
 implementá-los em `SiteHeader.tsx` substituindo `NAV_ITEMS` /
 `aria-disabled` por painéis reais. Enquanto não existe no Figma, não há código
 para escrever aqui — conteúdo não se inventa.
+
+### 2026-10-20 — Solutions Section: primeira opção (Safe / Caixinhas)
+
+Commit `55ebb88` no `main`, push para o GitHub (`origin/main`). O deploy na
+Vercel é disparado automaticamente pelo push.
+
+**Fluxo "pode commitar" executado na íntegra:** `tsc --noEmit` (limpo),
+`npm run lint` (limpo), `npm run build` (limpo), commit com mensagem longa
+em arquivo (`git commit -F`), push.
+
+**O que foi commitado:**
+- `src/components/solutions/SolutionsSection.tsx` — primeiro frame da seção
+  (Safe / Caixinhas, nó `144:2` do Figma), integrado em
+  `src/app/page.tsx` entre a Cards Section e o PendingSections.
+- Entrada por scroll (`whileInView` com `once`), igual ao padrão das demais
+  seções.
+- Background principal com parallax suave do mouse em toda a seção (direção ×
+  força, alcance 600px, mola), desligado sob `prefers-reduced-motion`.
+- Opção ativa em destaque (fundo da marca + texto branco); inativas com borda
+  da marca, texto da marca, escala reduzida e blur.
+- Badge "Caixinhas", título e CTA "Saiba Mais" lidos do Figma.
+- Background desfocado à direita (prévia da próxima opção).
+- Imagens de background em `public/images/backgrounds/` (safe-image,
+  serenity-image, trade-image, upstairs-image — já colocadas pelo usuário).
+
+**Próximo passo:** implementar as outras três opções da Solutions Section
+(Conta e Pix — `151:92`, Investimentos — `153:125`, Empréstimos — `153:167`),
+todos frames ocultos no Figma, um de cada vez, trocando o conteúdo ativo
+quando o usuário clicar na pílula correspondente.
