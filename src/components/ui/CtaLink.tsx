@@ -55,6 +55,11 @@ const BASE =
   // `leading-normal` do Tailwind vale 1.5 e deixaria o botão com 44px.
   // O Figma usa a altura natural do Montserrat (≈1.22), gerando 40px.
   "font-display text-base leading-[1.25] whitespace-nowrap " +
+  // `font-semibold` é o `Montserrat:SemiBold` de **todo** CTA do design —
+  // "Quero ser Nubank" (nó `14:457`), "Login Empresas" (`14:444`), "Conheça o
+  // Cartão Nubank" (`101:183`) e o CTA da Solutions Section (`178:260`).
+  // Sem esta linha os botões saíam em Regular, mais finos que o desenho.
+  "font-semibold " +
   "transition-colors duration-200 ease-out";
 
 type CommonProps = {

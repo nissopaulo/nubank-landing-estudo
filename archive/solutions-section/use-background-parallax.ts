@@ -5,7 +5,7 @@ import type { PointerEvent as ReactPointerEvent } from "react";
 import { useMotionValue, useSpring } from "motion/react";
 import type { MotionValue } from "motion/react";
 
-import { BACKGROUND_PARALLAX } from "@/lib/motion";
+import { BACKGROUND_PARALLAX } from "./motion";
 import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 
 /**

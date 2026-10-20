@@ -9,8 +9,8 @@ no Figma, com foco em movimento e hierarquia visual no espírito Apple.
 - **Figma:** https://www.figma.com/design/16kp2jwaILwDfp44uYuNkP
 - **Frame implementado:** `Hero Section` (node `14:446`, 1920×1080),
   `Ecossystem Section` (nós `52:3`–`80:77`, 1920×919), `Cards Section`
-  (nós `97:2`–`103:383`, 1920×1086) e `Solutions Section - Safe`
-  (nó `144:2`, 1920×1316)
+  (nós `97:2`–`103:383`, 1920×1086) e `Solutions Section - Piggybank`
+  (nó `178:205`, 1920×1080)
 
 ---
 
@@ -73,6 +73,8 @@ src/
     hero/
       HeroSection.tsx  seção da Hero (node 14:446)
       CardsShowcase.tsx composição de cards: entrada, parallax, ponteiro
+    solutions/
+      SolutionsSection.tsx  a Solutions Section: fundo, seletor e painel
     site/
       SiteHeader.tsx   cabeçalho fixo, condensa ao rolar
       SiteFooter.tsx   rodapé + aviso legal + seções pendentes
@@ -85,7 +87,7 @@ src/
     hero-cards.ts      geometria dos cards lida do Figma
     card-showcase.ts   cartões e conteúdo da Cards Section
     ecosystem-pillars.ts  pilares e conteúdo do card ativo
-    solutions.ts       opções e geometria da Solutions Section
+    solutions.ts       as quatro opções e o conteúdo da Solutions Section
     motion.ts          durações, curvas e variantes compartilhadas
     use-prefers-reduced-motion.ts
 public/images/
@@ -93,7 +95,7 @@ public/images/
   cards/               artes dos cartões da Hero (WebP)
   credit-card/         peças do cartão de crédito (SVG do Figma)
   peoples/             recorte de cada pilar (WebP, alfa)
-  backgrounds/         artes da Solutions Section (WebP, hoje só do arquivo)
+  backgrounds/         artes da Solutions Section (PNG masters + WebP servido)
 
 archive/
   solutions-section/   a Solutions Section arquivada (código, CSS e README)
@@ -157,6 +159,7 @@ em `src/app/globals.css`:
 | `--color-nu-neutral-100/200/300/400/800` | `#f3f4f6` `#e5e7eb` `#d1d5db` `#9ca3af` `#1c1c1e` | `Neutral/*` |
 | `--color-nu-text-primary` | `#111111` | `Text/text-primary` |
 | `--color-nu-text-tertiary` | `#6b7280` | `Text/text-tertiary` |
+| `--color-nu-text-secondary` | `#4b5563` | `Text/text-secondary` (nó `178:205`) |
 | `--color-nu-hero-stop-3` | `#d8b4fe` | lido direto do gradiente (não é token) |
 
 Tipografia: **Montserrat** (variável), carregada com `next/font` e servida
@@ -1147,7 +1150,325 @@ sombra.
 
 ---
 
-## Solutions Section — arquivada
+## Solutions Section
+
+Figma `Solutions Section - Piggybank` (nó `178:205`), 1920×1080. É a seção
+**nova** — redesenhada do zero em 2026-10-20, e **não é** o carrossel que está
+arquivado mais abaixo (que ocupava o mesmo lugar na página e foi retirado).
+O que ela herda dele é o **seletor de pílulas**: o mesmo `PillTab` e a mesma
+regra `.pill-tab`.
+
+O quadro tem **quatro** frames, e **dois** estão liberados:
+
+| Opção | Frame | Nó | Estado |
+|---|---|---|---|
+| Caixinhas | `Solutions Section - Piggybank` | `178:205` | **liberado** |
+| Conta | `Solutions Section - Account` | `178:262` | **liberado** |
+| Empréstimos | `Solutions Section - Advance` | `178:281` | oculto |
+| E muito mais | `Solutions Section - More` | `178:296` | oculto |
+
+As quatro pílulas aparecem — é o que o frame mostra — e as duas liberadas
+trocam de verdade. As outras duas são `<button>` reais com `aria-disabled` e
+aviso para o leitor de tela, a mesma regra dos pilares do Ecossystem e das
+pílulas da Cards Section: **um botão que não faz nada não existe em
+silêncio.**
+
+Os dois frames liberados são **idênticos fora da arte e do texto**: o vidro, o
+raio, a sombra, o padding, o título em 48 px, a descrição em 16 px e o CTA são
+os mesmos. O que muda é a **cena** de fundo e o **texto** do painel — e é por
+isso que a troca é animada em duas partes independentes.
+
+### A arte é o fundo da seção, e não uma imagem numa janela
+
+A diferença estrutural em relação a tudo que já existe na página: aqui **não
+há janela**. A arte ocupa a seção inteira, sangrando pelas bordas, e o
+seletor e o painel flutua por cima dela. A seção tem, portanto, duas peças de
+vidro — não um cartão de imagem.
+
+O `object-fit: cover` reproduz o desenho sem número mágico: a arte tem
+2048×1112 (1,84173) e a caixa 1920×1080 (1,77778), então o `cover` escala
+pela altura, deixa a largura em 1989,2 e transborda 34,6 px para cada lado —
+que é exatamente o `103,65%` de largura com `-1,82%` de deslocamento que o
+Figma declara. Na vertical não sobra um pixel, e por isso a posição do
+`object-position` é irrelevante.
+
+### A geometria vem do padding e do `justify-between`
+
+O Figma dá a navegação em (200, 100) e o painel em (1040, 580), dentro de um
+`Main Content` de 1520×880. Traduzido para fluxo:
+
+- `px-[200px] py-[100px]` — a borda do conteúdo;
+- `justify-between` — o seletor em cima, o painel embaixo;
+- `items-end` — o painel encosta na borda direita (840 + 680 = 1520).
+
+E o seletor é o único alinhado à **esquerda** (x = 0 do `Main Content`), o que
+exige um wrapper de largura cheia com `items-start` dentro de uma coluna
+`items-end`. Sem o `w-full` no wrapper, ele encolhe até o conteúdo e a
+navegação vai para a direita junto com o painel.
+
+### O vidro é o mesmo truque do header condensado
+
+`bg-white/90` + `backdrop-blur` + `drop-shadow`: superfície semiopaca sobre a
+arte, e o desfoque do que está atrás. O header usa 85% e 5 px de desfoque; aqui
+o Figma pede 90% e 5 px no seletor, e 90% e **10 px** no painel — e é essa
+diferença de 5 px entre os dois vidros que faz o painel ler como uma peça mais
+perto do olho do que o seletor.
+
+| | Seletor (nó `180:329`) | Painel (nó `178:253`) |
+|---|---|---|
+| Fundo | `rgba(255,255,255,0.9)` | `rgba(255,255,255,0.9)` |
+| Desfoque | 5 px | **10 px** |
+| Raio | 120 px | 24 px |
+| Sombra | `0 4px 20px rgba(0,0,0,.1)` | `6px 6px 20px rgba(0,0,0,.2)` |
+
+### A pílula inativa aqui não tem borda — e isso muda a caixa
+
+Na Cards Section a pílula inativa tem 1 px de borda da marca. **Aqui não tem**:
+no Figma (`181:349`) a inativa é só o texto na cor da marca. A diferença é do
+desenho, e ela entra como uma variante do `PillTab` (`borda="nenhuma"`) — e não
+como um componente novo.
+
+E a borda não é detalhe de 1 px: ela **entra na caixa** do CSS, e por isso o
+padding muda junto. A pílula com borda usa 17/9 (`9 + 20 + 9 + 1 = 40` de
+altura, texto a 18 da borda); a sem borda usa 18/10 (`10 + 20 + 10 = 40`, texto
+a 18 da borda). As duas dão a mesma caixa do Figma — 514×40 na Cards Section,
+116×40 na pílula "Caixinhas".
+
+### Fidelidade medida contra o frame `178:205`
+
+Geometria lida do DOM (`getBoundingClientRect`), em coordenadas de documento, a
+1920×1080. As duas últimas colunas são o frame do Piggybank e o da Conta — e
+eles batem igual, porque o layout é o mesmo:
+
+| | Figma | Piggybank | Conta | |
+|---|---|---|---|---|
+| Seção | 1920 × 1080 | 1920 × 1080 | 1920 × 1080 | ✅ |
+| Seletor | x 200 · y 100 · 597 × 64 | x 200 · y 100 · **594,36** × 64 | idem | ⚠️ |
+| Pílula "Caixinhas" | 116 × 40 | **115,41** × 40 | idem | ⚠️ |
+| Pílula "Conta" | 85 × 40 | **84,64** × 40 | idem | ⚠️ |
+| Pílula "Empréstimos" | 147 × 40 | **146,14** × 40 | idem | ⚠️ |
+| Pílula "E muito mais" | 145 × 40 | **144,17** × 40 | idem | ⚠️ |
+| Painel | x 1040 · y 580 · 680 × 400 | x 1040 · y **581,95** · 680 × **398,13** | idem | ⚠️ |
+| Título | 48 px · 584 × 118 | 48 px · 584 × **117,09** | idem | ⚠️ |
+| Descrição | 16 px · 584 × 40 | 16 px · 584 × **39,03** | idem | ⚠️ |
+| CTA | 48,312 · 233 × 40 | 48, **310,13** · **232,69** × 40 | idem | ⚠️ |
+
+Os dois deltas têm a **mesma causa**, e ela é o arredondamento do Figma: o
+`leading: normal` do Montserrat é 1,219, e o Figma **arredonda a caixa do texto
+para cima** (48 × 1,219 = 58,51 → duas linhas dariam 117,03, e ele escreve
+118). O projeto usa `leading-[1.22]` — a mesma constante da Hero, calibrada
+contra o `97:2` —, então cada caixa fica 0,91 px mais baixa que a do Figma, e
+a pilha do painel soma 1,87 px. Nenhum elemento é deslocado por isso: o vão de
+42 px entre o título e a descrição é **exato** nas duas.
+
+E a largura das pílulas: os 2,64 px que faltam no seletor são a métrica do
+texto (a mesma diferença que já existia na Cards Section, onde o Figma dá 514
+e o navegador dá 512,33).
+
+A quebra de linha do texto também bate com o Figma: o título da Conta quebra
+em "Seu dinheiro, no ritmo / da sua vida." e a descrição em "…em uma / conta
+digital…", nas mesmas posições do quadro.
+
+### A entrada é por scroll, e as duas peças têm reveles próprios
+
+O seletor e o painel entram com `revealUp` (sobe 24 px, curva expo, 1,1 s),
+escalonados por `staggerContainer(0.12)` — o seletor primeiro, o painel 120 ms
+depois. Medido no navegador:
+
+| momento | seletor | painel |
+|---|---|---|
+| antes do scroll | `opacity 0` · `y +24` | `opacity 0` · `y +24` |
+| +150 ms | `opacity 0,59` · `y +9,96` | `opacity 0,11` · `y +21,3` |
+| +400 ms | `opacity 0,93` · `y +1,61` | `opacity 0,85` · `y +3,49` |
+| +800 ms | `opacity 1,00` · `y +0,04` | `opacity 0,99` · `y +0,14` |
+| +1600 ms | `opacity 1` · `transform: none` | `opacity 1` · `transform: none` |
+
+Sob `prefers-reduced-motion` o mesmo caminho **sem deslocamento**: o
+`transform` é pulado (o elemento já nasce no lugar) e só a opacidade corre —
+`opacity 1` e `transform: none` no fim, sem estado preso. Medido com
+`Emulation.setEmulatedMedia`.
+
+### A troca de opção é uma troca de cena
+
+`background-image` não é animável, então a troca é feita com **duas camadas** —
+a que sai e a que entra — e cada uma faz um gesto **diferente**. É essa
+assimetria que dá a sensação de profundidade em vez de *dissolve*:
+
+| camada | opacidade | escala | desfoque |
+|---|---|---|---|
+| que sai | 1 → 0 | — | 0 → **14 px** |
+| que entra | 0 → 1 | **1,03 → 1** | — |
+
+A que sai **perde o foco** (é a parte *soft* do gesto) e a que entra **assenta
+no lugar** (é a parte *dinâmica*). E a que entra **nunca fica desfocada**: em
+qualquer instante há uma cena nítida na tela, e o que se vê no meio da troca é
+a cena nova emergindo de baixo da cena velha — e não duas cenas misturadas.
+
+A curva é `cubic-bezier(0.4, 0, 0.2, 1)` (a padrão do Material), que começa
+de leve, acelera no meio e assenta de leve, em 0,7 s. A enfática do projeto
+(0,32 · 0,72 · 0 · 1) foi descartada: ela resolve o gesto em um quinto do
+tempo e depois finge que continua, e num *dissolve* de tela cheia isso aparece
+como a cena "travando" no fim.
+
+A escala de 3% é pequena de propósito: a arte tem 1,84173 de proporção e a
+caixa 1,77778, então o `cover` já transborda 34,6 px de cada lado. Mais que
+isso e a arte "pula" no enquadramento.
+
+**Medido** (a cada ~90 ms, no navegador, arte em `op` / `blur` / `scale`):
+
+| momento | que sai | que entra |
+|---|---|---|
+| +109 ms | op 0,96 · blur 0,6 px | op 0,04 · scale 1,0287 |
+| +205 ms | op 0,72 · blur 3,98 px | op 0,28 · scale 1,0215 |
+| +299 ms | op 0,40 · blur 8,35 px | op 0,60 · scale 1,0121 |
+| +392 ms | op 0,18 · blur 11,42 px | op 0,82 · scale 1,0055 |
+| +485 ms | op 0,07 · blur 12,98 px | op 0,93 · scale 1,0022 |
+| +671 ms | op 0,002 · blur 13,97 px | op 0,998 · scale 1,0001 |
+| +763 ms | (desmontada) | op 1 · blur 0 · `transform: none` |
+
+**60 fps cravados durante a troca**, com o desfoque de tela cheia e tudo:
+mediana de 16,7 ms entre quadros e percentil 95 de 16,8 ms.
+
+### O texto do painel surge de novo a cada troca
+
+O texto **repete** a entrada a cada clique — não é a entrada da seção, é a da
+opção. E o gesto é o `revealUp` de sempre (sobe e aparece) com um acréscimo:
+um **desfoque que se resolve**.
+
+| | o que faz | duração |
+|---|---|---|
+| saída | desfoca e some, **no lugar** | 0,18 s |
+| entrada | sobe 18 px, aparece e vai entrando em foco | 0,55 s |
+
+O desfoque é o que faz o "surgir" ser suave em vez de um corte com *fade*: o
+olho percebe a cena entrando em foco, e não o texto acendendo.
+
+A saída é um **desfoque**, e não um deslocamento, por um motivo medido: sob
+`prefers-reduced-motion` o Motion pula a animação de transform e o elemento
+**salta** para o valor final — quem pede menos movimento veria o texto dar um
+pulo de 8 px antes de sumir. Um desfoque não desloca nada.
+
+`mode="wait"`: o texto velho termina de sair antes do novo começar. Sem isso os
+dois textos ficariam sobrepostos no mesmo quadro de 584 × 200 — que é
+exatamente o defeito que a Cards Section já teve.
+
+**Medido** (o bloco de texto, no navegador):
+
+| momento | texto na tela | op | blur | y |
+|---|---|---|---|---|
+| +109 ms | *o velho* | 0,70 | 1,8 px | −2,4 |
+| +205 ms | *o novo* | 0 | 6,0 px | +18 |
+| +298 ms | *o novo* | 0,70 | 1,8 px | +5,5 |
+| +392 ms | *o novo* | 0,90 | 0,6 px | +1,9 |
+| +488 ms | *o novo* | 0,97 | 0,2 px | +0,5 |
+| +675 ms | *o novo* | 1,00 | 0,0 px | 0 |
+
+A arte acaba em 0,70 s e o texto em 0,73 s — **eles chegam juntos**.
+
+### A trava da troca
+
+Enquanto a cena está trocando, um clique novo é ignorado. Sem a trava, o
+`AnimatePresence` trocaria a arte que está saindo no meio do *fade*, e a tela
+mostraria as duas cenas ao mesmo tempo. É a mesma trava que a Cards Section
+aplica durante a meia-volta.
+
+Medido: dois cliques com 120 ms de intervalo deixam a seção em **Conta** (o
+segundo foi ignorado), e o terceiro clique — com a trava liberada — volta para
+Caixinhas.
+
+### Sob movimento reduzido a troca é instantânea
+
+A arte troca na hora (a duração vai a zero: sem *dissolve* e sem desfoque), e
+o texto aparece **sem deslocamento** — o `transform` é pulado e o elemento
+nasce no lugar, como na entrada da seção. Só a opacidade e o desfoque correm,
+que é o que o `MotionConfig` do projeto já permite.
+
+### Contraste
+
+Medido no render, **com o grão ligado** (0,12), pelo método do projeto —
+apagar a tinta do texto, esperar o repaint e fotografar o fundo real atrás do
+glifo, comparando pixel a pixel na mesma coordenada. As duas colunas são os
+dois frames liberados:
+
+| Texto | Piggybank | Conta | Mínimo | |
+|---|---|---|---|---|
+| Título do painel, 48 px (texto grande) | 5,36:1 | 5,15:1 | 3:1 | ✅ |
+| Pílula inativa, 16 px | 5,17:1 | 5,66:1 | 4,5:1 | ✅ |
+| CTA, 16 px (branco sobre `#820ad1`) | 7,21:1 | 7,21:1 | 4,5:1 | ✅ |
+| **Descrição, 16 px** | **4,42:1** | **4,15:1** | 4,5:1 | ⚠️ **reprova** |
+
+A descrição é `Text/text-secondary` (#4b5563) sobre o vidro, e **sem o grão ela
+passa com folga** (5,70:1 no pior pixel do Piggybank). O que derruba é o grão
+da página: ele clareia o texto escuro (a tinta vai de 75 para 100 no canal
+mais escuro) e a folga some. A mediana dos pixels do glifo é 5,37:1 e o
+percentil 5 é 4,63:1 — ou seja, só o pior canto reprova.
+
+**Implementado como o Figma pede** (`#4b5563` é a variable do nó `178:205`).
+A correção não é de tinta: é do grão, que hoje é uma camada de página inteira
+por cima de tudo. A solução correta — grão por seção, **abaixo** do texto — é a
+pendência que já está registrada no `CONTEXTO.md` (decisão 14) e que ainda não
+foi feita.
+
+### Os assets
+
+As artes vieram do Figma em 2048×1112 PNG (3,4 a 3,9 MB cada) e foram
+convertidas para WebP com o `sharp` — o mesmo procedimento dos outros assets do
+projeto:
+
+| Arquivo | PNG | WebP | |
+|---|---|---|---|
+| `piggybank-bg` | 3.495,1 KB | **271,2 KB** | −92,2% |
+| `account-bg` | 3.433,6 KB | **268,0 KB** | −92,2% |
+| `advance-bg` | 3.943,9 KB | **406,0 KB** | −89,7% |
+| `more-bg` | 3.841,9 KB | **324,5 KB** | −91,6% |
+
+A qualidade 88 foi conferida pixel a pixel na região mais desfavorável (o
+gradiente do céu, que é onde o WebP lossy mais aparece): erro médio de 1,57
+níveis por canal, com máximo de 17 — e o que o WebP remove é justamente o
+*dithering* do export do Figma, que é o "grão" falso que o viewer mostra. O
+resultado é mais liso que o PNG, e mais próximo do que o Figma renderiza.
+
+```bash
+node -e "const s=require('sharp');const f=require('fs');\
+for(const n of f.readdirSync('public/images/backgrounds').filter(x=>x.endsWith('.png')))\
+s('public/images/backgrounds/'+n).webp({quality:88,effort:6,smartSubsample:true})\
+.toFile('public/images/backgrounds/'+n.replace(/\.png\$/,'.webp'))"
+```
+
+Os PNGs ficam no repositório como **master**; o que a página serve é o WebP.
+
+### O seletor é o mesmo componente das duas seções
+
+A Cards Section e a Solutions Section usam o **mesmo** `PillTab` e a **mesma**
+regra `.pill-tab`. O que muda entre elas é a paleta — que chega por custom
+property — e agora também a borda, que virou a variante `borda="nenhuma"`.
+
+A paleta, porém, é a **mesma** nas duas: a pílula ativa é `Background/bg-brand`
+(#820ad1) com `Text/text-on-brand` (branco) e as inativas são `Text/text-brand`
+(#820ad1) sem fundo. Conferido no frame da Conta (`181:349`), o único outro
+frame com o desenho legível. Por isso a seção **não declara** nenhuma custom
+property: são os defaults da regra.
+
+### Acessibilidade
+
+- O seletor é uma **tablist** (`role="tablist"` + `role="tab"` +
+  `role="tabpanel"` com `aria-labelledby`), como na Cards Section: trocar de
+  pílula troca o painel inteiro, e é isso que o leitor de tela precisa
+  anunciar.
+- A arte de fundo é decorativa (`alt=""` dentro de um `aria-hidden`).
+- A seção tem `aria-label="Soluções"`, e o `h2` do painel é o título da
+  opção.
+
+### O que o Figma tem e ainda não foi implementado
+
+O frame `178:205` tem um bloco **oculto** chamado `Steps Progress` (nó
+`180:322`): quatro passos de 162,5 px, em x = 840, y = 860, com 10 de gap —
+620 de largura no total, alinhado com o painel. Ele está oculto no desenho, e
+por isso não foi implementado; fica registrado aqui para quando ele aparecer.
+
+---
+
+## Solutions Section — arquivada (o carrossel antigo)
 
 > **Esta seção saiu da página em 2026-10-20.** O resultado não foi aprovado e a
 > ideia é trabalhar a seção de outra forma. O código inteiro está commitado em
@@ -1156,7 +1477,13 @@ sombra.
 > é lintado e não faz parte da build.**
 >
 > O que **ficou** no projeto é o `PillTab` (`components/ui/PillTab.tsx` e a
-> regra `.pill-tab`), que a Cards Section usa.
+> regra `.pill-tab`), que a Cards Section e a Solutions Section nova usam.
+>
+> **O rework já aconteceu:** a seção que está na página hoje é outra coisa —
+> quadro novo (`178:205`), sem janela e sem carrossel. Ver a seção anterior.
+> O que está arquivado aqui é a **versão anterior**, e o nome `solutions.ts` no
+> `src/lib/` já é da implementação nova: trazer esta de volta exige renomear
+> uma das duas.
 
 Figma `Solutions Section - Safe` (nó `144:2`) e `Solutions Section -
 Account` (`151:92`), 1920×1176. Foi a seção que vinha **abaixo** da Cards
@@ -1255,6 +1582,17 @@ badge e o painel no meio da viagem. O clip que importa é o do quadro da
 composição, que é quem recorta a ilustração.
 
 ### Quem interpola o quê
+
+> **Correção de 2026-10-20.** Este trecho afirmava que "o Motion **não**
+> interpola `filter`". **Está errado**, e foi medido de novo na Solutions
+> Section nova: o Motion 14 interpola `filter: "blur(0px)" → "blur(14px)"` sem
+> dificuldade — o `motion-dom` tem um value type `filter`, que é um `complex`.
+> O que provavelmente falhou aqui é a **forma** do valor: as duas pontas
+> precisam ter a mesma estrutura (`blur(0px)` e `blur(14px)`, e não `none` e
+> `blur(14px)`).
+>
+> Na seção nova o `filter` é variante do Motion, e o desfoque de tela cheia
+> roda a **60 fps cravados** durante a troca.
 
 O **transform** e a **opacity** são variantes do Motion, porque o Motion
 interpola os dois. O **filter** é transição de CSS, porque o Motion **não**
@@ -1571,9 +1909,10 @@ movimento foi desenhado aqui:
 7. **Cartão de crédito** — a seção inteira responde ao ponteiro: o cartão
    inclina em 3D e um reflexo viaja com ele, ambos desvanecendo com a distância.
    Ver a seção da Cards Section.
-8. **Fundo da Solutions Section** — a arte dentro da janela segue o ponteiro,
-   com mola, e volta ao repouso quando ele sai. Só a arte se move: os painéis
-   ficam ancorados na janela. Ver a seção da Solutions.
+8. **Fundo da Solutions Section** — na seção **nova**, o seletor e o painel
+   entram por scroll, escalonados. Na versão **arquivada** (o carrossel), a arte
+   dentro da janela seguia o ponteiro, com mola, e voltava ao repouso quando ele
+   saía. Ver as duas seções da Solutions.
 
 ### O corte de movimento reduzido não vem só do `MotionConfig`
 
@@ -1790,8 +2129,11 @@ ponta direita — passa em texto grande, reprova em texto pequeno, e a descriç�
 tem 16 px. Implementado como o Figma pede; a discussão está na seção do
 Ecossystem.
 
-**A Solutions Section não tem nenhuma.** Os cinco textos medem de 6,21:1 a
-6,67:1 com o grão ligado — a tabela está na seção da Solutions.
+- **A Solutions Section (nova) tem uma reprovação, e ela é do grão.** A
+  descrição do painel mede 4,42:1 (Piggybank) e 4,15:1 (Conta) com o grão
+  ligado — e 5,70:1 sem ele. A tinta é a do Figma (`Text/text-secondary`,
+  #4b5563) e ela passa; o que derruba é o grão de página, que clareia o texto
+  escuro. A tabela está na seção da Solutions.
 
 ### Cards Section
 
@@ -1925,10 +2267,11 @@ com `PROVISÓRIO`:
   `aria-disabled`. A virada foi verificada com os quatro, inclusive nos saltos
   que forçam a troca do slot escondido, em Chrome e Firefox, movimento normal e
   reduzido.
-- **A Solutions Section está no primeiro frame** — o `144:2` (Caixinhas) está
-  liberado e as outras três pílulas são botões desativados com aviso para
-  leitor de tela. É decisão de processo, não falta de design: os quatro frames
-  existem no Figma, três deles ocultos.
+- **A Solutions Section está com dois frames liberados** — o `178:205`
+  (Caixinhas) e o `178:262` (Conta) trocam de verdade; as outras duas pílulas
+  são botões desativados com aviso para leitor de tela. É decisão de processo,
+  não falta de design: os quatro frames existem no Figma, dois deles ocultos.
+  (O `144:2` do carrossel antigo é outra seção, e está arquivada.)
 - **Texto do rodapé** com o aviso legal — redigido para este estudo.
 
 Além disso, **não há** números de usuários, taxas, limites, depoimentos nem
@@ -1981,15 +2324,13 @@ redirecionadores — esta página não tem função de cadastro.
   nas dimensões desejadas.
 - **Assets**: os SVGs e as artes foram exportados do Figma e salvos em
   `public/`. Os PNGs dos cartões foram convertidos para WebP (4.370 KB → 341 KB,
-  **−92,2%**). Os quatro fundos da Solutions Section também: 19,4 MB → 736 KB
-  (**−96,3%**), com erro médio de 1,3 nível e sem banding — as gradientes
-  suaves são o caso mais desfavorável para WebP lossy, e foi por isso que a
-  qualidade 86 foi conferida pixel a pixel. O comando:
+  **−92,2%**). As artes da Solutions Section também — as quatro do quadro novo,
+  de 3,4 a 3,9 MB cada, para 268 a 406 KB (**−89,7% a −92,2%**). O comando:
 
   ```bash
   node -e "const s=require('sharp');const f=require('fs');\
   for(const n of f.readdirSync('public/images/backgrounds').filter(x=>x.endsWith('.png')))\
-  s('public/images/backgrounds/'+n).webp({quality:86,effort:6})\
+  s('public/images/backgrounds/'+n).webp({quality:88,effort:6,smartSubsample:true})\
   .toFile('public/images/backgrounds/'+n.replace(/\.png$/,'.webp'))"
   ```
 - **Ícone do app** (`src/app/icon.svg`) é um quadrado placeholder na cor da
@@ -1997,6 +2338,14 @@ redirecionadores — esta página não tem função de cadastro.
 - **Contraste de botões**: `leading-normal` do Tailwind vale 1,5 e deixaria os
   CTAs com 44 px; o Figma usa a altura natural do Montserrat, então usamos
   `leading-[1.25]` (40 px).
+- **Todo CTA do design é `Montserrat:SemiBold`** — "Quero ser Nubank" (nó
+  `14:457`), "Login Empresas" (`14:444`), "Conheça o Cartão Nubank"
+  (`101:183`) e o CTA da Solutions Section (`178:260`). A base do `CtaLink`
+  não declarava o peso, e os botões saíam em **Regular** — mais finos que o
+  desenho, e com a largura errada por causa disso (o texto do Figma foi medido
+  em SemiBold). Uma palavra na base (`font-semibold`) corrige os quatro
+  lugares de uma vez, e é a única alteração de aparência em seções já
+  aprovadas: o peso da fonte do texto do botão.
 - **Auditoria**: `npm audit` reporta 5 vulnerabilidades de severidade alta na
   cadeia `braces → micromatch → fast-glob → eslint-config-next`. São
   dependências de **desenvolvimento** do ESLint e não chegam à build. O
@@ -2007,10 +2356,11 @@ redirecionadores — esta página não tem função de cadastro.
 
 ## Próximos passos
 
-1. **A Solutions Section está arquivada** — o resultado não foi aprovado e a
-   seção saiu da página. O código está em `archive/solutions-section/`, e o
-   rework vem quando você quiser atacá-lo. O próximo bloco do projeto é a
-   navegação.
+1. **Liberar o terceiro frame da Solutions Section** (o `178:281`,
+   Empréstimos). É só preencher o `showcase` em `src/lib/solutions.ts` — a
+   troca, o *pull* de foco da arte e a emergência do texto já estão prontos e
+   medidas. Enquanto isso, o bloco `Steps Progress` (nó `180:322`, oculto no
+   Figma) continua sem implementação.
 2. Decidir as quatro reprovações de contraste da Cards Section, que são **do
    design** e estão implementadas como o Figma pede: nº 12 (pílula inativa do
    Nubank, 4,40:1), nº 14 (pílula inativa do Croma, 2,44:1), nº 15 (nome no

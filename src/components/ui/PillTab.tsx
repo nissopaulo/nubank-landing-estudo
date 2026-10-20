@@ -33,6 +33,18 @@ import type { ReactNode } from "react";
  *
  * O UA stylesheet põe `cursor: default` em `<button>` e o preflight do
  * Tailwind v4 não desfaz — a mesma razão do `.eco-card`.
+ *
+ * ## A pílula pode não ter borda, e isso muda a caixa
+ *
+ * A Cards Section usa a pílula **contornada** — a inativa tem 1 px de borda da
+ * marca. A navegação da Solutions Section usa a pílula **sem borda**: no
+ * Figma (`181:349`) a inativa é só o texto na cor da marca.
+ *
+ * Não é estilo, é a diferença entre os dois desenhos. E a borda não é
+ * detalhe de 1 px: ela **entra na caixa** do CSS, e por isso o padding da
+ * pílula com borda é 17/9 e o da sem borda é 18/10 — as duas dão a mesma
+ * caixa do Figma, e o texto fica a 18 da borda nas duas. Ver a regra
+ * `.pill-tab[data-borda="nenhuma"]` no `globals.css`.
  */
 type PillTabProps = {
   /** Rótulo da pílula. */
@@ -47,6 +59,14 @@ type PillTabProps = {
    * não faz nada não existe em silêncio**.
    */
   liberado: boolean;
+  /**
+   * A pílula tem borda?
+   *
+   * `"solida"` (padrão) é a da Cards Section; `"nenhuma"` é a da navegação da
+   * Solutions Section. A diferença é do desenho, não uma escolha de estilo —
+   * e ela muda a caixa, porque o `border` do CSS sempre soma.
+   */
+  borda?: "solida" | "nenhuma";
   /** `id` do botão, para o `aria-labelledby` do painel. */
   id?: string;
   /** `id` do painel que esta pílula controla. */
@@ -61,6 +81,7 @@ export function PillTab({
   label,
   selected,
   liberado,
+  borda = "solida",
   id,
   controls,
   onSelect,
@@ -76,6 +97,7 @@ export function PillTab({
       aria-controls={controls}
       onClick={liberado ? onSelect : undefined}
       data-state={selected ? "active" : "idle"}
+      data-borda={borda}
       className="pill-tab shrink-0 whitespace-nowrap rounded-[100px] font-display text-[16px] font-semibold leading-[1.25]"
     >
       {label}

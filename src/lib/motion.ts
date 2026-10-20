@@ -334,114 +334,90 @@ export const CARD_FLIP = {
 } as const;
 
 /**
- * A arte de fundo da Solutions Section responde ao ponteiro.
+ * A troca de opção da Solutions Section.
  *
- * ## A amplitude não é livre — a janela corta a arte
+ * ## A arte é a seção inteira
  *
- * No Figma a imagem **não** é dimensionada pela janela: ela é maior e fica
- * deslocada, e é a janela que recorta. Em `144:2` a arte ocupa 1882,348 ×
- * 1020,567 a partir de (−289, −118) dentro de uma janela de 1520 × 720.
+ * A Solutions Section (nó `178:205`) não tem janela: a arte **é** o fundo,
+ * sangrando pelas bordas, e o seletor e o painel flutuam por cima dela. Trocar
+ * de opção troca a cena inteira, e a troca é feita com **duas camadas** — a
+ * que sai e a que entra — porque `background-image` não é animável.
  *
- * A margem disponível é, portanto, assimétrica, e é ela que limita o
- * deslocamento:
+ * ## O gesto é "a cena perde o foco e a outra chega"
  *
- * | direção | quanto a arte aguenta antes de appear a borda |
- * |---|---|
- * | para a esquerda | **73,348 px** (a borda direita encosta na janela) |
- * | para a direita   | 289 px |
- * | para cima       | 182,567 px |
- * | para baixo      | 118 px |
+ * As duas camadas não fazem a mesma coisa, e é essa assimetria que dá a
+ * sensação de profundidade em vez de dissolve:
  *
- * A amplitude horizontal de 14 px usa 19% da folga mais apertada. Acima de
- * 73 px a borda direita da arte apareceria — e é por isso que o valor está
- * aqui, num lugar só.
+ * | camada | opacidade | escala | desfoque |
+ * |---|---|---|---|
+ * | que sai | 1 → 0 | — | 0 → 14 px |
+ * | que entra | 0 → 1 | 1,03 → 1 | — |
  *
- * ## O alcance sumiu, e o motivo é o escopo
+ * A que sai **desfoca** (é a parte "soft" do gesto) e a que entra **assenta**
+ * (é a parte "dinâmica"). E a que entra nunca fica desfocada: em qualquer
+ * instante há uma cena nítida na tela, e o que se vê no meio da troca é a cena
+ * nova emergindo de baixo da cena velha — e não duas cenas misturadas.
  *
- * A primeira versão ouvia o ponteiro na **seção**, com a força morrendo 240 px
- * depois da borda da janela. O ouvinte agora está na **janela**, que é o que
- * limita o efeito àquela tela: passar pelo título ou pelas pílulas não move
- * a arte.
+ * A escala de 3% na entrada é pequena de propósito: a arte tem 1,84173 de
+ * proporção e a caixa 1,77778, então o `cover` já transborda 34,6 px de cada
+ * lado. Mais que isso e a arte "pula" no enquadramento.
  *
- * Com o ouvinte na própria janela, o ponteiro nunca está fora dela quando o
- * handler roda — e um `reach` seria um número morto. O que modula a resposta
- * é só a direção, que cresce do centro para as bordas.
+ * ## A curva é simétrica, e não a enfática
  *
- * ## A mola é o que faz o movimento parecer vivo
- *
- * Sem mola a arte grudaria no cursor, como um adesivo. Com mola, ela chega
- * depois e volta antes — e é esse atraso entre o gesto e a resposta que dá a
- * sensação de objeto pesado.
- *
- * O amortecimento é ligeiramente **superamortecido** (ζ ≈ 1,12): sem overshoot,
- * porque uma ilustração grande que oscila parece emperra e não viva.
- *
- * ## O sentido é o do pedido
- *
- * A arte vai **para onde o ponteiro está**, e o conteúdo dela junto. O sinal
- * contrário — o parallax clássico, em que a cena recua do cursor — é trocar um
- * sinal em `use-background-parallax.ts`. Foi medido e olhado nos dois
- * sentidos antes de escolher.
+ * `cubic-bezier(0.4, 0, 0.2, 1)` — a curva padrão do Material — começa de
+ * leve, acelera no meio e assenta de leve. A enfática (0,32 · 0,72 · 0 · 1) é
+ * rápida no começo: ela resolveria o gesto em um quinto do tempo e depois
+ * fingiria que continua, e num *dissolve* de tela cheia isso aparece como a
+ * cena "travando" no fim.
  */
-export const BACKGROUND_PARALLAX = {
-  /**
-   * Amplitude horizontal máxima, em px.
-   *
-   * **Foi reduzida duas vezes: 44 → 26 → 14.** O movimento precisa existir,
-   * mas a sensação pedida foi sempre de *suavidade*, não de resposta: 44 px
-   * numa janela de 1520 passava de "a arte acompanha o mouse" para "a arte está
-   * sendo arrastada", e 26 ainda era mais do que o olho seguia sem notar.
-   */
-  amplitudeX: 14,
-  /**
-   * Amplitude vertical máxima, em px.
-   *
-   * Reduzida na mesma proporção da horizontal: 28 → 16 → 9.
-   */
-  amplitudeY: 9,
-  /**
-   * A mola ficou **mais lenta** a cada ajuste.
-   *
-   * `stiffness` 120 → 90 → 70 deixa a arte demorar mais a chegar, e a `mass`
-   * 0,8 → 0,9 aumenta a inércia. O `damping` acompanha para manter o
-   * amortecimento relativo: ζ ≈ 1,32, ou seja, bem amortecida e **sem
-   * overshoot** — uma ilustração grande que oscila parece emperra e não viva.
-   */
-  spring: { stiffness: 70, damping: 21, mass: 0.9 },
+export const SOLUTIONS_ART = {
+  /** Duração da troca da arte, em segundos. */
+  duration: 0.7,
+  /** Curva da troca. */
+  ease: [0.4, 0, 0.2, 1] as [number, number, number, number],
+  /** De quanto a arte que entra vem "acima". */
+  scale: 1.03,
+  /** Quão desfocada a arte que sai fica antes de sumir, em px. */
+  blur: 14,
 } as const;
 
 /**
- * A troca de opção da Solutions Section.
+ * O texto do painel, a cada troca de opção.
  *
- * ## A seção é um carrossel, e a arte sai da borda para a janela
+ * ## Ele **repete** a cada troca
  *
- * Quando a opção troca, **tudo anda na mesma direção**: a arte que estava na
- * prévia da direita entra na janela, a que estava na janela sai para a prévia
- * da esquerda, e uma nova entra pela direita. É o gesto de um carrossel, e é
- * o que faz a troca ser lida como "a imagem saiu de lá e veio para cá" em vez
- * de "o conteúdo foi trocado".
+ * Não é a entrada da seção — é a da opção. E é o mesmo pedido de sempre: o
+ * texto "surge" de novo a cada clique, e o movimento é o do resto da landing
+ * (`revealUp`), com dois acréscimos.
  *
- * ## O deslocamento é curto, e por um motivo geométrico
+ * ## Sobe, aparece e sai do foco
  *
- * 48 px é o maior deslocamento que a prévia da direita aguenta sem invadir a
- * janela: a prévia começa em 1784,556 e a janela termina em 1720, e a folga
- * é de 64,56 px. Passar dela faria a prévia desfocada invadir a arte nítida.
+ * O `revealUp` de sempre (sobe 24 px e aparece) é a base. Aqui ele ganha um
+ * **desfoque que se resolve**: o texto nasce desfocado e vai ficando nítido
+ * enquanto sobe. É o que faz o "surgir" ser suave em vez de um corte com
+ * fade — o olho percebe a cena entrando em foco, e não o texto acendendo.
  *
- * ## A curva é a enfática
+ * O texto da saída é o inverso — sobe 8 px e some em 0,18 s — e é rápido de
+ * propósito: a cena nova já está entrando, e um texto que demora a sair
+ * segura a troca.
  *
- * A mesma do resto do projeto em trocas de conteúdo: ela é rápida no começo
- * (o clique responde na hora) e chega tangenciando o fim (sem corte seco).
+ * ## A opacidade sai antes do resto
+ *
+ * `mode="wait"`: o texto velho termina de sair antes do novo começar. Sem
+ * isso os dois textos ficam sobrepostos no mesmo quadro de 584 × 200 — que é
+ * exatamente o defeito que a Cards Section já teve.
  */
-export const SOLUTIONS_SLIDE = {
-  /** Distância do deslocamento horizontal, em px. */
-  distance: 48,
-  /** Duração do deslize da arte, em segundos. */
-  duration: 0.6,
-  ease: EASE_EMPHASIZED,
-  /** Duração do cross-fade das prévias, em segundos. */
-  fade: 0.4,
-  /** Duração da saída do painel de texto, em segundos. */
-  textExit: 0.22,
+export const SOLUTIONS_TEXT = {
+  /** Duração da entrada do texto, em segundos. */
+  enter: 0.55,
+  /** Duração da saída do texto, em segundos. */
+  exit: 0.18,
+  /** Curva da entrada. */
+  ease: EASE_OUT_EXPO,
+  /** Deslocamento de entrada, em px. */
+  y: 18,
+  /** Desfoque de entrada, em px. */
+  blur: 6,
 } as const;
 
 /**

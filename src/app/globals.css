@@ -55,6 +55,16 @@
   --color-nu-neutral-800: #1c1c1e;
   --color-nu-text-primary: #111111; /* Text/text-primary */
   --color-nu-text-tertiary: #6b7280; /* Text/text-tertiary */
+  /*
+   * Text/text-secondary (#4b5563) — a tinta da descrição do painel da
+   * Solutions Section (nó `178:257`).
+   *
+   * É a única variable nova que o nó `178:205` traz, e ela é **nova de
+   * verdade**: não é o `Text/text-tertiary` (#6b7280) que já existia, nem
+   * nenhum dos neutros do design system. O Figma tem as duas, com nomes
+   * diferentes e valores diferentes.
+   */
+  --color-nu-text-secondary: #4b5563;
 
   /* Action */
   --color-nu-action-surface: #f3e8ff; /* Action/action-secondary */
@@ -870,6 +880,28 @@
 }
 .pill-tab[aria-disabled="true"] {
   cursor: not-allowed;
+}
+
+/*
+ * A pílula **sem borda** — a da navegação da Solutions Section.
+ *
+ * A Cards Section usa a pílula contornada; a navegação da Solutions Section
+ * (Figma `181:349`) usa a pílula sem contorno: a inativa é só o texto na cor
+ * da marca. A diferença é do desenho.
+ *
+ * E a borda não é detalhe de 1 px: ela **entra na caixa** do CSS, e por isso o
+ * padding muda junto. A pílula com borda usa 17/9 (9 + 20 + 9 + 1 = 40 de
+ * altura, 18 do texto à borda); a sem borda usa 18/10 (10 + 20 + 10 = 40, 18 do
+ * texto à borda). As duas dão a mesma caixa do Figma — 514×40 no caso da Cards
+ * Section, 116×40 no caso da pílula "Caixinhas".
+ *
+ * Esta regra vem **depois** da da pílula ativa, e é o que faz valer: as duas
+ * têm a mesma especificidade (`0,2,0`) e a da ativa põe `border-width: 0`, o
+ * que é o mesmo resultado de `border: none`.
+ */
+.pill-tab[data-borda="nenhuma"] {
+  border: none;
+  padding: 10px 18px;
 }
 
 /**
