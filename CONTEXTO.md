@@ -169,6 +169,15 @@ provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
     cima e 118 px para baixo. Os 44 px usados são 60% da folga mais apertada.
     O sinal oposto (o parallax clássico, em que a cena recua do cursor) é
     trocar um sinal em `use-background-parallax.ts`.
+17. **O seletor de opções é o mesmo componente nas duas seções.** A Cards
+    Section e a Solutions Section têm o mesmo seletor, e agora são o mesmo
+    código: `components/ui/PillTab.tsx` + a regra `.pill-tab`. O que muda
+    entre elas é só a paleta, e ela chega por custom property — as duas seções
+    usam os mesmos nomes (`--pill-on-bg`, `--pill-on-ink`, `--pill-idle-ink`,
+    `--pill-idle-border`), e a Solutions usa os defaults, que são a cor da
+    marca. Unificar resolveu a pendência nº 17: a compensação do padding vale
+    para as duas, e as pílulas da Cards Section passaram de 520,33 × 42 para
+    512,33 × 40 — o Figma dá 514 × 40.
 
 ---
 
@@ -299,7 +308,7 @@ Escrever a mensagem num arquivo e usar `git commit -F <arquivo>`.
 | 14 | **A pílula inativa do Croma reprova AA em texto pequeno** — 2,59:1 calculado direto do gradiente do design, 2,44:1 com o grão. É a pior reprovação do projeto: `#8f7f64` sobre o creme de `rgb(217,210,196)` na altura das pílulas. Implementado como o Figma pede; a correção é de design | `card-showcase.ts` |
 | 15 | **O nome no cartão do Croma reprova AA em texto pequeno** — 4,26:1 no design, 4,12:1 com o grão. `Purple/800` sobre o gradiente do cartão. O pior ponto é a **base** do texto, onde o gradiente já passou da parada `bfb299`. Implementado como o Figma pede | `card-showcase.ts` |
 | 16 | **O nome em gradiente do Ultravioleta reprova AA em texto pequeno — 1,93:1, a pior reprovação do projeto.** O texto é `background-clip: text` indo de `Neutral/400` (#9ca3af) a `Neutral/100` (#f3f4f6), e a primeira parada vale 0,81826% do gradiente — está quase no fim da rampa, sobre a parte mais clara do cartão. O par medido é #9ca3af sobre rgb(159,62,228). O número é conservador por construção: a sonda emparelha a parada mais escura com o pior pixel; a outra ponta, #f3f4f6 sólido, daria 4,45:1 contra o mesmo fundo — **as duas reprovam**. Implementado como o Figma pede | `card-showcase.ts` |
-| 17 | **As pílulas da Cards Section estão 6,33 px mais largas e 2 px mais altas que o Figma.** O Figma dá `101:191` com **514 × 40** e o projeto entrega **520,33 × 42**. A causa é mecânica e está medida: o auto-layout do Figma **exclui o traço do tamanho do quadro** (`18 + 66 + 18 = 102` no `101:186`), e o `border` do CSS **sempre** soma na caixa. A correção é a mesma da Solutions Section — compensar o padding pela metade da borda (`px-[17px] py-[9px]` em vez de 18/10). **Não foi aplicado aqui** para não mexer numa seção já aprovada no meio desta | `.cc-tab` no `globals.css` |
+| 17 | ~~As pílulas da Cards Section estão 6,33 px mais largas e 2 px mais altas que o Figma.~~ — **resolvido 2026-10-20**, com a unificação do seletor das duas seções. O `PillTab` compartilhado compensa o padding pela metade da borda, e as pílulas passaram de 520,33 × 42 para **512,33 × 40** (o Figma dá 514 × 40; a diferença que resta é a métrica do texto) | `components/ui/PillTab.tsx` |
 
 **No Figma hoje existem dez frames visíveis** — `Hero Section` (`14:446`), os
 **quatro** da Ecossystem (`52:3` Nubank, `76:3` Croma, `77:40` Ultravioleta,
@@ -2606,3 +2615,83 @@ WebP é só o formato de entrega, como o resto do projeto. A qualidade 86 foi
 mantida depois de medir as alternativas: o erro médio é de 1,37 nível em
 1882 × 1020 (0,5%), e subir para 92 só ganha 0,2 de MAE por 60% a mais de
 peso. Lossless daria 0,47 de MAE por 2,8 MB (12 MB no total), o que não compensa.
+
+### 2026-10-20 — parallax mais suave, navigation para dentro do Title, e o seletor unificado
+
+Três pedidos numa sessão:
+
+1. **Diminuir a intensidade do movimento do fundo** — a arte estava se mexendo
+   demais.
+2. **O usuário mudou a posição do Navigation no Figma** — e pediu a mudança
+   junto.
+3. **Unificar o seletor de pílulas com o da Cards Section.**
+
+#### 1. O parallax, mais suave
+
+Amplitude de 44 × 28 para **26 × 16** (41% a menos) e mola mais lenta:
+`stiffness` 120 → 90 e `mass` 0,8 → 0,9, com o `damping` ajustado para
+manter o mesmo amortecimento relativo (ζ ≈ 1,11, sem overshoot).
+
+A amplitude é limitada pela folga da arte dentro da janela, e a folga é
+assimétrica — **73,348 px** para a esquerda, 289 para a direita, 182,567 para
+cima e 118 para baixo. Os 26 px usam 35% da folga mais apertada. Verificado
+depois: ±25,7 e ±15,7 medidos, e a arte **cobre a janela em todos os
+estados**.
+
+#### 2. O Navigation virou filho do Title
+
+No Figma, `151:83` (Navigation) deixou de ser irmão do `Main Content` e passou
+a ser filho do `Title` (`150:48`), em `justify-between`. O efeito é
+geométrico e não precisa de posicionamento absoluto: **902 = 1520 − 618**, ou
+seja, o seletor sai flush com a borda direita da coluna de conteúdo, alinhado
+pela base com o título.
+
+Medido: nav em x **1104,27** com a borda direita em **1720** (o Figma diz
+1102 — a diferença de 2,27 px é a métrica do texto), y 216,15 (o Figma diz
+216).
+
+A seção encolheu: **1316,16 → 1176,16**, porque o seletor saiu do pé dela.
+
+#### 3. O seletor virou um componente só
+
+`components/ui/PillTab.tsx` + a regra `.pill-tab` no `globals.css`, agora
+usados pelas duas seções. A paleta continua chegando por custom property, e
+os nomes foram unificados (`--pill-*` em vez de `--cc-pill-*`); a Solutions
+Section usa os defaults, que são a cor da marca.
+
+**A consequência boa: a pendência nº 17 foi resolvida de passagem.** Com a
+compensação do padding — a pílula com borda usa 17 e a sem borda usa 18 — as
+pílulas da Cards Section passaram de 520,33 × 42 para **512,33 × 40**, e o
+Figma dá 514 × 40.
+
+E a consequência de **não** poder herdar o comportamento antigo: a pílula
+ativa da Cards usava uma borda **transparente** para não "pular" de tamanho.
+Com a compensação, a pílula ativa precisa é a que **não tem** borda — com a
+borda transparente ela ocuparia 1 px a mais e ficaria 2 px mais larga que a
+inativa. A "mesma caixa nos dois estados" continua valendo, e agora vale pela
+mesma razão nas duas seções.
+
+#### Verificação
+
+Chrome e Firefox. Geometria da Solutions Section: seção 1920 × 1176,16;
+janela 200/356,15; badge 1530/398,15 (147,27 × 48); painel 1294/799,15
+(384 × 235,09); prévia 1784,56/406,15; seletor 1104,27/216,15 (615,73 × 40).
+
+Cards Section: seletor em **703,83**, **512,33 × 40** (o Figma dá 703 e
+514 × 40).
+
+Virada da Cards Section conferida depois do refactor: repouso com a frente
+pintada, clique no Croma com a face de verso pintada no fim, volta ao Nubank
+com o ângulo zerado, e o `tabpanel` trocando de id. A pílula desabilitada da
+Solutions Section não muda nada ao ser clicada.
+
+Sob `prefers-reduced-motion`, o deslocamento da arte é 0,00 com o ponteiro
+na borda da janela.
+
+#### Nota de método
+
+A unificação podia ter sido feita **depois**, e esse foi o pedido que o
+usuário fez ("é igual ao que tem no cards"). O que a deixou segura foi ter
+medido a Cards Section **antes** de mexer, para saber o que estava errado:
+520,33 × 42 contra 514 × 40 é o sintoma, e a causa é a mesma do badge. Sem
+esse número, a unificação teria sido um ato de fé.

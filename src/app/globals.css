@@ -794,43 +794,54 @@
 }
 
 /*
- * Pílulas do seletor.
+ * Pílulas de seletor.
  *
- * As cores são **por pilar**, e por isso chegam por custom property em vez de
- * vir em classe: no Nubank a pílula ativa é `Action/action-primary` com texto
- * branco, e no Croma é `#eeece9` com texto `Text/text-brand`. Com
- * `#8f7f64` — que não é token — nas inativas do Croma, não há classe a escrever:
- * o valor vem do Figma e entra por `style`.
+ * **O mesmo componente nas duas seções** — a Cards Section e a Solutions
+ * Section usam esta regra e o `PillTab` do `components/ui`. As cores são **por
+ * opção**, e por isso chegam por custom property em vez de vir em classe: no
+ * Nubank a pílula ativa é `Action/action-primary` com texto branco, e no Croma
+ * é `#eeece9` com texto `Text/text-brand`. Com `#8f7f64` — que não é token —
+ * nas inativas do Croma, não há classe a escrever: o valor vem do Figma e
+ * entra por `style`.
  *
- * O `color-mix` do hover usa a tinta do próprio pilar pelo mesmo motivo.
+ * O `color-mix` do hover usa a tinta da própria opção pelo mesmo motivo.
  *
  * O cursor precisa da regra pelo mesmo motivo do `.eco-card`: o UA stylesheet
  * põe `cursor: default` em `<button>` e o preflight do Tailwind v4 não desfaz.
+ *
+ * **O padding compensa a borda.** O auto-layout do Figma exclui o traço do
+ * tamanho do quadro — na pílula `101:186`, `18 + 66 + 18 = 102` e
+ * `10 + 20 + 10 = 40` — e o `border` do CSS sempre entra na caixa. Daí a
+ * pílula com borda usar 17 e a sem borda usar 18: as duas dão a mesma caixa e
+ * o texto fica a 18 da borda nas duas, como no design. Ver a decisão 15.
  */
-.cc-tab {
+.pill-tab {
   cursor: pointer;
-  border: 1px solid var(--cc-pill-idle-border, var(--color-nu-brand));
-  color: var(--cc-pill-idle-ink, var(--color-nu-brand));
+  padding: 9px 17px;
+  border: 1px solid var(--pill-idle-border, var(--color-nu-brand));
+  color: var(--pill-idle-ink, var(--color-nu-brand));
   transition:
     background-color 200ms ease-out,
     color 200ms ease-out,
     border-color 200ms ease-out;
 }
-.cc-tab[data-state="active"] {
-  background-color: var(--cc-pill-on-bg, var(--color-nu-brand));
-  color: var(--cc-pill-on-ink, var(--color-nu-action-text));
-  /* A ativa não tem borda nos dois frames — a caixa é a mesma nos dois estados,
-     então a borda transparente mantém a pílula do mesmo tamanho e não "pula". */
-  border-color: transparent;
+.pill-tab[data-state="active"] {
+  padding: 10px 18px;
+  /* A ativa **não tem** borda, e não uma borda transparente: com a borda
+     transparente ela ocuparia 1 px a mais e ficaria 2 px mais larga que a
+     inativa. O padding acima compensa para as duas terem a mesma caixa. */
+  border-width: 0;
+  background-color: var(--pill-on-bg, var(--color-nu-brand));
+  color: var(--pill-on-ink, var(--color-nu-action-text));
 }
-.cc-tab[data-state="idle"]:hover {
+.pill-tab[data-state="idle"]:hover {
   background-color: color-mix(
     in srgb,
-    var(--cc-pill-idle-ink, var(--color-nu-brand)) 12%,
+    var(--pill-idle-ink, var(--color-nu-brand)) 12%,
     transparent
   );
 }
-.cc-tab[aria-disabled="true"] {
+.pill-tab[aria-disabled="true"] {
   cursor: not-allowed;
 }
 

@@ -352,7 +352,7 @@ export const CARD_FLIP = {
  * | para cima       | 182,567 px |
  * | para baixo      | 118 px |
  *
- * A amplitude horizontal de 44 px usa 60% da folga mais apertada. Acima de
+ * A amplitude horizontal de 26 px usa 35% da folga mais apertada. Acima de
  * 73 px a borda direita da arte apareceria — e é por isso que o valor está
  * aqui, num lugar só.
  *
@@ -373,13 +373,32 @@ export const CARD_FLIP = {
  * sentidos antes de escolher.
  */
 export const BACKGROUND_PARALLAX = {
-  /** Amplitude horizontal máxima, em px. */
-  amplitudeX: 44,
-  /** Amplitude vertical máxima, em px. */
-  amplitudeY: 28,
+  /**
+   * Amplitude horizontal máxima, em px.
+   *
+   * **Foi reduzida de 44 para 26.** O movimento precisa existir, mas a
+   * ilustração é grande e a sensação pedida era de *suavidade*, não de
+   * resposta: 44 px numa janela de 1520 já passava de "a arte acompanha o
+   * mouse" para "a arte está sendo arrastada".
+   */
+  amplitudeX: 26,
+  /**
+   * Amplitude vertical máxima, em px.
+   *
+   * Reduzida de 28 para 16, na mesma proporção da horizontal.
+   */
+  amplitudeY: 16,
   /** Distância da borda da janela em que a resposta morre, em px. */
   reach: 240,
-  spring: { stiffness: 120, damping: 22, mass: 0.8 },
+  /**
+   * A mola ficou **mais lenta** também, e não só com menos amplitude.
+   *
+   * `stiffness` 120 → 90 deixa a arte demorar um pouco mais a chegar, e a
+   * `mass` 0,8 → 0,9 aumenta a inércia. O damping acompanhou (22 → 20) para
+   * manter o mesmo amortecimento relativo: ζ ≈ 1,11, ou seja, ainda sem
+   * overshoot — uma ilustração grande que oscila parece emperra e não viva.
+   */
+  spring: { stiffness: 90, damping: 20, mass: 0.9 },
 } as const;
 
 /**

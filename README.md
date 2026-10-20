@@ -82,6 +82,7 @@ src/
       NoiseOverlay.tsx grão de textura sobre a página inteira
     ui/
       CtaLink.tsx      botão/link de CTA
+      PillTab.tsx      pílula de seletor (Cards e Solutions Sections)
     motion-provider.tsx MotionConfig reducedMotion="user"
   lib/
     hero-cards.ts      geometria dos cards lida do Figma
@@ -1097,7 +1098,7 @@ Geometria lida do DOM (`getBoundingClientRect`), em coordenadas do frame:
 | Marca `nu` | 86,956 × 47,432 | idem |
 | Nome no cartão | y ≈ 192,5 | 192,27 |
 | Título | 64 px · altura 78,08 | idem |
-| Seletor | 4 pílulas, gap 24, py 10 | idem |
+| Seletor | 4 pílulas, gap 24, 514 × 40 | **512,33 × 40** |
 
 Os 2,08 px a mais na seção não são de layout: vêm das três caixas de texto em
 que o Figma usa `leading: normal` e o projeto usa `leading-[1.25]` — a altura
@@ -1184,7 +1185,12 @@ O Figma posiciona as peças em três referenciais distintos:
 |---|---|---|
 | badge e painel | `Main Content` (`144:3`) | mesma largura da janela, 256 px acima |
 | prévia desfocada | a **seção** | é irmã do `Main Content`, não filha |
-| seletor de pílulas | o fluxo da seção | centralizado, não posicionado |
+| seletor de pílulas | o `Title` (`150:48`) | `justify-between`: flush à direita |
+
+**O seletor virou filho do `Title`** — e é por isso que ele sai em x = 902:
+1520 − 618, ou seja, flush com a borda direita da coluna de conteúdo. Antes ele
+era irmão do `Main Content`, no pé da seção, e a seção tinha 1316 de altura;
+agora tem 1176.
 
 O badge e o painel são posicionados **pela janela**, e não pelo `Main Content`:
 a janela tem a mesma largura e começa 256 px mais abaixo, então `(1330, 298)`
@@ -1265,10 +1271,10 @@ de "cartão inteiro mexendo".
 
 | | valor | por quê |
 |---|---|---|
-| amplitude horizontal | 44 px | 60% da folga mais apertada da arte |
-| amplitude vertical | 28 px | |
+| amplitude horizontal | 26 px | era 44 — a sensação pedida era de suavidade, não de resposta |
+| amplitude vertical | 16 px | era 28, na mesma proporção |
 | alcance (`reach`) | 240 px | a resposta morre 240 px depois da borda da janela |
-| mola | `stiffness 120 / damping 22 / mass 0.8` | ζ ≈ 1,12, sem overshoot |
+| mola | `stiffness 90 / damping 20 / mass 0.9` | ζ ≈ 1,11, sem overshoot, e mais lenta |
 
 **A amplitude não é livre.** No Figma a arte **não** é dimensionada pela
 janela: ela é maior e deslocada, e é a janela que recorta. Em `144:2` a arte
@@ -1282,7 +1288,7 @@ ocupa 1882,348 × 1020,567 a partir de (−289, −118) dentro de uma janela de
 | para cima | 182,567 px |
 | para baixo | 118 px |
 
-Os 44 px usam 60% da folga mais apertada. **Acima de 73 px a borda direita da
+Os 26 px usam 35% da folga mais apertada. **Acima de 73 px a borda direita da
 arte apareceria** — e é por isso que o número mora num lugar só.
 
 **O sentido é o do pedido:** a arte vai *para onde* o ponteiro está, e o
@@ -1297,20 +1303,39 @@ de "segue".
 | Ponteiro | `x` | `y` |
 |---|---|---|
 | centro da janela | 0 | 0 |
-| borda esquerda | −43,7 | 0 |
-| borda direita | +43,7 | 0 |
-| borda de cima | 0 | −27,7 |
-| 120 px acima da janela | 0 | −14,0 (força 0,5) |
+| borda esquerda | −25,7 | 0 |
+| borda direita | +25,6 | 0 |
+| borda de cima | 0 | −15,7 |
+| 120 px acima da janela | 0 | −8,0 (força 0,5) |
 | 240 px acima | 0 | 0 (a resposta morreu) |
 
 E o deslocamento do **conteúdo** foi conferido por correlação cruzada entre
-duas capturas: 84,52 px entre a ponta esquerda e a ponta direita da janela —
-exatamente o dobro da amplitude, o que confirma que a arte e o que está
-pintado nela andam juntos.
+duas capturas: 84,52 px entre a ponta esquerda e a ponta direita da janela, com
+a amplitude de 44 px — exatamente o dobro, o que confirma que a arte e o que
+está pintado nela andam juntos.
 
 Sob `prefers-reduced-motion` o deslocamento é **0,00** com o ponteiro na borda
 da janela. O corte é no *handler* e não no `MotionConfig`, porque isto é um
 motion value e não uma animação.
+
+### O seletor é o mesmo componente das duas seções
+
+A Cards Section e a Solutions Section têm **o mesmo seletor** — quatro pílulas
+que escolhem uma opção e trocam o conteúdo da seção. E agora são literalmente
+o mesmo código: `components/ui/PillTab.tsx` e a regra `.pill-tab` no
+`globals.css`.
+
+O que muda entre as duas seções é só a **paleta**, e ela chega por custom
+property: no Nubank a pílula ativa é `Action/action-primary` com texto branco, e
+no Croma é `#eeece9` com texto `Text/text-brand`. Com `#8f7f64` — que não é
+token — nas inativas do Croma, não há classe a escrever: o valor vem do Figma e
+entra por `style`. A Solutions Section usa os **defaults** (a cor da marca), e
+por isso não declara nenhuma.
+
+Unificar as duas resolveu também a **pendência nº 17**: com a compensação do
+padding, as pílulas da Cards Section passaram de 520,33 × 42 para
+**512,33 × 40** — o Figma dá 514 × 40, e a diferença que resta é a métrica do
+texto.
 
 ### Fidelidade medida contra o frame `144:2`
 
@@ -1319,14 +1344,14 @@ nos dois motores:
 
 | | Figma | Chrome | Firefox |
 |---|---|---|---|
-| Seção | 1920 × 1316 | 1920 × **1316,16** | 1920 × **1316,17** |
+| Seção | 1920 × 1176 | 1920 × **1176,16** | idem |
 | Título | x 200 · y 100 · 156 | idem (+0,16 de altura) | idem |
 | Janela da imagem | x 200 · y 356 · 1520×720 | **200 · 356,15 · 1520×720** | **200 · 356,17** |
 | Badge | x 1530 · y 398 · 148×48 | **1530 · 398,15 · 147,27×48** | **1530 · 398,17 · 147,25×48** |
 | Painel de texto | x 1294 · y 799 · 384×235 | **1294 · 799,15 · 384×235,09** | **1294 · 799,17 · 384×235,1** |
 | CTA (relativo ao painel) | x 42 · y 183 · 118×20 | **42 · 183,1 · 117,25×20** | idem |
 | Prévia | x 1784,56 · y 406 · 1308,889×620 | **1784,56 · 406,15 · 1308,88×620** | **1784,57** |
-| Seletor | x 651 · y 1176 · 618×40 | **652,13 · 1176,15 · 615,73×40** | **652,18 · 615,63** |
+| Seletor | x 902 (no Title) · y 116 · 618×40 | **x 1104,27 · y 216,15 · 615,73×40** | idem |
 | Pílulas | 116 / 129 / 154 / 147 | 115,41 / 128,83 / 153,36 / 146,14 | idem |
 | Imagem (relativo à janela) | −289 · −118 · 1882,348×1020,567 | **−89 · −118 · 1882,34×1020,56** | idem |
 
@@ -1817,18 +1842,14 @@ redirecionadores — esta página não tem função de cadastro.
 1. **A Solutions Section está no primeiro frame** — o `144:2` (Caixinhas) está
    liberado e verificado. O próximo bloco é liberar o `151:92` (Conta e Pix), e
    o preenchimento é o campo `active` em `lib/solutions.ts`.
-2. Corrigir o desvio de traço das pílulas da Cards Section (nº 17): o Figma dá
-   514 × 40 e o projeto entrega 520,33 × 42, porque o `border` do CSS soma na
-   caixa e o traço do Figma não. A correção é a mesma da Solutions Section —
-   compensar o padding pela metade da borda.
-3. Decidir as quatro reprovações de contraste da Cards Section, que são **do
+2. Decidir as quatro reprovações de contraste da Cards Section, que são **do
    design** e estão implementadas como o Figma pede: nº 12 (pílula inativa do
    Nubank, 4,40:1), nº 14 (pílula inativa do Croma, 2,44:1), nº 15 (nome no
    cartão do Croma, 4,12:1) e nº 16 (nome em gradiente do Ultravioleta, 1,93:1 —
    a pior do projeto).
-4. Decidir o que fazer com o contraste da descrição do Croma (3,48:1 em 16 px) —
+3. Decidir o que fazer com o contraste da descrição do Croma (3,48:1 em 16 px) —
    hoje segue o Figma, e é o único texto do Ecossystem que não passa em AA.
-5. Desenhar no Figma as seções `Porque a Nu` e `Diferenciais` (a de `Cartões` já
+4. Desenhar no Figma as seções `Porque a Nu` e `Diferenciais` (a de `Cartões` já
    começou, na Cards Section).
-6. Revisar o texto do rodapé e a composição mobile dos cards.
-7. Exportar o ícone do app definitivo do Figma.
+5. Revisar o texto do rodapé e a composição mobile dos cards.
+6. Exportar o ícone do app definitivo do Figma.

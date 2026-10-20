@@ -7,6 +7,7 @@ import { CreditCard } from "@/components/cards/CreditCard";
 import { useCardTilt } from "@/components/cards/use-card-tilt";
 import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 import { CtaLink } from "@/components/ui/CtaLink";
+import { PillTab } from "@/components/ui/PillTab";
 import { CARDS, type ShowcaseCard } from "@/lib/card-showcase";
 import {
   CARD_BG,
@@ -354,18 +355,21 @@ export function CardsSection() {
           className="flex items-start gap-[24px]"
           style={
             {
-              "--cc-pill-on-bg": visivel.chrome.pill.onBg,
-              "--cc-pill-on-ink": visivel.chrome.pill.onBgInk,
-              "--cc-pill-idle-ink": visivel.chrome.pill.idleInk,
-              "--cc-pill-idle-border": visivel.chrome.pill.idleBorder,
+              "--pill-on-bg": visivel.chrome.pill.onBg,
+              "--pill-on-ink": visivel.chrome.pill.onBgInk,
+              "--pill-idle-ink": visivel.chrome.pill.idleInk,
+              "--pill-idle-border": visivel.chrome.pill.idleBorder,
             } as React.CSSProperties
           }
         >
           {CARDS.map((item, index) => (
             <motion.div key={item.id} variants={revealUp}>
-              <CardTab
-                card={item}
+              <PillTab
+                label={item.label}
                 selected={index === alvo}
+                liberado={Boolean(item.showcase)}
+                id={`cartoes-aba-${item.id}`}
+                controls={`cartoes-painel-${item.id}`}
                 onSelect={() => select(index)}
               />
             </motion.div>
@@ -544,41 +548,4 @@ export function CardsSection() {
   );
 }
 
-/**
- * Pílula do seletor.
- *
- * `aria-disabled` nos cartões cujo frame ainda não foi liberado, com o aviso em
- * `sr-only` — sem ele, o botão seria focável e não faria nada. `aria-selected`
- * só nos que existem, porque é nesses que a troca acontece de verdade.
- */
-function CardTab({
-  card,
-  selected,
-  onSelect,
-}: {
-  card: ShowcaseCard;
-  selected: boolean;
-  onSelect: () => void;
-}) {
-  const liberado = Boolean(card.showcase);
-
-  return (
-    <button
-      type="button"
-      role="tab"
-      id={`cartoes-aba-${card.id}`}
-      aria-selected={liberado ? selected : undefined}
-      aria-disabled={!liberado}
-      aria-controls={`cartoes-painel-${card.id}`}
-      onClick={liberado ? onSelect : undefined}
-      data-state={selected ? "active" : "idle"}
-      className="cc-tab rounded-full px-[18px] py-[10px] font-display text-base font-semibold leading-[1.25] whitespace-nowrap"
-    >
-      {card.label}
-      {!liberado && (
-        <span className="sr-only">— ainda não implementado neste estudo</span>
-      )}
-    </button>
-  );
-}
 

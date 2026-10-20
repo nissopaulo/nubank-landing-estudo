@@ -13,6 +13,7 @@ import {
   WINDOW_RADIUS,
 } from "@/lib/solutions";
 import { revealFade, revealUp, staggerContainer } from "@/lib/motion";
+import { PillTab } from "@/components/ui/PillTab";
 import { useBackgroundParallax } from "@/components/solutions/use-background-parallax";
 
 /**
@@ -115,15 +116,54 @@ export function SolutionsSection() {
         variants={staggerContainer(0.09)}
         className="flex w-full flex-col gap-[100px]"
       >
-        <motion.h2
-          id="solucoes-titulo"
+        {/*
+          O Title é uma linha só: o texto à esquerda e o seletor à direita, os
+          dois alinhados pela base.
+
+          No Figma (`150:48`) o Navigation virou **filho do Title**, em
+          `justify-between` — e é por isso que ele sai em x = 902: 1520 − 618,
+          ou seja, flush com a borda direita da coluna de conteúdo. Antes ele
+          era irmão do `Main Content`, no pé da seção.
+        */}
+        <motion.div
           variants={revealUp}
-          className="font-display text-[64px] font-bold leading-[1.22] text-nu-brand"
+          className="flex w-full items-end justify-between"
         >
-          Cada objetivo
-          <br />
-          merece seu espaço.
-        </motion.h2>
+          <h2
+            id="solucoes-titulo"
+            className="font-display text-[64px] font-bold leading-[1.22] text-nu-brand"
+          >
+            Cada objetivo
+            <br />
+            merece seu espaço.
+          </h2>
+
+          {/*
+            O seletor. `role="tablist"` porque trocar de opção troca o
+            **conteúdo inteiro** da seção — é a mesma relação de substituição
+            da Cards Section, e é o que faz o leitor de tela anunciar
+            "Caixinhas, aba 1 de 4" em vez de quatro botões sem relação.
+
+            É o **mesmo componente** da Cards Section (`PillTab`), com a mesma
+            regra de CSS. A paleta é a da marca, que é o default das custom
+            properties — e por isso o seletor não precisa declarar nenhuma.
+          */}
+          <div
+            role="tablist"
+            aria-label="Escolher a solução"
+            aria-orientation="horizontal"
+            className="sol-nav flex items-start gap-[24px]"
+          >
+            {SOLUTIONS.map((item, index) => (
+              <PillTab
+                key={item.id}
+                label={item.label}
+                selected={index === ACTIVE_INDEX}
+                liberado={Boolean(item.active)}
+              />
+            ))}
+          </div>
+        </motion.div>
 
         {/*
           A janela da imagem. `relative` porque é a âncora do badge e do painel
@@ -244,32 +284,6 @@ export function SolutionsSection() {
       </motion.div>
 
       {/*
-        O seletor. `role="tablist"` porque trocar de opção troca o **conteúdo
-        inteiro** da seção — é a mesma relação de substituição da Cards
-        Section, e é o que faz o leitor de tela anunciar "Caixinhas, aba 1 de
-        4" em vez de quatro botões sem relação.
-      */}
-      <motion.div
-        role="tablist"
-        aria-label="Escolher a solução"
-        aria-orientation="horizontal"
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.25 }}
-        variants={staggerContainer(0.06)}
-        className="sol-nav flex items-start gap-[24px]"
-      >
-        {SOLUTIONS.map((item, index) => (
-          <SolutionTab
-            key={item.id}
-            label={item.label}
-            selected={index === ACTIVE_INDEX}
-            liberado={Boolean(item.active)}
-          />
-        ))}
-      </motion.div>
-
-      {/*
         A prévia desfocada da opção seguinte.
 
         `aria-hidden` porque é decorativa — a informação que ela carrega é a
@@ -328,51 +342,3 @@ export function SolutionsSection() {
   );
 }
 
-/**
- * Pílula do seletor.
- *
- * `aria-disabled` nas opções cujo frame ainda não foi liberado, com o aviso em
- * `sr-only` — sem ele o botão seria focável e não faria nada. `aria-selected`
- * só na que existe, porque é nela que a troca acontece de verdade.
- */
-function SolutionTab({
-  label,
-  selected,
-  liberado,
-}: {
-  label: string;
-  selected: boolean;
-  liberado: boolean;
-}) {
-  return (
-    <motion.button
-      type="button"
-      role="tab"
-      aria-selected={liberado ? selected : undefined}
-      aria-disabled={!liberado}
-      variants={revealUp}
-      /*
-       * **O padding é 17 e não 18 nas pílulas com borda.**
-       *
-       * No Figma (`151:86`) o quadro tem 129 de largura e o texto fica a 18 da
-       * borda: 1 do traço + 17 de padding. O `border` do CSS soma na caixa e o
-       * traço do Figma não sai no auto-layout — então, sem compensar, a pílula
-       * teria 131 de largura e 42 de altura, contra 129 e 40 do design.
-       *
-       * A pílula ativa não tem traço no Figma (`151:84`), e por isso o padding
-       * dela é o do Figma, 18. As duas continuam com a **mesma caixa**, que é o
-       * que faz o seletor não "pular" quando o estado muda.
-       */
-      className={`sol-pill shrink-0 whitespace-nowrap rounded-[100px] font-display text-[16px] font-semibold leading-[1.25] ${
-        selected
-          ? "bg-nu-brand px-[18px] py-[10px] text-white"
-          : "border border-nu-brand px-[17px] py-[9px] text-nu-brand"
-      }`}
-    >
-      {label}
-      {!liberado && (
-        <span className="sr-only">— ainda não implementado neste estudo</span>
-      )}
-    </motion.button>
-  );
-}
