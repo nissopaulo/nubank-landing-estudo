@@ -2410,3 +2410,30 @@ em arquivo (`git commit -F`), push.
 (Conta e Pix — `151:92`, Investimentos — `153:125`, Empréstimos — `153:167`),
 todos frames ocultos no Figma, um de cada vez, trocando o conteúdo ativo
 quando o usuário clicar na pílula correspondente.
+
+### 2026-10-20 — fix(Solutions Section): alinhar primeira opção ao design do Figma
+
+Commit `1563190` no `main`, push para o GitHub (`origin/main`). O deploy na
+Vercel é disparado automaticamente pelo push.
+
+**Fluxo "pode commitar" executado na íntegra:** `tsc --noEmit` (limpo),
+`npm run lint` (limpo), `npm run build` (limpo), commit com mensagem longa
+em arquivo (`git commit -F`), push.
+
+**O que foi corrigido:** `src/components/solutions/SolutionsSection.tsx` foi
+reescrito para seguir fielmente o design context do nó `144:2`
+("Solutions Section - Safe", 1920×1316):
+
+- Fundo da seção: branco (`bg-white`), não cinza (`neutral-100`).
+- Título com medidas exatas do Figma: 64px, bold, Montserrat, cor da marca,
+  leading 0, whitespace nowrap.
+- Container do background principal com `h-[720px] rounded-[25px]
+  overflow-clip` e imagem posicionada conforme o design.
+- Badge "Caixinhas" em `bg-action-surface` com borda da marca, 20px.
+- text-box com `bg-neutral-100`, px-42 py-32 rounded-42, gap-64.
+- Background desfocado à direita com blur, h-620, left 1784px, top 406px,
+  w-1308px, rounded 22px.
+- Pílulas de navegação sem `disabled`: ativa com fundo da marca e texto
+  branco; inativas com borda e texto da marca, escala reduzida e blur.
+- Entrada por scroll (`whileInView` com `once`) e parallax do mouse,
+  desligado sob `prefers-reduced-motion`.
