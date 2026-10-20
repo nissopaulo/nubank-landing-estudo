@@ -90,6 +90,24 @@ export const revealScale: Variants = {
   },
 };
 
+/**
+ * Reveal só de opacidade, para elemento que **não** pode se deslocar.
+ *
+ * Existe para a Solutions Section, onde o badge e o painel de texto são
+ * posicionados em absoluto sobre a imagem: se eles usassem o `revealUp`, o
+ * deslocamento do próprio quadro e o deles se somariam — 48 px em vez de 24 —
+ * e o painel sairia do lugar duas vezes.
+ *
+ * Aqui a opacidade é a única coisa que muda, então o que se move é o quadro.
+ */
+export const revealFade: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { duration: DURATION.base, ease: EASE_OUT_EXPO },
+  },
+};
+
 /** Container que escalona os filhos revealed. */
 export const staggerContainer = (stagger = 0.08, delayChildren = 0): Variants => ({
   hidden: {},

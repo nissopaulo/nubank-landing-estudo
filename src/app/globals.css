@@ -60,6 +60,19 @@
   --color-nu-action-surface: #f3e8ff; /* Action/action-secondary */
   --color-nu-action-text: #ffffff; /* Action/action-primary-text */
 
+  /* Background */
+  --color-nu-bg-primary: #ffffff; /* Background/bg-primary */
+  /*
+   * Background/bg-secondary (#f9fafb) — o painel do badge e do texto da
+   * Solutions Section (nó `144:2`).
+   *
+   * Não é um cinza do design system: é o valor exato da variable do Figma, e
+   * é diferente dos dois vizinhos que já existiam (`Neutral/100` = #f3f4f6 e
+   * `Action/action-secondary` = #f3e8ff). Usar o token mais próximo em vez
+   * dele muda a cor da superfície, que é o que o design fixou.
+   */
+  --color-nu-bg-secondary: #f9fafb;
+
   /* Gradiente do fundo da Hero — os quatro tons vêm do nó 14:460.
      As PARADAS foram deslocadas de 0/25/75/100 para 0/52/86/100: com as
      originais, a metade inferior do gradiente ficava clara demais e o texto

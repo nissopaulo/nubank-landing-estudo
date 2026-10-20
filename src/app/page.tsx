@@ -4,6 +4,7 @@ import { HeroSection } from "@/components/hero/HeroSection";
 import { NoiseOverlay } from "@/components/site/NoiseOverlay";
 import { PendingSections, SiteFooter } from "@/components/site/SiteFooter";
 import { SiteHeader } from "@/components/site/SiteHeader";
+import { SolutionsSection } from "@/components/solutions/SolutionsSection";
 
 export default function Home() {
   return (
@@ -24,6 +25,7 @@ export default function Home() {
         <HeroSection />
         <EcosystemSection />
         <CardsSection />
+        <SolutionsSection />
         <PendingSections />
       </main>
       <SiteFooter />

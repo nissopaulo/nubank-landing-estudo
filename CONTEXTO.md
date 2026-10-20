@@ -10,8 +10,9 @@
   autoral no Figma. Sem vínculo oficial com a Nu Pagamentos.
 - **Figma:** https://www.figma.com/design/16kp2jwaILwDfp44uYuNkP
 - **Frames implementados:** `Hero Section` (node `14:446`, 1920×1080),
-  `Ecossystem Section - Nubank` (node `52:3`, 1920×919) e `Cards Section -
-  Nubank` (node `97:2`, 1920×1086)
+  `Ecossystem Section` (nós `52:3`, `76:3`, `77:40`, `80:77`, 1920×919),
+  `Cards Section` (nós `97:2`, `103:248`, `103:318`, `103:383`, 1920×1086)
+  e `Solutions Section - Safe` (nó `144:2`, 1920×1316)
 - **Produção:** https://nubank-landing-estudo.vercel.app
 - **Repositório:** https://github.com/nissopaulo/nubank-landing-estudo
 
@@ -19,19 +20,27 @@
 
 ## Estado atual
 
-Três telas implementadas e funcionando. A **Hero**, com header fixo, cards em
-parallax e rodapé. Abaixo dela a **Ecossystem Section**, carrossel de pilares —
-**completa: os quatro desenhados**, os quatro clicáveis, e nenhum `PROVISÓRIO`
+**Quatro** telas implementadas e funcionando. A **Hero**, com header fixo, cards
+em parallax e rodapé. Abaixo dela a **Ecossystem Section**, carrossel de pilares
+— **completa: os quatro desenhados**, os quatro clicáveis, e nenhum `PROVISÓRIO`
 sobrando. Clicar num pilar reequilibra a linha de cards inteira, com transição.
 Depois dela a **Cards Section**: um seletor de pílulas, o cartão de crédito que
 inclina em 3D sob o ponteiro, e o nome, a descrição e o CTA. A Cards Section
 **entra por scroll** — nada está lá quando se chega nela —, e a interação é da
 **seção inteira**, não só do cartão.
 
-A Cards Section está **no primeiro frame dos quatro**: só o `97:2` (Nubank) está
-liberado, e as outras três pílulas são botões desativados com aviso para leitor
-de tela. É decisão de processo, não falta de design — os quatro frames existem
-no Figma, três deles ocultos.
+**A Cards Section está completa**: os quatro frames (`97:2`, `103:248`,
+`103:318`, `103:383`) estão liberados, as quatro pílulas trocam de verdade e
+nenhuma fica `aria-disabled`. A virada do cartão foi medida em Chrome e
+Firefox, em movimento normal e reduzido.
+
+Depois dela vem a **Solutions Section**, **no primeiro frame dos quatro**: só o
+`144:2` (Caixinhas) está liberado, e as outras três pílulas são botões
+desativados com aviso para leitor de tela. É decisão de processo, não falta de
+design — os quatro frames existem no Figma, três deles ocultos. A seção é uma
+composição: a imagem principal em janela arredondada, o badge e o painel de
+texto sobre ela, a prévia desfocada da opção seguinte sangrando pela borda
+direita, e o seletor de pílulas no pé.
 
 Entre as seções e o rodapé existe um bloco **"Em construção"** que é
 provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
@@ -41,7 +50,7 @@ provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
 | Stack | Next.js 16.4 (App Router, Turbopack), React 19.3, TS, Tailwind v4, Motion 14, Phosphor Icons |
 | Tipografia | Montserrat (única fonte), `next/font` self-hosted |
 | Ícones | Phosphor Icons; logo da marca e peças do cartão são SVG do Figma |
-| Qualidade | `tsc --noEmit` e `eslint` passam limpos (verificado 2026-10-18) |
+| Qualidade | `tsc --noEmit`, `eslint` e `next build` passam limpos (verificado 2026-10-20) |
 
 ---
 
@@ -138,6 +147,16 @@ provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
     teria de ser por seção e ficar *abaixo* do texto, em vez de ser uma camada
     de página inteira por cima de tudo. Aí texturiza a superfície sem tocar nos
     glifos. É a solução correta, mas muda a arquitetura e não foi feita.
+15. **O traço do Figma não entra no tamanho do quadro; o `border` do CSS entra.**
+    Compensar o padding pela metade da borda. O auto-layout do Figma exclui o
+    traço da caixa: no badge `151:75` são `24 + 100 + 24 = 148` e
+    `12 + 24 + 12 = 48`; na pílula `101:186`, `18 + 66 + 18 = 102`. No CSS o
+    `border` **sempre** soma, então sem compensar o badge saía 151,27 × 53 e a
+    pílula 42 de altura. A correção é `px-[22px] py-[10px]` com `border-2` no
+    badge e `px-[17px] py-[9px]` com `border` na pílula — e assim **todo**
+    número do Figma é reproduzido, inclusive a posição do texto dentro da caixa.
+    **A Cards Section tem o mesmo desvio e ainda não foi corrigida** — ver a
+    pendência nº 17.
 
 ---
 
@@ -185,6 +204,18 @@ também. `Purple/950` e `Purple/600` aparecem porque a primeira e a última para
 gradiente do card são exatamente esses dois valores — mas isso **não** significa
 que são tokens utilizáveis: as três paradas do meio são interpolações do gradiente,
 não cores do design system, e transformá-las em token seria inventar cor.
+
+**Leitura do nó `144:2` (Solutions Section - Safe), 2026-10-20:** **uma
+variable nova** — `Background/bg-secondary` = `#f9fafb`, a superfície do
+badge e do painel de texto. Não é um cinza do design system: é o valor exato do
+Figma, e é **diferente** dos dois vizinhos que já existiam (`Neutral/100` =
+#f3f4f6 e `Action/action-secondary` = #f3e8ff). Entrou como
+`--color-nu-bg-secondary`.
+
+O resto do nó não traz variable nova: `Text/text-brand`, `Action/action-secondary-text`,
+`Border/border-brand`, `Action/action-primary` e `Action/action-primary-text`
+são todos o `#820ad1` de sempre (mais um nome para o valor), e
+`Background/bg-primary` = #ffffff, que entrou como `--color-nu-bg-primary`.
 
 **Leitura do nó `97:2` (Cards Section), 2026-10-18:** **duas variables novas**,
 e nenhuma delas é uma cor nova:
@@ -255,14 +286,18 @@ Escrever a mensagem num arquivo e usar `git commit -F <arquivo>`.
 | 13 | ~~A virada entre cartões está escrita e nunca executou~~ — **resolvido 2026-10-18**. Medida por CDP, e a medição achou um bug real: **os dois sentidos giravam para o mesmo lado**. Corrigido com o `custom` do `AnimatePresence` | `CreditCard.tsx` |
 | 14 | **A pílula inativa do Croma reprova AA em texto pequeno** — 2,59:1 calculado direto do gradiente do design, 2,44:1 com o grão. É a pior reprovação do projeto: `#8f7f64` sobre o creme de `rgb(217,210,196)` na altura das pílulas. Implementado como o Figma pede; a correção é de design | `card-showcase.ts` |
 | 15 | **O nome no cartão do Croma reprova AA em texto pequeno** — 4,26:1 no design, 4,12:1 com o grão. `Purple/800` sobre o gradiente do cartão. O pior ponto é a **base** do texto, onde o gradiente já passou da parada `bfb299`. Implementado como o Figma pede | `card-showcase.ts` |
+| 16 | **O nome em gradiente do Ultravioleta reprova AA em texto pequeno — 1,93:1, a pior reprovação do projeto.** O texto é `background-clip: text` indo de `Neutral/400` (#9ca3af) a `Neutral/100` (#f3f4f6), e a primeira parada vale 0,81826% do gradiente — está quase no fim da rampa, sobre a parte mais clara do cartão. O par medido é #9ca3af sobre rgb(159,62,228). O número é conservador por construção: a sonda emparelha a parada mais escura com o pior pixel; a outra ponta, #f3f4f6 sólido, daria 4,45:1 contra o mesmo fundo — **as duas reprovam**. Implementado como o Figma pede | `card-showcase.ts` |
+| 17 | **As pílulas da Cards Section estão 6,33 px mais largas e 2 px mais altas que o Figma.** O Figma dá `101:191` com **514 × 40** e o projeto entrega **520,33 × 42**. A causa é mecânica e está medida: o auto-layout do Figma **exclui o traço do tamanho do quadro** (`18 + 66 + 18 = 102` no `101:186`), e o `border` do CSS **sempre** soma na caixa. A correção é a mesma da Solutions Section — compensar o padding pela metade da borda (`px-[17px] py-[9px]` em vez de 18/10). **Não foi aplicado aqui** para não mexer numa seção já aprovada no meio desta | `.cc-tab` no `globals.css` |
 
-**No Figma hoje existem nove frames visíveis** — `Hero Section` (`14:446`), os
+**No Figma hoje existem dez frames visíveis** — `Hero Section` (`14:446`), os
 **quatro** da Ecossystem (`52:3` Nubank, `76:3` Croma, `77:40` Ultravioleta,
-`80:77` Business) e os **quatro** da Cards Section (`97:2` Nubank, `103:248`
-Croma, `103:318` Ultravioleta, `103:383` Business) — mais os 4 frames soltos de
-arte dos cartões. A Ecossystem está completa. Na Cards Section **só o `97:2`
-está liberado**: os outros três estão ocultos por decisão de processo. Não há
-design das seções seguintes — por isso os itens 2 e 3 bloqueiam o resto.
+`80:77` Business), os **quatro** da Cards Section (`97:2` Nubank, `103:248`
+Croma, `103:318` Ultravioleta, `103:383` Business) e o **`144:2` Solutions
+Section - Safe** — mais os 4 frames soltos de arte dos cartões. A Ecossystem
+está completa, e a Cards Section também. Na Solutions Section **só o `144:2`
+está liberado**: os outros três (`151:92`, `153:125`, `153:167`) estão
+ocultos por decisão de processo. Não há design das seções seguintes — por isso
+os itens 2 e 3 bloqueiam o resto.
 
 ### Antes de sugerir código
 
@@ -332,6 +367,20 @@ design das seções seguintes — por isso os itens 2 e 3 bloqueiam o resto.
   trata parse failure como **aviso** e segue — a Vercel deploya sem reclamar. O
   dev trata como **erro fatal** e mostra overlay. Então "passou no build" não
   prova que o CSS está válido: para CSS, o teste é abrir o `next dev`.
+- **O `border` do CSS soma na caixa; o traço do Figma não.** Ao reproduzir um
+  quadro com traço do Figma, o padding tem de ser compensado pela metade da
+  borda (`border-2` com `px-[22px]`, `border` com `px-[17px]`). Sem isso
+  a caixa sai 2 px maior em cada eixo. Ver a decisão 15 e a pendência nº 17.
+- **O `IntersectionObserver` herda o recorte do ancestral.** Um elemento
+  posicionado em absoluto que o ancestral recorta tem a razão de interseção
+  calculada sobre a parte **visível**: um bloco de 1308,889 px com 135,44
+  expostos dá 10,3%, e um `amount: 0.25` nunca dispara. Quando o elemento é
+  cortado de propósito, o gatilho precisa de `amount: "some"`.
+- **No Firefox 158 o BiDi mudou:** não há mais `/json/version` (CDP foi
+  removido), o endpoint `/session` é o **próprio upgrade de WebSocket** (exige
+  GET, não POST) e a sessão precisa ser criada **pela própria conexão**, com
+  `session.new`. Conectar direto sem `session.new` dá "WebDriver session does
+  not exist".
 - **Trabalhar e julgar no desktop (≥1024 px).** Não propor breakpoint novo, nem
   "aproveitar para já tratar o mobile", nem auditar tela estreita — a menos que
   o usuário peça. Medidas, espaçamentos e decisões de layout são tomadas no
@@ -2382,4 +2431,84 @@ implementá-los em `SiteHeader.tsx` substituindo `NAV_ITEMS` /
 `aria-disabled` por painéis reais. Enquanto não existe no Figma, não há código
 para escrever aqui — conteúdo não se inventa.
 
+### 2026-10-20 — Solutions Section: primeiro frame (`144:2`, Safe / Caixinhas)
 
+A última sessão tinha implementado a seção e depois **removido tudo** (commit
+`b305a5d`, mensagem "refactor: remove Solutions Section completamente"), sem
+registrar o motivo. A causa está reconstituída abaixo, e ela justifica a
+remoção: a versão que foi removida **não estava alinhada ao Figma**.
+
+#### O que foi feito nesta sessão
+
+- `src/lib/solutions.ts` — os dados das quatro opções e a geometria do frame.
+- `src/components/solutions/SolutionsSection.tsx` — a seção, o seletor e a
+  prévia desfocada.
+- `src/app/globals.css` — o token `--color-nu-bg-secondary` (`#f9fafb`), que
+  é `Background/bg-secondary` no Figma e **não** existia no projeto.
+- `src/lib/motion.ts` — `revealFade`, um reveal só de opacidade.
+- `src/app/page.tsx` — a seção entra entre a Cards Section e o bloco
+  "Em construção".
+- Os **quatro PNGs** de `public/images/backgrounds/` viraram WebP: de 19,4 MB
+  para 736 KB (**−96,3%**), com erro médio de 1,31 nível e sem banding. Os PNGs
+  foram removidos do versionamento — e o `.git` saiu de 21,8 MB para ~1 MB.
+  (O commit anterior, `b305a5d`, **afirmava** no corpo da mensagem que tinha
+  removido as imagens do versionamento, e não tinha: `git ls-files` ainda
+  listava as quatro.)
+
+#### Por que a versão removida estava errada — e o que a medição mostrou
+
+| | Figma `144:2` | versão removida (`1563190`) |
+|---|---|---|
+| fundo do badge | `Background/bg-secondary` #f9fafb | `--color-nu-action-surface` #f3e8ff |
+| fundo do painel | #f9fafb | `--color-nu-neutral-100` #f3f4f6 |
+| prévia desfocada | x 1784,56, **filha da seção** | x 1784px **dentro do Main Content** → 1984, **fora do frame** |
+| prévia | dentro do Main Content | some (100% fora do canvas de 1920) |
+| título do painel | 3 linhas | 1 linha com `whitespace-nowrap` |
+| `leading` do título | `leading-[0]` + `normal` nos `<p>` | `leading-[0]` sem `<p>` → linhas colapsam |
+| CTA | texto + CaretDown a −90° | `<button>` sem caret |
+| pílulas | trocam o conteúdo | só mudam o próprio destaque — **3 de 4 não faziam nada** |
+| entrada por scroll | — | `whileInView` no pai e `animate` nos filhos → animavam na montagem |
+
+A **prévia** é o achado mais concreto: ela é irmã do `Main Content` no Figma,
+então a origem da coordenada é a seção. Ancorada dentro do `Main Content`, ela
+ia parar em x = 1984 — 64 px **fora** do frame de 1920, e portanto invisível.
+
+#### A lição que vale para o resto do projeto
+
+**O `border` do CSS soma na caixa; o traço do Figma não.** Isso não é
+detalhe da Solutions Section — é um desvio **já presente na Cards Section**,
+que a documentação afirma ser "idem". Medido: o Figma dá `101:191` com
+**514 × 40** e o projeto entrega **520,33 × 42**. As pílulas da Solutions
+receberam a correção (compensar o padding pela metade da borda) e as da Cards
+não — ver a pendência nº 17.
+
+#### As duas armadilhas do `IntersectionObserver`
+
+1. **A prévia precisa de `amount: "some"`.** O observer herda o recorte do
+   `overflow-clip` da seção: a prévia tem 1308,889 de largura e só 135,44
+   visíveis, e a razão fica em **10,3%** — nunca alcançando os 25% usados no
+   resto da página. Com o limite antigo ela ficava em `opacity: 0` para
+   sempre.
+2. **A prévia é ancorada pela direita.** A borda esquerda dela fica em
+   1784,56 no frame de 1920, então só 135,44 px aparecem. Ancorada pela
+   esquerda, ela sumiria abaixo de 1785 px de viewport; pela direita
+   (`right: -1173,445px`) o pixel em 1920 é o mesmo e ela continua visível.
+
+#### Verificação
+
+`tsc`, `eslint` e `next build` limpos. Geometria medida no DOM, em Chrome
+(`1920 × 1316,16`) e Firefox (`1920 × 1316,17`): **nenhum delta de posição é de
+1px**, e os deltas de tamanho que restam são de ±0,86 px e vêm da métrica do
+texto (o viewer do Figma mede a largura de avanço do Montserrat em ~0,5% a mais).
+Contraste dos cinco textos medido por pixel **com o grão ligado**: de 6,21:1 a
+6,67:1, todos passando AA. Entrada por scroll verificada nos dois motores, e
+movimento reduzido sem transform nem opacidade pendente.
+
+**Não verificado:** a prévia não tem leitura de contraste (é decorativa), e a
+interação entre as pílulas ainda não existe — só o `144:2` está liberado.
+
+#### O que vem a seguir
+
+Liberar o `151:92` (Conta e Pix), que é a segunda opção da mesma seção. O
+preenchimento é o campo `active` em `lib/solutions.ts` e nada mais muda no
+componente — a mesma mecânica dos quatro frames da Cards Section.
