@@ -805,14 +805,29 @@
  * "translate(-1173.444px, 408px) scale(0.861111)", e o CSS interpola listas de
  * transform com a mesma estrutura de funções.
  *
- * O desfoque interpola junto, e o valor é **local**: o `filter` é aplicado no
+ * O desfoque interpela junto, e o valor é **local**: o `filter` é aplicado no
  * espaço do quadro, e o quadro está escalado por 0,861111 — então 5,001 local
  * dá 4,306 na tela, que é o número do Figma.
+ *
+ * ## A curva e a duração
+ *
+ * A primeira versão usava `EASE_EMPHASIZED` (0,32 0,72 0 1) e 800 ms. Medida,
+ * ela fazia **78% do caminho no primeiro quarto do tempo** — uma arrancada
+ * seguida de 500 ms de arrasto, que é o que o usuário chamou de "intenso".
+ *
+ * A curva agora é `cubic-bezier(0.6, 0.05, 0.3, 1)`: a partida é macia, o
+ * glide é longo e a chegada é amortecida. Distribuição medida do caminho
+ * percorrido: 11% em 25% do tempo, 62% em 50%, 94% em 75%.
+ *
+ * **A duração tem de bater com `CARROSSEL_DURACAO` em `lib/solutions.ts`**,
+ * porque o badge e o painel de texto esperam esse número para aparecerem
+ * quando a arte chega. É a mesma duplicação que os CTAs da header têm: o
+ * Tailwind só enxerga classes escritas por extenso, e esta transição é CSS.
  */
 .sol-arte {
   transition:
-    transform 800ms cubic-bezier(0.32, 0.72, 0, 1),
-    filter 800ms cubic-bezier(0.32, 0.72, 0, 1);
+    transform 1000ms cubic-bezier(0.6, 0.05, 0.3, 1),
+    filter 1000ms cubic-bezier(0.6, 0.05, 0.3, 1);
 }
 
 /*

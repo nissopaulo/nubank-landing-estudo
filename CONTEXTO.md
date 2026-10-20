@@ -434,6 +434,13 @@ os itens 2 e 3 bloqueiam o resto.
   GET, não POST) e a sessão precisa ser criada **pela própria conexão**, com
   `session.new`. Conectar direto sem `session.new` dá "WebDriver session does
   not exist".
+- **Com o `animate` apontando para um RÓTULO de variant, vale a transition da
+  variant, e a prop `transition` é ignorada.** O Motion só usa a prop como
+  substituto quando não há transition na variant — e com `variants={revealUp}`
+  há. Medido: o atraso que o painel de texto precisava (esperar a arte
+  chegar) estava na prop, e o painel aparecia em **250 ms**, no meio da viagem
+  da arte, que era exatamente o defeito que se queria corrigir.
+  A correção é pôr o atraso **dentro** da variant.
 - **O dev server serve CSS velho — e já aconteceu quatro vezes.** O sintoma
   é sempre o mesmo: a regra está no arquivo-fonte e **não** no CSS servido.
   Conferir é uma linha (`curl` na página, pegar o `href` do `.css` e
@@ -2979,5 +2986,81 @@ caminho, em 309 ms 89%, e o resto é a chegada.
 Movimento reduzido: a arte **já** está no destino em 120 ms — a viagem é
 cortada pelo bloco global (`transition-duration: 0.01ms !important`) e a troca
 é instantânea.
+
+tsc --noEmit, eslint e next build limpos.
+
+### 2026-10-20 — o carrossel mais lento, mais suave, e o conteúdo esperando a arte
+
+Três ajustes pedidos: a animação mais lenta, mais suave, e o badge e o painel
+de texto só aparecendo **quando a nova tela chegasse**.
+
+#### 1. A curva era o problema, não a duração
+
+Medida: a curva `EASE_EMPHASIZED` (0,32 0,72 0 1) fazia **78% do caminho no
+primeiro quarto do tempo** — uma arrancada seguida de meio segundo de arrasto.
+Isso é o que lê como "intenso", e nenhuma quantidade de duração conserta: a
+distribuição é o problema.
+
+Comparando as candidatas por distribuição do caminho percorrido:
+
+| curva | 10% do tempo | 25% | 50% | 75% | 90% |
+|---|---|---|---|---|---|
+| EASE_EMPHASIZED (a de antes) | 27% | **78%** | **95%** | 99% | 100% |
+| Material padrão (0,4 0 0,2 1) | 3% | 24% | 78% | 96% | 99% |
+| **0,6 0,05 0,3 1 (a nova)** | 2% | **11%** | **62%** | **94%** | 99% |
+
+A nova tem partida macia, glide longo e chegada amortecida. Com 1000 ms (era
+800), a medição no navegador deu: **50% do caminho em 524 ms**, 75% em 651 ms,
+90% em 727 ms. A curva antiga chegava a 95% em 400 ms.
+
+#### 2. O conteúdo espera a arte
+
+A linha do tempo pedida:
+
+| | |
+|---|---|
+| 0 – 240 ms | o badge e o painel **antigos** saem |
+| 240 – 1000 ms | **a arte viaja sozinha** |
+| 1000 ms | a arte chega — badge e painel **novos** entram |
+| ~1900 ms | tudo assentado |
+
+O atraso é o mesmo número da transição da arte (`CARROSSEL_DURACAO` em
+`lib/solutions.ts`, 1000 ms), e é uma **duplicação consciente**: a transição da
+arte é CSS escrito à mão, e o Tailwind só enxerga classes escritas por extenso.
+É a mesma duplicação que os CTAs da header já têm.
+
+#### 3. A armadilha do `transition` na prop
+
+O primeiro attempt pôs o atraso na prop `transition` do painel, e **não
+funcionou**: o painel aparecia em 250 ms, no meio da viagem.
+
+A razão: com o `animate` apontando para um **rótulo** de variant
+(`animate="visible"`), é a transition **da variant** que vale — a prop é
+ignorada. Com `variants={revealUp}` há transition na variant, e por isso a
+prop não entra.
+
+O badge, que usa `animate={{ opacity: 1, transition: {...} }}` — um **objeto**,
+não um rótulo — pegou o delay de primeira, e é por isso que os dois se
+comportaram diferente na primeira medição.
+
+A correção é pôr o atraso **dentro** da variant.
+
+#### 4. O atraso também tem de ser cortado no movimento reduzido
+
+Sob `prefers-reduced-motion`, a arte chega instantaneamente (a transição CSS
+é cortada pelo bloco global), mas o **atraso** do conteúdo não era — e esperar
+um segundo para o texto aparecer é o oposto do que a preferência pede.
+
+O atraso agora é zero quando `usePrefersReducedMotion()` é verdadeiro.
+
+#### Verificação
+
+Chrome e Firefox, dentro de 0,05 px. A arte sai de x = 200 e chega a −1173,4;
+a escala vai 1 → 0,8611 e o desfoque 0 → 5,00052. O badge novo passa de
+opacidade 0 a 1 entre 1011 ms e 1440 ms, e o painel novo fica em opacidade 0
+até 1000 ms e sobe de y = 24 a 0 a partir daí.
+
+Movimento reduzido: a arte **já** está no destino em 120 ms e o painel chega
+a opacidade 1 sem atraso.
 
 tsc --noEmit, eslint e next build limpos.

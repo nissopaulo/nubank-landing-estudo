@@ -246,3 +246,16 @@ export const SLOTS = {
 } as const;
 
 export type SlotName = keyof typeof SLOTS;
+
+/**
+ * A duração da viagem da arte, em ms.
+ *
+ * **TEM DE BATER** com a `transition` do `.sol-arte` no `globals.css`.
+ *
+ * O motivo é a duplicação que os CTAs da header já têm: o Tailwind só
+ * enxerga classes escritas por extenso, e a transição da arte é CSS escrito à
+ * mão. E a duplicação aqui tem uma consequência prática — é este número que
+ * diz ao badge e ao painel de texto **quando a arte chega**, e é por isso que
+ * ele precisa estar nos dois lugares.
+ */
+export const CARROSSEL_DURACAO = 1000;

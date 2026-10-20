@@ -1229,6 +1229,39 @@ O desfoque é **local**: o `filter` é aplicado no espaço do quadro, e o quadro
 está escalado por 0,861111, então 5,001 local dá 4,306 na tela — que é o número
 do Figma.
 
+**A curva e a duração.** A primeira versão usava `EASE_EMPHASIZED` e 800 ms.
+Medida, ela fazia **78% do caminho no primeiro quarto do tempo** — uma
+arrancada seguida de meio segundo de arrasto, que é o que lê como "intenso".
+
+| | curva | duração |
+|---|---|---|
+| antes | `cubic-bezier(0.32, 0.72, 0, 1)` | 800 ms |
+| agora | `cubic-bezier(0.6, 0.05, 0.3, 1)` | **1000 ms** |
+
+A de agora tem partida macia, glide longo e chegada amortecida. Distribuição
+medida do caminho percorrido: **50% em 524 ms** (era 95%), 75% em 651 ms, 90%
+em 727 ms.
+
+### O badge e o painel só aparecem quando a arte chega
+
+O conteúdo da janela **não** troca no meio da viagem. A linha do tempo é:
+
+| | |
+|---|---|
+| 0 – 240 ms | o badge e o painel **antigos** saem |
+| 240 – 1000 ms | **a arte viaja sozinha** |
+| 1000 ms | a arte chega — e o badge e o painel **novos** entram |
+| ~1900 ms | tudo assentado |
+
+A espera é o mesmo número da transição da arte (`CARROSSEL_DURACAO` em
+`lib/solutions.ts`), e ela mora **dentro da variant** do painel — não na prop
+`transition`. Com o `animate` apontando para um rótulo de variant, é a
+transition **da variant** que vale, e a prop é ignorada. Medido: com o atraso na
+prop, o painel aparecia em 250 ms, no meio da viagem.
+
+Sob `prefers-reduced-motion` o atraso é **zero** — a preferência pede mudança
+instantânea, e esperar um segundo para o texto aparecer é o contrário disso.
+
 ### A direção da saída é uma *variant*, e não um objeto
 
 O `exit` do elemento que sai é o do **render antigo**, e é por isso que ele

@@ -7,6 +7,7 @@ import { CaretRight } from "@phosphor-icons/react/dist/ssr/CaretRight";
 
 import {
   ACTIVE_INDEX,
+  CARROSSEL_DURACAO,
   PREVIEW_BLUR,
   PREVIEW_SCALE,
   SLOTS,
@@ -16,11 +17,14 @@ import {
   type Solution,
 } from "@/lib/solutions";
 import {
+  DURATION,
+  EASE_OUT_EXPO,
   revealUp,
   SOLUTIONS_SLIDE,
   staggerContainer,
 } from "@/lib/motion";
 import { PillTab } from "@/components/ui/PillTab";
+import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 import {
   useBackgroundParallax,
   type BackgroundParallaxValues,
@@ -89,6 +93,20 @@ export function SolutionsSection() {
 
   const solucao = SOLUTIONS[indice];
   const active = solucao.active;
+
+  /**
+   * O instante em que a arte chega, em segundos.
+   *
+   * É o tempo que a arte leva para completar a viagem entre os slots — o
+   * mesmo número da `transition` do `.sol-arte` no `globals.css`
+   * (`CARROSSEL_DURACAO`). O badge e o painel de texto esperam esse instante
+   * para aparecerem, para não trocarem no meio do movimento.
+   *
+   * Sob movimento reduzido o atraso é **zero**: a preferência pede que a
+   * mudança seja instantânea, e esperar um segundo para o texto aparecer é
+   * exatamente o contrário disso.
+   */
+  const CHEGADA = usePrefersReducedMotion() ? 0 : CARROSSEL_DURACAO / 1000;
 
   /*
    * A arte de fundo segue o ponteiro. O ouvinte é a **janela** — é o que
@@ -228,6 +246,12 @@ export function SolutionsSection() {
           {/*
             O badge. Cruza com a arte, sem se mover: ele está ancorado na
             janela, e é a ilustração que passa por baixo dele.
+
+            **A entrada espera a arte chegar.** O pedido foi que o badge e o
+            painel só aparecessem quando a nova tela estivesse de fato aqui —
+            e não no meio da viagem. A saída é rápida (o conteúdo antigo sai
+            logo) e a entrada é adiada em `CARROSSEL_DURACAO`, que é o tempo
+            que a arte leva para chegar.
           */}
           <AnimatePresence initial={false} custom={direcao}>
             <motion.div
@@ -236,9 +260,11 @@ export function SolutionsSection() {
               className="sol-badge absolute flex items-center justify-center rounded-[100px] border-2 border-nu-brand bg-nu-bg-secondary px-[22px] py-[10px]"
               style={{ left: active.badgeBox.x, top: active.badgeBox.y }}
               initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: SOLUTIONS_SLIDE.fade }}
+              animate={{
+                opacity: 1,
+                transition: { duration: SOLUTIONS_SLIDE.fade, delay: CHEGADA },
+              }}
+              exit={{ opacity: 0, transition: { duration: SOLUTIONS_SLIDE.textExit } }}
             >
               {/*
                 `leading-[1.2]`: o texto do Figma (`151:76`) tem 24 px de caixa
@@ -265,6 +291,10 @@ export function SolutionsSection() {
             (sobe 24 px e aparece), e ele **repete a cada troca** — é o que o
             pedido foi: o texto tem que surgir de novo sempre que se troca de
             uma opção para a outra.
+
+            E a entrada **espera a arte chegar**: o `delay` é o tempo que a
+            arte leva para completar a viagem, para o texto não aparecer
+            enquanto a tela ainda está em movimento.
           */}
           <AnimatePresence initial={false} custom={direcao}>
             <motion.div
@@ -276,7 +306,29 @@ export function SolutionsSection() {
                 top: active.textBox.y,
                 width: active.textBox.w,
               }}
-              variants={revealUp}
+              /*
+               * A variant tem o **atraso dentro dela**, e não na prop
+               * `transition`. Com o `animate` apontando para um rótulo de
+               * variant, é a transition da variant que vale — a prop é
+               * ignorada. Medido: com o atraso na prop, o painel aparecia em
+               * 250 ms, no meio da viagem da arte, que é exatamente o que o
+               * pedido foi para evitar.
+               *
+               * A forma é a do `revealUp` (sobe 24 px e aparece), e a duração
+               * também — o que muda é só o **quando**.
+               */
+              variants={{
+                hidden: { opacity: 0, y: 24 },
+                visible: {
+                  opacity: 1,
+                  y: 0,
+                  transition: {
+                    duration: DURATION.slow,
+                    delay: CHEGADA,
+                    ease: EASE_OUT_EXPO,
+                  },
+                },
+              }}
               initial="hidden"
               animate="visible"
               exit={{
