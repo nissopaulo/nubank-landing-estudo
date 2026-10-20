@@ -352,9 +352,20 @@ export const CARD_FLIP = {
  * | para cima       | 182,567 px |
  * | para baixo      | 118 px |
  *
- * A amplitude horizontal de 26 px usa 35% da folga mais apertada. Acima de
+ * A amplitude horizontal de 14 px usa 19% da folga mais apertada. Acima de
  * 73 px a borda direita da arte apareceria — e é por isso que o valor está
  * aqui, num lugar só.
+ *
+ * ## O alcance sumiu, e o motivo é o escopo
+ *
+ * A primeira versão ouvia o ponteiro na **seção**, com a força morrendo 240 px
+ * depois da borda da janela. O ouvinte agora está na **janela**, que é o que
+ * limita o efeito àquela tela: passar pelo título ou pelas pílulas não move
+ * a arte.
+ *
+ * Com o ouvinte na própria janela, o ponteiro nunca está fora dela quando o
+ * handler roda — e um `reach` seria um número morto. O que modula a resposta
+ * é só a direção, que cresce do centro para as bordas.
  *
  * ## A mola é o que faz o movimento parecer vivo
  *
@@ -376,29 +387,27 @@ export const BACKGROUND_PARALLAX = {
   /**
    * Amplitude horizontal máxima, em px.
    *
-   * **Foi reduzida de 44 para 26.** O movimento precisa existir, mas a
-   * ilustração é grande e a sensação pedida era de *suavidade*, não de
-   * resposta: 44 px numa janela de 1520 já passava de "a arte acompanha o
-   * mouse" para "a arte está sendo arrastada".
+   * **Foi reduzida duas vezes: 44 → 26 → 14.** O movimento precisa existir,
+   * mas a sensação pedida foi sempre de *suavidade*, não de resposta: 44 px
+   * numa janela de 1520 passava de "a arte acompanha o mouse" para "a arte está
+   * sendo arrastada", e 26 ainda era mais do que o olho seguia sem notar.
    */
-  amplitudeX: 26,
+  amplitudeX: 14,
   /**
    * Amplitude vertical máxima, em px.
    *
-   * Reduzida de 28 para 16, na mesma proporção da horizontal.
+   * Reduzida na mesma proporção da horizontal: 28 → 16 → 9.
    */
-  amplitudeY: 16,
-  /** Distância da borda da janela em que a resposta morre, em px. */
-  reach: 240,
+  amplitudeY: 9,
   /**
-   * A mola ficou **mais lenta** também, e não só com menos amplitude.
+   * A mola ficou **mais lenta** a cada ajuste.
    *
-   * `stiffness` 120 → 90 deixa a arte demorar um pouco mais a chegar, e a
-   * `mass` 0,8 → 0,9 aumenta a inércia. O damping acompanhou (22 → 20) para
-   * manter o mesmo amortecimento relativo: ζ ≈ 1,11, ou seja, ainda sem
-   * overshoot — uma ilustração grande que oscila parece emperra e não viva.
+   * `stiffness` 120 → 90 → 70 deixa a arte demorar mais a chegar, e a `mass`
+   * 0,8 → 0,9 aumenta a inércia. O `damping` acompanha para manter o
+   * amortecimento relativo: ζ ≈ 1,32, ou seja, bem amortecida e **sem
+   * overshoot** — uma ilustração grande que oscila parece emperra e não viva.
    */
-  spring: { stiffness: 90, damping: 20, mass: 0.9 },
+  spring: { stiffness: 70, damping: 21, mass: 0.9 },
 } as const;
 
 /**

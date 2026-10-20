@@ -11,18 +11,24 @@ import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 /**
  * A arte de fundo da Solutions Section responde ao ponteiro.
  *
+ * ## O escopo é a JANELA, e não a seção
+ *
+ * O ouvinte está na janela da imagem, e não na seção. Isso é o que limita o
+ * efeito àquela "tela": passar o ponteiro pelo título ou pelas pílulas não
+ * move a arte, e a resposta só existe enquanto o ponteiro está sobre a
+ * imagem.
+ *
+ * A consequência é que **a força virou 1 dentro da janela** e não há mais
+ * `reach`: com o ouvinte na própria janela, o ponteiro nunca está fora dela
+ * quando o handler roda, e uma distância de alcance seria um número morto.
+ * O que modula a resposta é só a **direção**, que cresce do centro para as
+ * bordas.
+ *
  * ## O que se move, e o que não
  *
  * Só a **arte** se move. O badge e o painel de texto ficam ancorados na janela,
  * e a ilustração desliza por baixo deles — que é o que faz a leitura ser de
  * "janela" e não de "cartão inteiro mexendo".
- *
- * ## A direção é medida contra a janela, e não contra a seção
- *
- * A janela é a peça que se move, então é contra ela que a direção é
- * normalizada. O **ouvinte** é a seção inteira, que é o que faz a resposta
- * começar já quando o ponteiro entra na seção — e não só quando ele chega em
- * cima da arte.
  *
  * ## O sinal é o do pedido: a arte vai PARA ONDE o ponteiro está
  *
@@ -34,13 +40,6 @@ import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
  * cursor) é trocar um sinal: `x = -nx * amplitude`. Foi medido e olhado nos
  * dois sentidos antes de escolher — com o sinal invertido, a moldura do quadro
  * na árvore saía pela borda esquerda da janela, que é o oposto de "segue".
- *
- * ## A força é a distância até a janela
- *
- * Dentro da janela a força é 1; fora, ela morre `reach` px depois da borda.
- * Sem isso a arte ficaria travada no deslocamento máximo assim que o ponteiro
- * saísse da caixa — e aí não parece reação, parece defeito. É o mesmo
- * mecanismo da inclinação do cartão de crédito.
  *
  * ## Cortado por `prefers-reduced-motion`
  *
@@ -57,7 +56,7 @@ export type BackgroundParallaxValues = {
 };
 
 export type BackgroundParallax = {
-  /** Props para espalhar na `<section>` que deve escutar o ponteiro. */
+  /** Props para espalhar na janela que contém a arte. */
   bind: {
     onPointerMove: (event: ReactPointerEvent<HTMLElement>) => void;
     onPointerLeave: () => void;
@@ -91,28 +90,21 @@ export function useBackgroundParallax(): BackgroundParallax {
       // `pointermove` de um dedo viraria a arte a cada toque na tela.
       if (reduceMotion || event.pointerType !== "mouse") return;
 
-      const janela = document.querySelector<HTMLElement>(".sol-window");
-      if (!janela) return;
-
-      const box = janela.getBoundingClientRect();
+      // A caixa é a do **próprio elemento que escuta** — a janela. Não precisa
+      // de `querySelector` no documento: o `currentTarget` do evento é
+      // exatamente a caixa que contém a arte.
+      const box = event.currentTarget.getBoundingClientRect();
       const cx = box.left + box.width / 2;
       const cy = box.top + box.height / 2;
 
-      // Direção normalizada contra a janela e saturada em ±1: passando da
-      // borda, a direção não continua crescendo — senão a arte passaria do
-      // deslocamento máximo direto para o oposto, e o gesto viraria uma
-      // guinada.
+      // Direção normalizada contra a janela e saturada em ±1. A saturação
+      // importa pouco aqui (com o ouvinte na janela, o ponteiro nunca sai
+      // dela), mas ela é a rede de segurança contra uma janela degenerada.
       const nx = clamp((event.clientX - cx) / (box.width / 2), -1, 1);
       const ny = clamp((event.clientY - cy) / (box.height / 2), -1, 1);
 
-      // Força: 1 dentro da janela, caindo a zero `reach` depois da borda.
-      const outX = Math.max(0, Math.abs(event.clientX - cx) - box.width / 2);
-      const outY = Math.max(0, Math.abs(event.clientY - cy) - box.height / 2);
-      const fora = Math.hypot(outX, outY);
-      const forca = Math.max(0, 1 - fora / BACKGROUND_PARALLAX.reach);
-
-      targetX.set(nx * BACKGROUND_PARALLAX.amplitudeX * forca);
-      targetY.set(ny * BACKGROUND_PARALLAX.amplitudeY * forca);
+      targetX.set(nx * BACKGROUND_PARALLAX.amplitudeX);
+      targetY.set(ny * BACKGROUND_PARALLAX.amplitudeY);
     },
     [reduceMotion, targetX, targetY],
   );

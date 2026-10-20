@@ -169,7 +169,15 @@ provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
     cima e 118 px para baixo. Os 44 px usados são 60% da folga mais apertada.
     O sinal oposto (o parallax clássico, em que a cena recua do cursor) é
     trocar um sinal em `use-background-parallax.ts`.
-17. **O seletor de opções é o mesmo componente nas duas seções.** A Cards
+17. **O parallax da Solutions Section só existe dentro da janela da imagem.**
+    O ouvinte do ponteiro está no próprio elemento que contém a arte, e não na
+    seção. Passar pelo título ou pelas pílulas **não move nada** — é o que
+    limita o efeito àquela "tela".
+    A consequência é que o `reach` **deixou de existir**: com o ouvinte na
+    janela, o ponteiro nunca está fora dela quando o handler roda, e uma
+    distância de alcance seria um número morto. O que modula a resposta é só a
+    **direção**, que cresce do centro para as bordas.
+18. **O seletor de opções é o mesmo componente nas duas seções.** A Cards
     Section e a Solutions Section têm o mesmo seletor, e agora são o mesmo
     código: `components/ui/PillTab.tsx` + a regra `.pill-tab`. O que muda
     entre elas é só a paleta, e ela chega por custom property — as duas seções
@@ -2695,3 +2703,66 @@ usuário fez ("é igual ao que tem no cards"). O que a deixou segura foi ter
 medido a Cards Section **antes** de mexer, para saber o que estava errado:
 520,33 × 42 contra 514 × 40 é o sintoma, e a causa é a mesma do badge. Sem
 esse número, a unificação teria sido um ato de fé.
+
+### 2026-10-20 — parallax mais suave ainda, e limitado à janela da imagem
+
+Três pedidos: menos intensidade, mais suavidade, e o efeito restrito à tela
+que tem o fundo. (E a informação de que o usuário liberou o frame `151:92`
+— Conta e Pix — no Figma, que é o próximo bloco.)
+
+#### As três mudanças
+
+| | antes | agora |
+|---|---|---|
+| amplitude horizontal | 26 px | **14 px** |
+| amplitude vertical | 16 px | **9 px** |
+| mola | `120 / 22 / 0,8` → `90 / 20 / 0,9` | **`70 / 21 / 0,9`** |
+| escopo | a seção inteira | **só a janela da imagem** |
+
+A amplitude caiu pela segunda vez (44 → 26 → 14) e a mola ficou mais lenta
+pela segunda vez também. O `damping` acompanhou para manter o amortecimento
+relativo: ζ ≈ 1,32, bem amortecida e **sem overshoot**.
+
+#### O escopo restrito muda o modelo, e não é só um detalhe
+
+O ouvinte saiu da **seção** e foi para a **janela**. O que isso apaga é o
+conceito de `reach`: com o ouvinte na própria janela, o ponteiro nunca está
+fora dela quando o handler roda, e a distância de alcance vira um número
+morto. Tirou também a lógica de força — o que modula a resposta agora é só a
+**direção**, que cresce do centro para as bordas.
+
+E o ganho de escopo é o que o usuário pediu: passar o ponteiro pelo título ou
+pelas pílulas não move a arte.
+
+O `currentTarget` do evento substituiu o `document.querySelector(".sol-window")`
+— com o ouvinte no próprio elemento, a caixa é a dele, e não há busca global.
+
+#### Verificação
+
+Chrome e Firefox, dentro de 0,1 px:
+
+| ponteiro | x | y | |
+|---|---|---|---|
+| centro da janela | 0 | 0 | parado |
+| borda esquerda | −13,6 (FF: −13,8) | 0 | responde |
+| borda direita | +13,2 (FF: +13,7) | 0 | responde |
+| borda de cima | 0 | −8,7 (FF: −8,8) | responde |
+| **sobre o título** | 0 | 0 | **parado** |
+| **sobre as pílulas** | 0 | 0 | **parado** |
+| **100 px abaixo da janela** | 0 | 0 | **parado** |
+
+A arte continua cobrindo a janela em todos os estados, e sob
+`prefers-reduced-motion` o deslocamento é 0,00 com o ponteiro na borda.
+
+#### O Figma
+
+O usuário liberou o `151:92` (Conta e Pix) — o segundo frame da Solutions
+Section. E a altura do frame no Figma passou de 1316 para **1176**, que é a
+consequência da mudança do Navigation para dentro do Title: o Figma está
+batendo com o que foi implementado.
+
+Os outros dois (`153:125` Investimentos e `153:167` Empréstimos) seguem
+ocultos. Note que os dois ainda estão nomeados "Solutions Section - Account"
+no Figma — a identidade deles vem do badge, e o nome merece correção.
+
+tsc --noEmit, eslint e next build limpos.

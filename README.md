@@ -1271,10 +1271,9 @@ de "cartão inteiro mexendo".
 
 | | valor | por quê |
 |---|---|---|
-| amplitude horizontal | 26 px | era 44 — a sensação pedida era de suavidade, não de resposta |
-| amplitude vertical | 16 px | era 28, na mesma proporção |
-| alcance (`reach`) | 240 px | a resposta morre 240 px depois da borda da janela |
-| mola | `stiffness 90 / damping 20 / mass 0.9` | ζ ≈ 1,11, sem overshoot, e mais lenta |
+| amplitude horizontal | 14 px | 44 → 26 → 14: a sensação pedida é de suavidade, não de resposta |
+| amplitude vertical | 9 px | 28 → 16 → 9, na mesma proporção |
+| mola | `stiffness 70 / damping 21 / mass 0.9` | ζ ≈ 1,32, bem amortecida, sem overshoot |
 
 **A amplitude não é livre.** No Figma a arte **não** é dimensionada pela
 janela: ela é maior e deslocada, e é a janela que recorta. Em `144:2` a arte
@@ -1288,7 +1287,7 @@ ocupa 1882,348 × 1020,567 a partir de (−289, −118) dentro de uma janela de
 | para cima | 182,567 px |
 | para baixo | 118 px |
 
-Os 26 px usam 35% da folga mais apertada. **Acima de 73 px a borda direita da
+Os 14 px usam 19% da folga mais apertada. **Acima de 73 px a borda direita da
 arte apareceria** — e é por isso que o número mora num lugar só.
 
 **O sentido é o do pedido:** a arte vai *para onde* o ponteiro está, e o
@@ -1298,15 +1297,26 @@ medido e olhado nos dois sentidos antes de escolher — com o sinal invertido, a
 moldura do quadro na árvore saía pela borda esquerda da janela, que é o oposto
 de "segue".
 
-**Medido** (Chrome e Firefox, dentro de 0,05 px):
+**O escopo é a janela, e não a seção.** O ouvinte do ponteiro está na própria
+janela da imagem: passar pelo título ou pelas pílulas **não move a arte**. É o
+que limita o efeito àquela "tela".
 
-| Ponteiro | `x` | `y` |
-|---|---|---|
-| centro da janela | 0 | 0 |
-| borda esquerda | −25,7 | 0 |
-| borda direita | +25,6 | 0 |
-| borda de cima | 0 | −15,7 |
-| 120 px acima da janela | 0 | −8,0 (força 0,5) |
+E com o ouvinte na janela, o `reach` **deixou de existir** — o ponteiro nunca
+está fora dela quando o handler roda, e uma distância de alcance seria um
+número morto. O que modula a resposta é só a **direção**, que cresce do centro
+para as bordas.
+
+**Medido** (Chrome e Firefox, dentro de 0,1 px):
+
+| Ponteiro | `x` | `y` | |
+|---|---|---|---|
+| centro da janela | 0 | 0 | parado |
+| borda esquerda da janela | −13,6 | 0 | responde |
+| borda direita da janela | +13,2 | 0 | responde |
+| borda de cima | 0 | −8,7 | responde |
+| **sobre o título** | 0 | 0 | **parado** |
+| **sobre as pílulas** | 0 | 0 | **parado** |
+| **100 px abaixo da janela** | 0 | 0 | **parado** |
 | 240 px acima | 0 | 0 (a resposta morreu) |
 
 E o deslocamento do **conteúdo** foi conferido por correlação cruzada entre

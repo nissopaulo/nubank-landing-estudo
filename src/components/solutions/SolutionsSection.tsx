@@ -75,9 +75,9 @@ export function SolutionsSection() {
   const active = solution.active;
 
   /*
-   * A arte de fundo segue o ponteiro. O ouvinte é a seção inteira — é o que
-   * faz a resposta começar quando o ponteiro entra na seção, e não só quando
-   * ele chega em cima da arte — e a direção é medida contra a janela.
+   * A arte de fundo segue o ponteiro. O ouvinte é a **janela** — é o que
+   * limita o efeito àquela tela: passar o ponteiro pelo título ou pelas
+   * pílulas não move a arte.
    *
    * O hook vem **antes** do `return` antecipado: a regra de hooks exige a
    * mesma ordem em todo render, e um hook depois de uma saída antecipada é
@@ -100,7 +100,6 @@ export function SolutionsSection() {
       id="solucoes"
       aria-labelledby="solucoes-titulo"
       className="relative flex flex-col items-center gap-[100px] overflow-clip bg-white px-[200px] py-[100px]"
-      {...parallax.bind}
     >
       {/*
         `overflow-clip` na seção porque a prévia desfocada vai **além** da
@@ -169,11 +168,15 @@ export function SolutionsSection() {
           A janela da imagem. `relative` porque é a âncora do badge e do painel
           de texto, e `overflow-clip` porque é ela que recorta a imagem, como
           no Figma.
+
+          É aqui que o ponteiro é escutado: o efeito da arte fica **limitado a
+          esta tela**, e passar pelo título ou pelas pílulas não move nada.
         */}
         <motion.div
           variants={revealUp}
           className="sol-window relative w-full overflow-clip"
           style={{ height: WINDOW_H, borderRadius: WINDOW_RADIUS }}
+          {...parallax.bind}
         >
           {/*
             A imagem não é dimensionada pela janela: o Figma a põe num
