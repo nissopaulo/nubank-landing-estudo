@@ -34,11 +34,9 @@ inclina em 3D sob o ponteiro, e o nome, a descrição e o CTA. A Cards Section
 nenhuma fica `aria-disabled`. A virada do cartão foi medida em Chrome e
 Firefox, em movimento normal e reduzido.
 
-Depois dela vem a **Solutions Section**, **um carrossel**, e ela está **no
-segundo frame dos quatro**: o `144:2` (Caixinhas) e o `151:92` (Conta e
-Pix) estão liberados, e as outras duas pílulas são botões desativados com aviso
-para leitor de tela. É decisão de processo, não falta de design — os quatro
-frames existem no Figma, dois deles ocultos.
+Depois dela vem a **Solutions Section**, **um carrossel**, e ela está
+**completa**: os quatro frames (`144:2`, `151:92`, `153:125`, `153:167`) estão
+liberados e as quatro opções trocam.
 
 A composição: a imagem principal em janela arredondada, o badge e o painel de
 texto sobre ela, e as **prévias das vizinhas sangrando pelas bordas** — 135 px
@@ -201,7 +199,17 @@ provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
     lado errado **na volta** — medido, tx = −35 quando devia ser +36. Com a
     variant, o `custom` do `AnimatePresence` chega ao `exit`. É a mesma
     armadilha que a Cards Section já tinha encontrado na virada do cartão.
-21. **O seletor de opções é o mesmo componente nas duas seções.** A Cards
+21. **O badge e o painel viajam com a arte, e não ficam parados.**
+    A saída deles usa **o mesmo deslocamento, a mesma escala e a mesma curva** da
+    viagem da arte (`VIAGEM`), e o `transform-origin` de cada um é o **canto da
+    janela** — e não o do próprio elemento. É o que faz a saída casar com a
+    arte: o badge termina a −28,37, que é exatamente onde ele ficaria se
+    estivesse dentro do quadro da arte.
+    Medido: a diferença entre a posição real do badge e a posição que ele
+    teria dentro do quadro da arte fica em **±1,8 px** durante toda a viagem.
+    E a janela **não** tem `overflow-clip`: um clip ali cortaria o badge e o
+    painel no meio da viagem.
+22. **O seletor de opções é o mesmo componente nas duas seções.** A Cards
     Section e a Solutions Section têm o mesmo seletor, e agora são o mesmo
     código: `components/ui/PillTab.tsx` + a regra `.pill-tab`. O que muda
     entre elas é só a paleta, e ela chega por custom property — as duas seções
@@ -3061,6 +3069,88 @@ opacidade 0 a 1 entre 1011 ms e 1440 ms, e o painel novo fica em opacidade 0
 até 1000 ms e sobe de y = 24 a 0 a partir daí.
 
 Movimento reduzido: a arte **já** está no destino em 120 ms e o painel chega
+a opacidade 1 sem atraso.
+
+tsc --noEmit, eslint e next build limpos.
+
+### 2026-10-20 — o conteúdo viaja com a arte, e as duas últimas opções
+
+Dois pedidos: o badge e o painel de texto **atrelados ao fundo** (não parados
+no lugar enquanto somem), e a implementação das duas últimas opções, que o
+usuário liberou no Figma.
+
+#### 1. O conteúdo viaja
+
+O problema descrito: "a tela está indo para a esquerda e o badge e o text box
+continua no mesmo lugar até sumir".
+
+A correção: a saída do badge e do painel usa **o mesmo deslocamento, a mesma
+escala e a mesma curva** da viagem da arte. E o `transform-origin` de cada um
+é o **canto da janela**, e não o do próprio elemento.
+
+Deriva (a mesma do quadro da arte): o elemento está na posição de janela
+`(wx, wy)`; a origem do transform é o canto da janela; o `scale` vem antes
+do `translate` na ordem do CSS. O deslocamento necessário é, portanto,
+**independente da opção**:
+
+    A_x = posicao_do_slot_esquerda.x - posicao_do_slot_centro.x = -1373,444
+    A_y = posicao_do_slot_esquerda.y - posicao_do_slot_centro.y =      52
+
+E a origem, essa sim, é por opção: `(-wx, -wy)`.
+
+**Medido:** a diferença entre a posição real do badge e a posição que ele teria
+dentro do quadro da arte fica em **±1,8 px** durante toda a viagem, e volta a
+0 no fim. O badge sai de x = 1530 e chega a **−28,37** — que é exatamente
+`-1173,444 + 1330 × 0,861111`, a posição dele no quadro da arte escalado.
+Ele **some enquanto viaja** (opacidade 1 → 0 entre 8 ms e 1016 ms).
+
+E a janela perdeu o `overflow-clip`: um clip ali cortaria o badge e o painel
+no meio da viagem. O clip que importa é o do quadro da arte.
+
+#### 2. As duas últimas opções
+
+Implementados o Investimentos (`153:125`) e o Empréstimos (`153:167`), com
+tudo lido do Figma: arte, recorte, título da seção, badge, título do painel em
+quatro linhas (o Investimentos) e três, e a posição e a largura do painel.
+
+O painel do Investimentos é o único que **sobe**: 29 px acima dos outros
+(y = 414 em vez de 443 na janela), e 264 px de altura em vez de 235, porque o
+título tem quatro linhas.
+
+O título do painel virou um **array** de linhas: três nos outros frames e
+**quatro** no Investimentos, e uma tupla de três não serviria.
+
+#### 3. O modelo das prévias se confirmou nos quatro frames
+
+O recorte da arte de cada prévia é **exatamente** o recorte da janela escalado
+por 0,861111 — delta **0,000** nos quatro números, nos quatro frames. Inclusive
+nos dois casos que ainda não estavam implementados (a prévia esquerda do
+Investimentos e a do Empréstimos).
+
+Mas a **posição do quadro** da prévia **não** é a mesma em todos, e a do
+Investimentos é inconsistente: x = −1373,444 (200 px mais à esquerda) e
+y = 306 (102 px mais acima). E a 200 px mais à esquerda o quadro inteiro
+sairia do frame de 1920 — a prévia ficaria **invisível**.
+
+O **render do próprio Figma** mostra a prévia visível, em 0..140, que é
+exatamente onde o modelo a põe. A implementação segue o render, e o número
+isolado do `get_design_context` fica registrado como divergência. Vale
+corrigir o Figma.
+
+#### Verificação
+
+Chrome e Firefox, dentro de 0,05 px. Geometria dos quatro estados:
+
+| | badge | painel | arte na janela |
+|---|---|---|---|
+| Caixinhas | 1530 · 147,27×48 | 1294 · 384×235,09 | 200 / 356 |
+| Conta e Pix | 1513 · 164,03×48 | 1235 · 443×235,09 | 200 / 356 |
+| Investimentos | 1483 · 194,7×48 | 1211 · 467×**264,13** | 200 / 356 |
+| Empréstimos | 1492 · 185,67×48 | 1159 · 519×235,09 | 200 / 356 |
+
+Todas as quatro opções trocam, e o carrossel vai e volta.
+
+Movimento reduzido: a arte **já** está no destino em 120 ms e o conteúdo chega
 a opacidade 1 sem atraso.
 
 tsc --noEmit, eslint e next build limpos.

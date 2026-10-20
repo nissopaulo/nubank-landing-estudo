@@ -8,10 +8,12 @@ import { CaretRight } from "@phosphor-icons/react/dist/ssr/CaretRight";
 import {
   ACTIVE_INDEX,
   CARROSSEL_DURACAO,
+  CARROSSEL_EASE,
   PREVIEW_BLUR,
   PREVIEW_SCALE,
   SLOTS,
   SOLUTIONS,
+  VIAGEM,
   WINDOW,
   type SlotName,
   type Solution,
@@ -239,7 +241,13 @@ export function SolutionsSection() {
           id={`solucoes-painel-${solucao.id}`}
           aria-labelledby={`solucoes-aba-${solucao.id}`}
           variants={revealUp}
-          className="sol-window relative w-full overflow-clip"
+          /*
+           * **Sem `overflow-clip`**, e é de propósito: o badge e o painel
+           * saem com a arte, e um clip aqui os cortaria no meio da viagem.
+           * O clip que importa é o do quadro da arte, que é quem recorta a
+           * ilustração.
+           */
+          className="sol-window relative w-full"
           style={{ height: WINDOW.h, borderRadius: WINDOW.radius }}
           {...parallax.bind}
         >
@@ -258,13 +266,42 @@ export function SolutionsSection() {
               key={solucao.id}
               custom={direcao}
               className="sol-badge absolute flex items-center justify-center rounded-[100px] border-2 border-nu-brand bg-nu-bg-secondary px-[22px] py-[10px]"
-              style={{ left: active.badgeBox.x, top: active.badgeBox.y }}
+              style={{
+                left: active.badgeBox.x,
+                top: active.badgeBox.y,
+                /*
+                 * A origem do transform é o **canto da janela**, e não o do
+                 * próprio badge — é o que faz a saída casar com a viagem da
+                 * arte. E a origem é a posição do badge dentro da janela, que
+                 * muda por opção.
+                 */
+                transformOrigin: `${-active.badgeBox.x}px ${-active.badgeBox.y}px`,
+              }}
               initial={{ opacity: 0 }}
               animate={{
                 opacity: 1,
                 transition: { duration: SOLUTIONS_SLIDE.fade, delay: CHEGADA },
               }}
-              exit={{ opacity: 0, transition: { duration: SOLUTIONS_SLIDE.textExit } }}
+              /*
+               * **A saída viaja com a arte.** O pedido foi que o badge e o
+               * painel não ficassem parados no lugar enquanto apagam — eles
+               * accompany a composição para a borda, encolhendo com ela.
+               *
+               * O deslocamento é o mesmo da arte (de um slot para o outro), e
+               * a curva e a duração também — as três coisas precisam bater com
+               * a transição do `.sol-arte`, e `VIAGEM` é a fonte da
+               * verdade do deslocamento.
+               */
+              exit={{
+                opacity: 0,
+                x: VIAGEM.dx,
+                y: VIAGEM.dy,
+                scale: VIAGEM.scale,
+                transition: {
+                  duration: CARROSSEL_DURACAO / 1000,
+                  ease: CARROSSEL_EASE,
+                },
+              }}
             >
               {/*
                 `leading-[1.2]`: o texto do Figma (`151:76`) tem 24 px de caixa
@@ -305,6 +342,8 @@ export function SolutionsSection() {
                 left: active.textBox.x,
                 top: active.textBox.y,
                 width: active.textBox.w,
+                /* A origem é o canto da janela — ver o badge. */
+                transformOrigin: `${-active.textBox.x}px ${-active.textBox.y}px`,
               }}
               /*
                * A variant tem o **atraso dentro dela**, e não na prop
@@ -331,18 +370,25 @@ export function SolutionsSection() {
               }}
               initial="hidden"
               animate="visible"
+              /* A saída viaja com a arte — ver o badge. */
               exit={{
                 opacity: 0,
-                y: -12,
-                transition: { duration: SOLUTIONS_SLIDE.textExit, ease: "easeOut" },
+                x: VIAGEM.dx,
+                y: VIAGEM.dy,
+                scale: VIAGEM.scale,
+                transition: {
+                  duration: CARROSSEL_DURACAO / 1000,
+                  ease: CARROSSEL_EASE,
+                },
               }}
             >
               <p className="font-display text-[24px] font-bold leading-[1.21] whitespace-pre text-nu-brand">
-                {active.title[0]}
-                <br />
-                {active.title[1]}
-                <br />
-                {active.title[2]}
+                {active.title.map((linha) => (
+                  <span key={linha}>
+                    {linha}
+                    <br />
+                  </span>
+                ))}
               </p>
 
               {/*

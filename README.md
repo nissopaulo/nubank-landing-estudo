@@ -1164,10 +1164,13 @@ tem vizinha anterior.
 |---|---|---|---|
 | Caixinhas | Safe | `144:2` | liberado |
 | Conta e Pix | Account | `151:92` | liberado |
-| Investimentos | — | `153:125` | oculto |
-| Empréstimos | — | `153:167` | oculto |
+| Investimentos | — | `153:125` | liberado |
+| Empréstimos | — | `153:167` | liberado |
 
-(No Figma os dois últimos estão **todos** nomeados "Solutions Section -
+**A seção está completa**: as quatro opções trocam, e o carrossel vai e volta
+sem travar.
+
+(No Figma os dois últimos ainda estão **todos** nomeados "Solutions Section -
 Account" — a identidade deles vem do badge, não do nome do frame.)
 
 ### A prévia É a janela encolhida — e isso é o que faz o carrossel
@@ -1241,6 +1244,25 @@ arrancada seguida de meio segundo de arrasto, que é o que lê como "intenso".
 A de agora tem partida macia, glide longo e chegada amortecida. Distribuição
 medida do caminho percorrido: **50% em 524 ms** (era 95%), 75% em 651 ms, 90%
 em 727 ms.
+
+### O badge e o painel viajam com a arte
+
+O conteúdo da janela **não fica parado** enquanto a arte sai. Ele acompanha a
+composição para a borda, encolhe com ela e some no caminho.
+
+A saída usa **o mesmo deslocamento, a mesma escala e a mesma curva** da viagem da
+arte (`VIAGEM` em `lib/solutions.ts`), e o `transform-origin` de cada um é o
+**canto da janela** — e não o do próprio elemento. É o que faz a saída casar
+com a arte: o badge termina a −28,37, que é exatamente onde ele ficaria se
+estivesse dentro do quadro da arte.
+
+Medido, o badge e a arte ficam **colados** durante toda a viagem: a diferença
+entre a posição real do badge e a posição que ele teria dentro do quadro da
+arte fica em **±1,8 px**, e volta a 0 no fim.
+
+Por isso a janela **não** tem `overflow-clip` — um clip ali cortaria o badge e
+o painel no meio da viagem. O clip que importa é o do quadro da arte, que é
+quem recorta a ilustração.
 
 ### O badge e o painel só aparecem quando a arte chega
 
@@ -1444,49 +1466,48 @@ padding, as pílulas da Cards Section passaram de 520,33 × 42 para
 **512,33 × 40** — o Figma dá 514 × 40, e a diferença que resta é a métrica do
 texto.
 
-### Fidelidade medida contra os dois frames
+### Fidelidade medida contra os quatro frames
 
 Geometria lida do DOM (`getBoundingClientRect`), em coordenadas de documento,
-nos dois motores. As duas colunas de estado são o **Caixinhas** (`144:2`) e o
-**Conta e Pix** (`151:92`).
+nos dois motores. Todos os números de baixo são do Figma.
 
-| | Figma (Safe) | Figma (Account) | Chrome | Firefox |
+| | Safe `144:2` | Account `151:92` | Billing `153:125` | Business `153:167` |
 |---|---|---|---|---|
-| Seção | 1920 × 1176 | 1920 × 1176 | **1920 × 1176,16** | idem |
-| Título | x 200 · y 100 | x 200 · y 100 · **554** | **200 · 100** (660,86 / 553,36) | idem |
-| Janela (badge e painel) | x 200 · y 356 · 1520×720 | idem | **200 · 356,15 · 1520×720** | **200 · 356,17** |
-| Badge | x 1530 · 148×48 | x 1513 · 165×48 | **1530 · 147,27×48** / **1513 · 164,03×48** | idem |
-| Painel de texto | x 1294 · **384**×235 | x 1235 · **443**×235 | **1294 · 384×235,09** / **1235 · 443×235,09** | idem |
-| Arte no centro | x 200 · y 356 · 1520×720 | idem | **200 · 356,15 · 1520×720** | **200 · 356,17** |
-| Arte na prévia esquerda | — | x −1173,44 · 1308,889×620 | **−1173,44 · 1308,89×620** | idem |
-| Arte na prévia direita | x 1784,56 | x 1784,56 | **1784,56 · 1308,89×620** | **1784,57** |
-| Seletor | x 902 (no Title) · 618×40 | idem | **x 1104,27 · 615,73×40** | idem |
-| Pílulas | 116 / 129 / 154 / 147 | idem | 115,41 / 128,83 / 153,36 / 146,14 | idem |
-| Imagem (relativo à janela) | −289 · −118 | −175 · −141 | **−89 · −118** / **25 · −141** | idem |
+| Título da seção | Cada objetivo merece seu espaço. | Tudo flui no seu dia a dia. | Olhe além de hoje. | Decisões com mais clareza. |
+| Arte na janela | 200 / 356 | idem | idem | idem |
+| Badge | 1530 · 148×48 | 1513 · 165×48 | 1483 · 195×48 | 1492 · 186×48 |
+| Painel de texto | 1294 · **384**×235 | 1235 · **443**×235 | 1211 · **467**×**264** | 1159 · **519**×235 |
+| Linha do painel | 799 | 799 | **770** | 799 |
+| Arte principal | safe (−289, −118) | serenity (−175, −141) | upstairs (−132, −31) | trade (−155, −49) |
 
-**Dois detalhes que só a medição mostra:**
+**O painel do Investimentos é o único que sobe** — 29 px acima dos outros (770
+em vez de 799) — e é o mais alto (264 px), porque o título tem **quatro**
+linhas. É o Figma, e a diferença é visível.
 
-- **A largura do painel de texto muda por frame**: 384 no Caixinhas e 443 no
-  Conta e Pix. Não é uma constante do design — o auto-layout do Figma dá a
-  largura do conteúdo mais o padding, e o texto do Caixinhas é mais estreito.
-- **O título do Conta e Pix tem um espaço no fim da primeira linha**, e ele
-  conta: o nó `151:95` mede 554 e a linha sem o espaço mede 535,25. O espaço
-  é invisível, mas a caixa do texto o inclui — por isso o título usa
-  `whitespace-pre`.
-- **A prévia é a janela encolhida por 0,861111**, e não há nada para medir
-  além disso: o quadro, o recorte da arte e o raio saem todos do mesmo
-  número (delta 0,000 no recorte, 21,528 = 25 × 0,861111 no raio).
+**A largura do painel muda por frame** (384 · 443 · 467 · 519): o auto-layout
+do Figma dá a largura do conteúdo mais o padding, e cada texto tem um
+tamanho diferente.
 
+Medido, com **±0,9 px** de diferença em todas as caixas — que é a métrica do
+texto, não o layout.
 
-**Nenhum delta de posição é de 1px.** Os deltas de tamanho que restam são de
-±0,86 px e vêm da métrica do texto: o viewer do Figma mede a largura de avance
-do Montserrat em ~0,5% a mais que o Chrome e o Firefox. É a mesma classe de
-diferença que o projeto já registrou no CTA da Cards Section (3,2 px, do ícone).
+### As prévias são as artes vizinhas, e o Figma é inconsistente nelas
 
-A única diferença de layout que **não** é de fonte é a altura da seção: 0,16 px
-a mais, porque o projeto usa `leading-[1.22]` nos títulos de 64 px e o Figma
-usa `leading: normal`. É a mesma conta de 2,08 px que a Cards Section já
-documentava.
+O recorte da arte de cada prévia é **exatamente** o recorte da janela
+escalado por 0,861111 — delta 0,000 nos quatro números, nos quatro frames. Mas
+a **posição do quadro** da prévia não é igual em todos:
+
+| prévia | Figma | implementado |
+|---|---|---|
+| direita | 1784,556 (y 406 e 408) | 1784,556 |
+| esquerda, no Account | −1173,444 · y 408 | −1173,444 · y 408 |
+| esquerda, no Investimentos | −1373,444 · y 306 | −1173,444 · y 408 |
+
+O do Investimentos é 200 px mais à esquerda e 102 px mais acima — e, a 200 px
+mais à esquerda, o quadro inteiro sairia do frame de 1920 e a prévia ficaria
+**invisível**. O render do próprio Figma mostra a prévia visível, em 0..140 —
+que é onde o modelo a põe. A implementação segue o render, e não o número
+isolado. Vale corrigir o Figma.
 
 ### Contraste
 
@@ -1962,11 +1983,9 @@ redirecionadores — esta página não tem função de cadastro.
 
 ## Próximos passos
 
-1. **A Solutions Section está no segundo frame** — o `144:2` (Caixinhas) e o
-   `151:92` (Conta e Pix) estão liberados e verificados. O próximo bloco é
-   liberar o `153:125` (Investimentos), e o preenchimento é o campo `active`
-   em `lib/solutions.ts` — com a posição da prévia esquerda, que nesse frame
-   é 200 px mais à esquerda e 102 px mais acima que nos outros.
+1. **A Solutions Section está completa** — os quatro frames (`144:2`, `151:92`,
+   `153:125`, `153:167`) estão liberados, as quatro opções trocam, e o
+   carrossel vai e volta. O próximo bloco é a navegação.
 2. Decidir as quatro reprovações de contraste da Cards Section, que são **do
    design** e estão implementadas como o Figma pede: nº 12 (pílula inativa do
    Nubank, 4,40:1), nº 14 (pílula inativa do Croma, 2,44:1), nº 15 (nome no

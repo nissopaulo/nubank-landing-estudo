@@ -92,12 +92,14 @@ export type Solution = {
     badge: string;
 
     /**
-     * Título do painel, nas três linhas em que o design quebra.
+     * Título do painel, nas linhas em que o design quebra.
      *
-     * A quebra vem do dado, não de uma largura: o Figma tem três nós de texto
-     * separados, e o mesmo cuidado do `desc` do Ecossystem.
+     * A quebra vem do dado, não de uma largura: o Figma tem um nó de texto
+     * por linha, e o mesmo cuidado do `desc` do Ecossystem. São três linhas
+     * no Caixinhas, no Conta e Pix e no Empréstimos, e **quatro** no
+     * Investimentos.
      */
-    title: [string, string, string];
+    title: string[];
 
     /** Rótulo do CTA. */
     cta: string;
@@ -175,13 +177,27 @@ export const SOLUTIONS: Solution[] = [
   {
     id: "investimentos",
     label: "Investimentos",
-    /**
-     * A arte existe mesmo com a opção oculta: é ela que aparece na prévia
-     * direita do frame do Conta e Pix (`153:161` / `153:162`).
-     */
     art: {
       src: "/images/backgrounds/upstairs-image.webp",
       imageBox: { x: -132, y: -31, w: 1784, h: 995.721 },
+    },
+    active: {
+      sectionTitle: ["Olhe além ", "de hoje."],
+      badge: "Investimentos",
+      title: [
+        "Explore alternativas para seus ",
+        "objetivos e conheça as ",
+        "características de cada ",
+        "investimento.",
+      ],
+      cta: "Saiba Mais",
+      badgeBox: { x: 1283, y: 42 },
+      /*
+       * O painel deste é o único que **sobe**: 29 px acima dos outros, na
+       * 414 em vez da 443. E é o mais alto (264 px), porque o título tem
+       * **quatro** linhas. É o Figma, e a diferença é visível.
+       */
+      textBox: { x: 1011, y: 414, w: 467 },
     },
   },
 
@@ -191,6 +207,18 @@ export const SOLUTIONS: Solution[] = [
     art: {
       src: "/images/backgrounds/trade-image.webp",
       imageBox: { x: -155, y: -49, w: 1736, h: 968.93 },
+    },
+    active: {
+      sectionTitle: ["Decisões com ", "mais clareza."],
+      badge: "Empréstimos",
+      title: [
+        "Conheça as condições disponíveis ",
+        "e avalie os custos antes ",
+        "de contratar.",
+      ],
+      cta: "Saiba Mais",
+      badgeBox: { x: 1292, y: 42 },
+      textBox: { x: 959, y: 443, w: 519 },
     },
   },
 ];
@@ -259,3 +287,29 @@ export type SlotName = keyof typeof SLOTS;
  * ele precisa estar nos dois lugares.
  */
 export const CARROSSEL_DURACAO = 1000;
+
+/**
+ * A curva da viagem, e ela tem de bater com a do `.sol-arte` no
+ * `globals.css`.
+ *
+ * `cubic-bezier(0.6, 0.05, 0.3, 1)`: partida macia, glide longo e chegada
+ * amortecida. A curva anterior (`EASE_EMPHASIZED`) fazia 78% do caminho no
+ * primeiro quarto do tempo — uma arrancada seguida de meio segundo de arrasto.
+ */
+export const CARROSSEL_EASE: [number, number, number, number] = [0.6, 0.05, 0.3, 1];
+
+/**
+ * O deslocamento de um slot para o outro, em px do frame de 1920.
+ *
+ * É a diferença entre a posição do slot centro e a do slot da prévia
+ * esquerda, e é o que faz o badge e o painel de texto **viajarem com a arte**
+ * em vez de ficarem parados enquanto apagam.
+ *
+ * O `scale` vem junto porque a arte encolhe na viagem, e um painel que
+ * saísse do lugar encolhendo leria como parte do mesmo movimento.
+ */
+export const VIAGEM = {
+  dx: SLOTS.esquerda.x - SLOTS.centro.x,
+  dy: SLOTS.esquerda.y - SLOTS.centro.y,
+  scale: PREVIEW_SCALE,
+};
