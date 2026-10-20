@@ -34,9 +34,12 @@ inclina em 3D sob o ponteiro, e o nome, a descrição e o CTA. A Cards Section
 nenhuma fica `aria-disabled`. A virada do cartão foi medida em Chrome e
 Firefox, em movimento normal e reduzido.
 
-Depois dela vem a **Solutions Section**, **um carrossel**, e ela está
-**completa**: os quatro frames (`144:2`, `151:92`, `153:125`, `153:167`) estão
-liberados e as quatro opções trocam.
+Depois dela **ia** a **Solutions Section** — um carrossel com os quatro frames
+(`144:2`, `151:92`, `153:125`, `153:167`) implementados e medidos. Mas o
+resultado não foi aprovado, e em 2026-10-20 a seção **saiu da página** e o
+código foi **arquivado** em `archive/solutions-section/` — commitado, fora da
+build e do lint, só para reaproveitar. O `PillTab` (o seletor de pílulas, que
+a Cards Section usa) **ficou** no projeto.
 
 A composição: a imagem principal em janela arredondada, o badge e o painel de
 texto sobre ela, e as **prévias das vizinhas sangrando pelas bordas** — 135 px
@@ -3344,3 +3347,45 @@ Movimento reduzido: a arte **já** está no destino em 150 ms e o badge e o
 painel chegam a opacidade 1 sem atraso.
 
 tsc --noEmit, eslint e next build limpos.
+
+### 2026-10-20 — a Solutions Section saiu da página e foi arquivada
+
+O usuário: *"Eu vou trabalhar essa seção de uma outra forma para a gente
+continuar mais tarde. Acabei não gostando de como ficou no geral. Pode deixar
+tudo isso que a gente fez talvez em outra pasta commitado apenas para
+reutilizar caso precise, mas no momento não iremos mais ter utilidade para
+essa seção que trabalhamos do jeito que está."*
+
+#### O que foi feito
+
+- A seção saiu de `src/app/page.tsx`.
+- Os três arquivos foram para `archive/solutions-section/`:
+  `SolutionsSection.tsx`, `use-background-parallax.ts` e `solutions.ts` (que
+  estava em `src/lib/`).
+- A regra `.sol-arte` saiu do `globals.css` e foi para
+  `archive/solutions-section/sol-arte.css` — uma regra que ninguém usa é peso
+  morto no bundle.
+- O `archive/` foi acrescentado ao `exclude` do `tsconfig.json` e ao
+  `globalIgnores` do `eslint.config.mjs`: o código arquivado referencia
+  módulos que não existem mais, e ele não é compilado nem lintado.
+- Um `README.md` no arquivo explica o que é, o que há de aproveitável e como
+  trazer de volta (quatro passos).
+
+#### O que ficou no projeto
+
+O **`PillTab`** (`components/ui/PillTab.tsx` e a regra `.pill-tab` do
+`globals.css`), que a Cards Section usa. Ele já tem a compensação de padding
+que faz a pílula bater com o Figma — 17 em vez de 18, porque o `border` do
+CSS soma na caixa e o traço do Figma não sai no auto-layout.
+
+E os **assets** (`public/images/backgrounds/`, 736 KB em quatro WebP), que
+continuam onde o código arquivado os lê — e que o rework vai precisar. São
+reexportáveis do Figma (nós `145:33`, `149:37`, `149:38` e `150:39`).
+
+#### Verificação
+
+`tsc --noEmit`, `eslint` e `next build` limpos. A página servida **não tem mais
+`id="solucoes"` nem a classe `sol-arte`**, e continua com a Cards Section.
+
+O histórico das medições da seção continua no registro das sessões de
+2026-10-20 acima — e é o que o rework vai precisar.

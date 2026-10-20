@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Código arquivado: não é lintado, porque não faz parte do projeto.
+    "archive/**",
   ]),
 ]);
 

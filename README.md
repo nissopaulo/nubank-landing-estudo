@@ -73,9 +73,6 @@ src/
     hero/
       HeroSection.tsx  seção da Hero (node 14:446)
       CardsShowcase.tsx composição de cards: entrada, parallax, ponteiro
-    solutions/
-      SolutionsSection.tsx  seção de soluções (nó 144:2) e seu seletor
-      use-background-parallax.ts  a arte de fundo seguindo o ponteiro
     site/
       SiteHeader.tsx   cabeçalho fixo, condensa ao rolar
       SiteFooter.tsx   rodapé + aviso legal + seções pendentes
@@ -96,7 +93,10 @@ public/images/
   cards/               artes dos cartões da Hero (WebP)
   credit-card/         peças do cartão de crédito (SVG do Figma)
   peoples/             recorte de cada pilar (WebP, alfa)
-  backgrounds/         artes da Solutions Section (WebP)
+  backgrounds/         artes da Solutions Section (WebP, hoje só do arquivo)
+
+archive/
+  solutions-section/   a Solutions Section arquivada (código, CSS e README)
 ```
 
 ---
@@ -1147,11 +1147,24 @@ sombra.
 
 ---
 
-## Solutions Section
+## Solutions Section — arquivada
+
+> **Esta seção saiu da página em 2026-10-20.** O resultado não foi aprovado e a
+> ideia é trabalhar a seção de outra forma. O código inteiro está commitado em
+> [`archive/solutions-section/`](archive/solutions-section/) — com um README que
+> explica o que há de aproveitável e como trazer de volta. **Não é compilado, não
+> é lintado e não faz parte da build.**
+>
+> O que **ficou** no projeto é o `PillTab` (`components/ui/PillTab.tsx` e a
+> regra `.pill-tab`), que a Cards Section usa.
 
 Figma `Solutions Section - Safe` (nó `144:2`) e `Solutions Section -
-Account` (nó `151:92`), 1920×1176. É a seção que vem **abaixo** da Cards
+Account` (`151:92`), 1920×1176. Foi a seção que vinha **abaixo** da Cards
 Section.
+
+A geometria toda foi medida contra o render do Figma, e ela vale para o
+rework:
+
 
 ### A seção é um carrossel
 
@@ -1994,9 +2007,10 @@ redirecionadores — esta página não tem função de cadastro.
 
 ## Próximos passos
 
-1. **A Solutions Section está completa** — os quatro frames (`144:2`, `151:92`,
-   `153:125`, `153:167`) estão liberados, as quatro opções trocam, e o
-   carrossel vai e volta. O próximo bloco é a navegação.
+1. **A Solutions Section está arquivada** — o resultado não foi aprovado e a
+   seção saiu da página. O código está em `archive/solutions-section/`, e o
+   rework vem quando você quiser atacá-lo. O próximo bloco do projeto é a
+   navegação.
 2. Decidir as quatro reprovações de contraste da Cards Section, que são **do
    design** e estão implementadas como o Figma pede: nº 12 (pílula inativa do
    Nubank, 4,40:1), nº 14 (pílula inativa do Croma, 2,44:1), nº 15 (nome no
