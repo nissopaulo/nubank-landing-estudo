@@ -54,7 +54,6 @@ export type BackgroundParallaxValues = {
   /** Deslocamento vertical da arte, em px. */
   y: MotionValue<number>;
 };
-
 export type BackgroundParallax = {
   /** Props para espalhar na janela que contém a arte. */
   bind: {

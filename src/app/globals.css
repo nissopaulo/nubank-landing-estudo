@@ -794,6 +794,28 @@
 }
 
 /*
+ * A arte da Solutions Section, no slot do carrossel.
+ *
+ * A transição é de **CSS**, e não do Motion, e o motivo é estrutural: a arte
+ * **viaja** entre os slots — ela é o mesmo elemento o tempo todo, mudando de
+ * lugar. Se cada slot fosse um elemento diferente, a arte trocaria de
+ * identidade no meio do caminho e o gesto deixaria de ser um gesto.
+ *
+ * O `transform` interpola de "translate(200px, 356px) scale(1)" para
+ * "translate(-1173.444px, 408px) scale(0.861111)", e o CSS interpola listas de
+ * transform com a mesma estrutura de funções.
+ *
+ * O desfoque interpola junto, e o valor é **local**: o `filter` é aplicado no
+ * espaço do quadro, e o quadro está escalado por 0,861111 — então 5,001 local
+ * dá 4,306 na tela, que é o número do Figma.
+ */
+.sol-arte {
+  transition:
+    transform 800ms cubic-bezier(0.32, 0.72, 0, 1),
+    filter 800ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/*
  * Pílulas de seletor.
  *
  * **O mesmo componente nas duas seções** — a Cards Section e a Solutions

@@ -8,42 +8,45 @@ import { CaretRight } from "@phosphor-icons/react/dist/ssr/CaretRight";
 import {
   ACTIVE_INDEX,
   PREVIEW_BLUR,
-  PREVIEW_OVERFLOW,
-  PREVIEW_RADIUS,
+  PREVIEW_SCALE,
+  SLOTS,
   SOLUTIONS,
-  WINDOW_H,
-  WINDOW_RADIUS,
-  type SolutionPreview,
+  WINDOW,
+  type SlotName,
+  type Solution,
 } from "@/lib/solutions";
 import {
-  EASE_OUT_EXPO,
-  revealFade,
   revealUp,
   SOLUTIONS_SLIDE,
   staggerContainer,
 } from "@/lib/motion";
 import { PillTab } from "@/components/ui/PillTab";
-import { useBackgroundParallax } from "@/components/solutions/use-background-parallax";
+import {
+  useBackgroundParallax,
+  type BackgroundParallaxValues,
+} from "@/components/solutions/use-background-parallax";
 
 /**
  * Solutions Section — Figma `Solutions Section - Safe` (`144:2`) e
  * `Solutions Section - Account` (`151:92`), 1920×1176.
  *
- * ## A seção é um carrossel
+ * ## A seção é um carrossel, e a prévia é a JANELA encolhida
  *
  * A janela central mostra a opção **ativa** e as duas bordas mostram as
  * **vizinhas**: 135 px à esquerda são a opção anterior, 135 px à direita são a
  * seguinte. O frame do Safe não tem prévia esquerda — é a primeira opção.
  *
- * ## A troca é um gesto, e não uma substituição
+ * A prévia **não é uma miniatura**: é a janela escalada por 0,861111, com a
+ * arte no mesmo recorte (o delta do recorte contra o da janela escalado é
+ * 0,000 nos quatro números). Por isso a virada é **um transform só**: a arte
+ * não muda de recorte, ela muda de lugar — sai da borda, cresce, e assume o
+ * centro; e a que estava no centro encolhe para a borda e ganha o blur.
  *
- * Quando a opção troca, **tudo anda na mesma direção**: a arte que estava na
- * prévia da direita entra na janela, a que estava na janela sai para a
- * prévia da esquerda, e uma nova entra pela direita.
+ * ## O que se move, e o que não
  *
- * Isso é possível porque **a prévia é a arte da vizinha**: a prévia direita do
- * Safe é a arte do Conta e Pix, que é exatamente o que entra na janela na
- * troca seguinte. O olho segue a mesma arte e lê o movimento.
+ * Só a **arte** viaja. O badge e o painel de texto ficam ancorados na janela e
+ * trocam por cross-fade: as prévias do Figma **não têm badge nem painel**, e
+ * é a arte que sangra para fora.
  *
  * ## O painel de texto surge a cada troca
  *
@@ -53,18 +56,17 @@ import { useBackgroundParallax } from "@/components/solutions/use-background-par
  *
  * ## Três âncoras diferentes, e por quê
  *
- * | Peça              | Âncora          | Por quê                                 |
- * |-------------------|-----------------|-----------------------------------------|
+ * | Peça              | Âncora          | Por quê                                    |
+ * |-------------------|-----------------|--------------------------------------------|
  * | badge e painel    | a **janela**    | mesma largura do `Main Content`, 256 px acima |
- * | prévias           | a **seção**     | são irmãs do `Main Content`, não filhas  |
- * | seletor de pílulas | o `Title`       | `justify-between`: flush à direita      |
+ * | arte              | o **slot**      | posição + escala, e é o que faz o carrossel  |
+ * | seletor de pílulas | o `Title`       | `justify-between`: flush à direita           |
  *
  * O badge e o painel são posicionados **pela janela**, e não pelo `Main
  * Content`: a janela tem a mesma largura e começa 256 px mais abaixo, então
  * `(1330, 298)` no `Main Content` é `(1330, 42)` na janela. Ancorar na janela
  * deixa a composição ligada à imagem — e é o que faz o resultado bater com o
- * Figma mesmo com o título renderizando 0,16 px mais alto (o `leading-[1.22]`
- * do projeto contra o `leading: normal` do design).
+ * Figma mesmo com o título renderizando 0,16 px mais alto.
  *
  * ## O CTA é um link de texto, e não um `CtaLink`
  *
@@ -105,13 +107,26 @@ export function SolutionsSection() {
    */
   if (!active) return null;
 
-  const image = active.imageBox;
-
   function select(i: number) {
     if (i === indice) return;
     setDirecao(i > indice ? 1 : -1);
     setIndice(i);
   }
+
+  /*
+   * As opções visíveis, cada uma no seu slot.
+   *
+   * A arte da opção anterior vai para a borda esquerda, a da atual fica no
+   * centro e a da seguinte vai para a borda direita. A arte é a mesma nos três
+   * casos — muda só o slot, que é posição e escala.
+   */
+  const visiveis: { opcao: Solution; slot: SlotName }[] = [
+    ...(indice > 0 ? [{ opcao: SOLUTIONS[indice - 1], slot: "esquerda" as const }] : []),
+    { opcao: solucao, slot: "centro" as const },
+    ...(indice < SOLUTIONS.length - 1
+      ? [{ opcao: SOLUTIONS[indice + 1], slot: "direita" as const }]
+      : []),
+  ];
 
   return (
     <section
@@ -127,6 +142,13 @@ export function SolutionsSection() {
         className="flex w-full flex-col gap-[100px]"
       >
         {/*
+          As artes, uma por opção visível.
+        */}
+        {visiveis.map((v) => (
+          <Arte key={v.opcao.id} opcao={v.opcao} slot={v.slot} parallax={parallax.values} />
+        ))}
+
+        {/*
           O Title é uma linha só: o texto à esquerda e o seletor à direita, os
           dois alinhados pela base.
 
@@ -136,7 +158,7 @@ export function SolutionsSection() {
         */}
         <motion.div
           variants={revealUp}
-          className="flex w-full items-end justify-between"
+          className="relative flex w-full items-end justify-between"
         >
           <h2
             id="solucoes-titulo"
@@ -184,9 +206,12 @@ export function SolutionsSection() {
         </motion.div>
 
         {/*
-          A janela da imagem. `relative` porque é a âncora do badge e do painel
-          de texto, e `overflow-clip` porque é ela que recorta a imagem, como
-          no Figma.
+          A janela. Ela **não** tem a arte dentro: a arte vive no slot, e no
+          centro o slot cobre a janela exatamente. O que fica aqui é o que é
+          ancorado na janela — o badge e o painel de texto.
+
+          `relative` porque é a âncora deles, e `overflow-clip` porque é ela
+          que recorta, como no Figma.
 
           É aqui que o ponteiro é escutado: o efeito da arte fica **limitado a
           esta tela**, e passar pelo título ou pelas pílulas não move nada.
@@ -197,71 +222,9 @@ export function SolutionsSection() {
           aria-labelledby={`solucoes-aba-${solucao.id}`}
           variants={revealUp}
           className="sol-window relative w-full overflow-clip"
-          style={{ height: WINDOW_H, borderRadius: WINDOW_RADIUS }}
+          style={{ height: WINDOW.h, borderRadius: WINDOW.radius }}
           {...parallax.bind}
         >
-          {/*
-            A arte não é dimensionada pela janela: o Figma a põe num retângulo
-            maior e deixa a janela recortar. É o que dá o enquadramento, e o
-            mesmo motivo pelo qual a sombra dos cards da Hero vai na `<img>` e
-            não na caixa do slot.
-
-            **A arte é a única coisa que se move.** O badge e o painel ficam
-            ancorados na janela, e a ilustração desliza por baixo deles.
-
-            `will-change: transform` é o custo consciente de mover uma arte de
-            1882 × 1020: sem uma camada própria, cada quadro do ponteiro
-            repintaria a região recortada.
-          */}
-          <AnimatePresence initial={false} custom={direcao}>
-            <motion.div
-              key={solucao.id}
-              custom={direcao}
-              aria-hidden="true"
-              className="absolute will-change-transform"
-              style={{
-                left: image.x,
-                top: image.y,
-                width: image.w,
-                height: image.h,
-              }}
-              /*
-               * A saída é uma **variant**, e não um objeto literal — porque só
-               * uma variant recebe o `custom`, e é o `custom` que carrega a
-               * direção.
-               *
-               * A primeira versão usava `exit={{ opacity: 0, x: -direcao * 48 }}`,
-               * e ela errava a direção **na volta**: o `exit` do elemento que
-               * sai é o do render antigo, com a direção antiga. Medido: indo
-               * para trás, a arte saía pela esquerda (tx = −35) quando
-               * devia sair pela direita. Com a variant, o `custom` do
-               * `AnimatePresence` chega ao `exit` e a direção fica certa.
-               */
-              variants={{
-                sai: (d: number) => ({
-                  opacity: 0,
-                  x: -d * SOLUTIONS_SLIDE.distance,
-                }),
-              }}
-              initial={{ opacity: 0, x: direcao * SOLUTIONS_SLIDE.distance }}
-              animate={{ opacity: 1, x: 0 }}
-              exit="sai"
-              transition={{
-                duration: SOLUTIONS_SLIDE.duration,
-                ease: SOLUTIONS_SLIDE.ease,
-              }}
-            >
-              <Image
-                src={active.image}
-                alt=""
-                fill
-                className="object-cover"
-                sizes="(min-width: 1920px) 1882px, 100vw"
-                unoptimized
-              />
-            </motion.div>
-          </AnimatePresence>
-
           {/*
             O badge. Cruza com a arte, sem se mover: ele está ancorado na
             janela, e é a ilustração que passa por baixo dele.
@@ -350,122 +313,95 @@ export function SolutionsSection() {
           </AnimatePresence>
         </motion.div>
       </motion.div>
-
-      {/*
-        As prévias das opções vizinhas.
-      */}
-      <Preview
-        key="prev"
-        slot={active.prev}
-        lado="esquerda"
-        direcao={direcao}
-        indice={indice}
-      />
-      <Preview
-        key="next"
-        slot={active.next}
-        lado="direita"
-        direcao={direcao}
-        indice={indice}
-      />
     </section>
   );
 }
 
 /**
- * Prévia de uma opção vizinha, sangrando pela borda da seção.
+ * A arte de uma opção, no slot em que ela está.
  *
- * `aria-hidden` porque é decorativa — a informação que ela carrega é a de uma
- * opção vizinha, e essa informação está no seletor.
+ * ## O quadro é a janela, e a prévia é ele encolhido
  *
- * O `blur` é do Figma (4,306 px) e fica no **contêiner**, não na imagem: no
- * design o desfoque é da camada, e é ele que produz a borda suave.
+ * O elemento tem **sempre** 1520 × 720, com a arte no recorte da janela. O
+ * que muda entre os slots é a `transform` — posição e escala — e o desfoque.
+ *
+ * Por isso o raio não precisa ser animado: 25 px escalados por 0,861111 dão
+ * 21,528, que é **exatamente** o raio que o Figma dá nas prévias.
+ *
+ * ## O desfoque é local, e por isso vale 5 px
+ *
+ * O `filter` é aplicado no espaço local do quadro, e o quadro está escalado
+ * por 0,861111. Para que o desfoque **na tela** seja 4,306 — o valor do
+ * Figma —, o valor local tem de ser 4,306 / 0,861111 = 5,001.
+ *
+ * ## A transição é uma transição de CSS, e não do Motion
+ *
+ * O `transform` interpola de "translate(200px, 356px) scale(1)" para
+ * "translate(-1173.444px, 408px) scale(0.861111)", e o CSS interpola listas
+ * de transform com a mesma estrutura de funções. É a peça mais barata de
+ * manter: nenhum estado, nenhum `AnimatePresence`, e a arte continua sendo o
+ * mesmo elemento — que é o que faz ela **viajar** em vez de trocar.
  */
-function Preview({
+function Arte({
+  opcao,
   slot,
-  lado,
-  direcao,
-  indice,
+  parallax,
 }: {
-  slot: SolutionPreview | undefined;
-  lado: "esquerda" | "direita";
-  direcao: number;
-  indice: number;
+  opcao: Solution;
+  slot: SlotName;
+  parallax: BackgroundParallaxValues;
 }) {
-  if (!slot) return null;
+  const art = opcao.art;
+  if (!art) return null;
 
+  const s = SLOTS[slot];
+  const preview = slot !== "centro";
   /*
-   * O quadro é **ancorado pela borda** da seção, e não pela esquerda.
-   *
-   * A prévia é mais larga que a faixa visível e o que sobra sai do frame. Se
-   * a âncora fosse a esquerda, abaixo de 1785 px de viewport a prévia ficaria
-   * inteira fora da seção — e é a seção que recorta. Pela borda, o mesmo pixel
-   * em 1920 e o pedaço continua visível em qualquer largura.
+   * O desfoque local: 0 no centro e 5,001 nas prévias. O valor local de 5,001
+   * é o que dá 4,306 na tela, que é o número do Figma.
    */
-  const posicao =
-    lado === "direita"
-      ? { right: -PREVIEW_OVERFLOW }
-      : { left: -PREVIEW_OVERFLOW };
+  const blurLocal = preview ? PREVIEW_BLUR / PREVIEW_SCALE : 0;
 
   return (
-    <AnimatePresence initial={false} custom={direcao}>
+    <div
+      aria-hidden="true"
+      className="sol-arte absolute overflow-clip"
+      style={{
+        left: 0,
+        top: 0,
+        width: WINDOW.w,
+        height: WINDOW.h,
+        borderRadius: WINDOW.radius,
+        transform: `translate(${s.x}px, ${s.y}px) scale(${s.scale})`,
+        transformOrigin: "0 0",
+        filter: `blur(${blurLocal}px)`,
+      }}
+    >
+      {/*
+        A arte dentro do quadro, no recorte da janela. É ela que o parallax
+        move — e o movimento é local, então nas prévias ele encolhe junto com
+        o quadro.
+      */}
       <motion.div
-        key={indice}
-        custom={direcao}
-        aria-hidden="true"
-        className="absolute overflow-clip"
+        className="absolute will-change-transform"
         style={{
-          ...posicao,
-          top: slot.frame.y,
-          width: slot.frame.w,
-          height: slot.frame.h,
-          borderRadius: PREVIEW_RADIUS,
-          filter: `blur(${PREVIEW_BLUR}px)`,
+          left: art.imageBox.x,
+          top: art.imageBox.y,
+          width: art.imageBox.w,
+          height: art.imageBox.h,
+          x: parallax.x,
+          y: parallax.y,
         }}
-        variants={revealFade}
-        initial="hidden"
-        animate="visible"
-        exit={{ opacity: 0 }}
-        transition={{ duration: SOLUTIONS_SLIDE.fade, ease: EASE_OUT_EXPO }}
       >
-        {/*
-          A arte dentro do quadro desliza na direção da troca. É ela que dá a
-          leitura de carrossel: a arte que estava na borda é a mesma que entra
-          na janela, e o olho segue o deslocamento.
-
-          A saída é uma **variant** pelo mesmo motivo da arte da janela: só uma
-          variant recebe o `custom` da direção.
-        */}
-        <motion.div
-          custom={direcao}
-          className="absolute"
-          style={{
-            left: slot.crop.x,
-            top: slot.crop.y,
-            width: slot.crop.w,
-            height: slot.crop.h,
-          }}
-          variants={{
-            sai: (d: number) => ({ x: -d * SOLUTIONS_SLIDE.distance }),
-          }}
-          initial={{ x: direcao * SOLUTIONS_SLIDE.distance }}
-          animate={{ x: 0 }}
-          exit="sai"
-          transition={{
-            duration: SOLUTIONS_SLIDE.duration,
-            ease: SOLUTIONS_SLIDE.ease,
-          }}
-        >
-          <Image
-            src={slot.src}
-            alt=""
-            fill
-            className="object-cover"
-            sizes="(min-width: 1920px) 1553px, 100vw"
-            unoptimized
-          />
-        </motion.div>
+        <Image
+          src={art.src}
+          alt=""
+          fill
+          className="object-cover"
+          sizes="(min-width: 1920px) 1882px, 100vw"
+          unoptimized
+        />
       </motion.div>
-    </AnimatePresence>
+    </div>
   );
 }

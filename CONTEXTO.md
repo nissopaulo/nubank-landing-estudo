@@ -180,14 +180,18 @@ provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
     janela, o ponteiro nunca está fora dela quando o handler roda, e uma
     distância de alcance seria um número morto. O que modula a resposta é só a
     **direção**, que cresce do centro para as bordas.
-18. **A Solutions Section é um carrossel, e a troca é um gesto.**
+18. **A Solutions Section é um carrossel, e a prévia É a janela encolhida.**
     A janela central mostra a opção ativa e as duas bordas mostram as vizinhas.
-    Quando a opção troca, **tudo anda na mesma direção**: a arte que estava na
-    prévia da direita entra na janela, a que estava na janela sai para a prévia
-    da esquerda, e uma nova entra pela direita.
-    Isso é possível porque **a prévia É a arte da vizinha** — a prévia direita
-    do Caixinhas é a arte do Conta e Pix, que é exatamente o que entra na
-    janela na troca seguinte. O olho segue a mesma arte e lê o movimento.
+    E a prévia não é uma miniatura: é a **janela escalada por 0,861111**, com
+    a arte no mesmo recorte escalado. Sai da geometria do Figma:
+    1308,889 / 1520 = 620 / 720 = 0,861111, o recorte da arte da prévia é o da
+    janela escalado com **delta 0,000** nos quatro valores, e o raio 21,528 é
+    25 × 0,861111.
+    Duas consequências: o raio não precisa ser animado (ele escala sozinho), e
+    a arte só precisa de **um** recorte.
+    Como consequência, **a arte viaja**: é o mesmo elemento o tempo todo,
+    mudando de slot, e o slot é só posição + escala. O badge e o painel de
+    texto não viajam — as prévias do Figma não têm nenhum dos dois.
 19. **O painel de texto repete o reveal a cada troca.** O pedido foi explícito,
     e é o mesmo `revealUp` do resto da landing: sobe 24 px e aparece. Ele
     **repete** a cada troca — não é a entrada da seção, é a da opção.
@@ -430,6 +434,17 @@ os itens 2 e 3 bloqueiam o resto.
   GET, não POST) e a sessão precisa ser criada **pela própria conexão**, com
   `session.new`. Conectar direto sem `session.new` dá "WebDriver session does
   not exist".
+- **O dev server serve CSS velho — e já aconteceu quatro vezes.** O sintoma
+  é sempre o mesmo: a regra está no arquivo-fonte e **não** no CSS servido.
+  Conferir é uma linha (`curl` na página, pegar o `href` do `.css` e
+  procurar a regra), e a correção é matar os três processos do projeto
+  (`next dev`, `start-server` e o worker do Turbopack) e **remover o
+  `.next`** — a recompilação incremental não dá conta.
+  Aconteceu pela quarta vez nesta sessão: a transição do carrossel não rodava
+  porque a regra `.sol-arte` não estava no CSS servido, e o sintoma era
+  "a arte salta de um lugar para o outro", que parece um bug de lógica.
+  **Toda vez que um efeito não rodar, conferir o CSS servido antes de
+  suspectar do código.**
 - **Trabalhar e julgar no desktop (≥1024 px).** Não propor breakpoint novo, nem
   "aproveitar para já tratar o mobile", nem auditar tela estreita — a menos que
   o usuário peça. Medidas, espaçamentos e decisões de layout são tomadas no
@@ -2869,5 +2884,100 @@ Acessibilidade conferida: as quatro pílulas com `role="tab"`,
 `aria-selected` só nas duas liberadas, `aria-disabled` + aviso em `sr-only`
 nas outras duas, e o `tabpanel` com `id` e `aria-labelledby` apontando para
 a aba ativa.
+
+tsc --noEmit, eslint e next build limpos.
+
+### 2026-10-20 — o carrossel de verdade: a arte viaja
+
+O usuário pediu o gesto completo: "o preview que estava em blur entra no lugar
+do que estava na tela, e o que estava vai para a esquerda e fica em estado de
+blur com a escala menor".
+
+A implementação anterior era um cross-fade com deslize de 48 px. Não era o
+pedido.
+
+#### O achado que define a implementação
+
+**A prévia É a janela encolhida.** Sai da geometria do Figma, e o número é o
+mesmo nos três lugares:
+
+| | quadro | recorte da arte | raio |
+|---|---|---|---|
+| janela | 1520 × 720 | (−175, −141) 1803 × 1006,326 | 25 |
+| prévia | 1308,889 × 620 | (−248,861, −101,611) 1620,911 × 878,821 | 21,528 |
+| razão | **0,861111** | **0,861111** (delta 0,000) | 0,861120 |
+
+1308,889 / 1520 = 620 / 720 = 0,861111. E o recorte da arte da prévia é o da
+janela escalado, com **delta 0,000** nos quatro números. Uma prévia é a janela
+encolhida, não uma miniatura desenhada à mão.
+
+Isso economiza a implementação inteira: o raio **não precisa ser animado**
+(25 escalados por 0,861111 dão 21,528, que é o número do Figma), e a arte só
+precisa de **um** recorte — o da janela.
+
+#### A arte viaja, e é um transform só
+
+Com o modelo acima, a arte é o **mesmo elemento** o tempo todo e muda de slot.
+E o slot é só posição + escala:
+
+| | posição | escala | desfoque |
+|---|---|---|---|
+| centro | 200, 356 | 1 | 0 |
+| prévia esquerda | −1173,444, 408 | 0,861111 | 4,306 |
+| prévia direita | 1784,556, 406 | 0,861111 | 4,306 |
+
+Ao trocar, a arte do centro encolhe e ganha blur para a borda esquerda, e a da
+borda direita cresce e afina para o centro. **Nenhuma arte é trocada: as duas se
+deslocam.**
+
+A transição é de **CSS** (`transition: transform 800ms, filter 800ms`), e não
+do Motion, por dois motivos: o CSS interpola listas de transform com a mesma
+estrutura de funções, e — o principal — **não há estado nem `AnimatePresence`**,
+a arte continua sendo o mesmo elemento, e é isso que a faz viajar.
+
+O desfoque é **local**: o `filter` é aplicado no espaço do quadro, e o quadro
+está escalado por 0,861111, então **5,001 local dá 4,306 na tela** — o número
+do Figma.
+
+O badge e o painel de texto **não viajam**: as prévias do Figma não têm
+nenhum dos dois, e é a arte que sangra para fora. Eles trocam por cross-fade, e
+o painel repete o `revealUp` (sobe 24 px e aparece) a cada troca.
+
+#### O bug que foi CSS velho, e não lógica
+
+A primeira medição mostrou a arte **saltando** de um lugar para o outro, sem
+nada no meio. O código estava certo; o **CSS servido** é que não tinha a
+regra `.sol-arte`.
+
+É a **quarta** vez que o dev server serve CSS velho neste projeto. O sintoma é
+traiçoeiro: "a transição não roda" parece bug de lógica, e o caminho óbvio é
+olhar o transform — que está certo. O que denuncia é comparar o **CSS servido**
+com o arquivo-fonte.
+
+A correção é a de sempre: matar os três processos do projeto (`next dev`,
+`start-server` e o worker do Turbopack) e **remover o `.next`**.
+
+Vale registrar a regra que ele ensinou de novo: **toda vez que um efeito não
+rodar, conferir o CSS servido antes de suspectar do código.**
+
+#### Verificação
+
+Chrome e Firefox, dentro de 0,05 px.
+
+Repouso, estado do Caixinhas: arte no centro em 200/356,15, 1520 × 720,
+`blur(0px)`; arte na prévia direita em 1784,56/406,15, **1308,89 × 620**,
+`blur(5,00052px)` (que é 4,306 na tela).
+
+Repouso, estado do Conta e Pix: três artes — 200/356,15 (1520 × 720, sem
+blur), −1173,44/408,08 (1308,89 × 620, com blur) e 1784,56/406,15 (idem).
+
+A transição, amostrada quadro a quadro dentro da página (para o rótulo de tempo
+bater com a foto): a arte sai de x = 200 e chega a −1173,4; a escala vai 1 →
+0,8611 e o desfoque 0 → 5,00052. Em 138 ms já tinha percorrido 44% do
+caminho, em 309 ms 89%, e o resto é a chegada.
+
+Movimento reduzido: a arte **já** está no destino em 120 ms — a viagem é
+cortada pelo bloco global (`transition-duration: 0.01ms !important`) e a troca
+é instantânea.
 
 tsc --noEmit, eslint e next build limpos.

@@ -1170,30 +1170,64 @@ tem vizinha anterior.
 (No Figma os dois últimos estão **todos** nomeados "Solutions Section -
 Account" — a identidade deles vem do badge, não do nome do frame.)
 
-### A troca é um gesto, e não uma substituição
+### A prévia É a janela encolhida — e isso é o que faz o carrossel
 
-Quando a opção troca, **tudo anda na mesma direção**: a arte que estava na
-prévia da direita entra na janela, a que estava na janela sai para a prévia da
-esquerda, e uma nova entra pela direita.
+Este é o achado que define a implementação, e ele sai da geometria do Figma, não
+de um palpite:
 
-Isso é possível porque **a prévia é a arte da vizinha**: a prévia direita do
-Safe é a arte do Conta e Pix, que é exatamente o que entra na janela na troca
-seguinte. O olho segue a mesma arte e lê o movimento.
+| | quadro | recorte da arte | raio |
+|---|---|---|---|
+| janela | 1520 × 720 | (−175, −141) 1803 × 1006,326 | 25 |
+| prévia  | 1308,889 × 620 | (−248,861, −101,611) 1620,911 × 878,821 | 21,528 |
+| razão   | **0,861111** | **0,861111** (delta 0,000) | 0,861120 |
 
-| o quê | como entra | como sai |
-|---|---|---|
-| arte da janela | desliza 48 px na direção da troca, opacidade 0 → 1 | desliza 48 px para o lado oposto, opacidade 1 → 0 |
-| painel de texto | **sobe 24 px e aparece** (o `revealUp` da landing) | sobe 12 px e some |
-| badge | opacidade 0 → 1 | opacidade 1 → 0 |
-| prévias | opacidade 0 → 1 | opacidade 1 → 0 |
+1308,889 / 1520 = 620 / 720 = 0,861111, e o mesmo número divide o recorte da
+arte (delta **0,000** nos quatro valores) e o raio. Uma prévia é, literalmente,
+**a janela encolhida** — e não uma miniatura desenhada à mão.
 
-O deslocamento de 48 px é o maior que a prévia da direita aguenta sem invadir
-a janela: a prévia começa em 1784,556 e a janela termina em 1720, e a folga é
-de 64,56 px.
+Duas consequências que economizam a implementação inteira:
+
+- **O raio não precisa ser animado.** 25 px escalados por 0,861111 dão 21,528,
+  que é exatamente o raio que o Figma dá nas prévias.
+- **A arte só precisa de um recorte.** O da janela. O da prévia é ele escalado.
+
+### A troca é um carrossel de verdade
+
+Com o modelo acima, **a arte viaja**: ela é o **mesmo elemento** o tempo todo,
+mudando de slot. E o slot é só **posição + escala**.
+
+| | posição | escala | desfoque |
+|---|---|---|---|
+| centro | 200, 356 | 1 | 0 |
+| prévia esquerda | −1173,444, 408 | 0,861111 | 4,306 |
+| prévia direita | 1784,556, 406 | 0,861111 | 4,306 |
+
+Ao trocar, a arte que estava no centro **encolhe e escurece** para a borda
+esquerda, e a que estava na prévia direita **cresce e afina** para o centro.
+Nenhuma arte é trocada: as duas se deslocam. É por isso que o gesto lê como
+carrossel e não como substituição de conteúdo.
+
+O que **não** viaja é o badge e o painel de texto: as prévias do Figma não têm
+nenhum dos dois, e é a arte que sangra para fora. Eles trocam por cross-fade na
+janela.
 
 **O painel de texto repete o reveal a cada troca.** É o mesmo `revealUp` do
 resto da landing (sobe 24 px, curva expo, 1,1 s) — e ele **repete** sempre que
-se troca de uma opção para a outra, que é o que foi pedido.
+se troca de uma opção para a outra.
+
+### A transição é de CSS, e não do Motion
+
+O `transform` interpola de `translate(200px, 356px) scale(1)` para
+`translate(-1173.444px, 408px) scale(0.861111)`, e o CSS interpola listas de
+transform com a mesma estrutura de funções. O `filter` interpola junto.
+
+E é a peça mais barata de manter: **nenhum estado, nenhum `AnimatePresence`, e
+a arte continua sendo o mesmo elemento** — que é o que faz ela *viajar* em vez
+de trocar.
+
+O desfoque é **local**: o `filter` é aplicado no espaço do quadro, e o quadro
+está escalado por 0,861111, então 5,001 local dá 4,306 na tela — que é o número
+do Figma.
 
 ### A direção da saída é uma *variant*, e não um objeto
 
@@ -1387,11 +1421,12 @@ nos dois motores. As duas colunas de estado são o **Caixinhas** (`144:2`) e o
 |---|---|---|---|---|
 | Seção | 1920 × 1176 | 1920 × 1176 | **1920 × 1176,16** | idem |
 | Título | x 200 · y 100 | x 200 · y 100 · **554** | **200 · 100** (660,86 / 553,36) | idem |
-| Janela da imagem | x 200 · y 356 · 1520×720 | idem | **200 · 356,15 · 1520×720** | **200 · 356,17** |
+| Janela (badge e painel) | x 200 · y 356 · 1520×720 | idem | **200 · 356,15 · 1520×720** | **200 · 356,17** |
 | Badge | x 1530 · 148×48 | x 1513 · 165×48 | **1530 · 147,27×48** / **1513 · 164,03×48** | idem |
 | Painel de texto | x 1294 · **384**×235 | x 1235 · **443**×235 | **1294 · 384×235,09** / **1235 · 443×235,09** | idem |
-| Prévia esquerda | — | x −1173,44 | — / **−1173,44** | idem |
-| Prévia direita | x 1784,56 | x 1784,56 | **1784,56** | **1784,57** |
+| Arte no centro | x 200 · y 356 · 1520×720 | idem | **200 · 356,15 · 1520×720** | **200 · 356,17** |
+| Arte na prévia esquerda | — | x −1173,44 · 1308,889×620 | **−1173,44 · 1308,89×620** | idem |
+| Arte na prévia direita | x 1784,56 | x 1784,56 | **1784,56 · 1308,89×620** | **1784,57** |
 | Seletor | x 902 (no Title) · 618×40 | idem | **x 1104,27 · 615,73×40** | idem |
 | Pílulas | 116 / 129 / 154 / 147 | idem | 115,41 / 128,83 / 153,36 / 146,14 | idem |
 | Imagem (relativo à janela) | −289 · −118 | −175 · −141 | **−89 · −118** / **25 · −141** | idem |
@@ -1405,6 +1440,9 @@ nos dois motores. As duas colunas de estado são o **Caixinhas** (`144:2`) e o
   conta: o nó `151:95` mede 554 e a linha sem o espaço mede 535,25. O espaço
   é invisível, mas a caixa do texto o inclui — por isso o título usa
   `whitespace-pre`.
+- **A prévia é a janela encolhida por 0,861111**, e não há nada para medir
+  além disso: o quadro, o recorte da arte e o raio saem todos do mesmo
+  número (delta 0,000 no recorte, 21,528 = 25 × 0,861111 no raio).
 
 
 **Nenhum delta de posição é de 1px.** Os deltas de tamanho que restam são de
