@@ -1196,41 +1196,61 @@ Duas consequências que economizam a implementação inteira:
 
 ### A troca é um carrossel de verdade
 
-Com o modelo acima, **a arte viaja**: ela é o **mesmo elemento** o tempo todo,
-mudando de slot. E o slot é só **posição + escala**.
+**Uma composição é um componente só**: a arte, o badge e o painel de texto
+vivem no **mesmo quadro** de 1520 × 720, e é esse quadro que muda de lugar.
+Nada "flutua" — o badge está atrelado à arte dele porque está **dentro** do
+quadro dela.
 
-| | posição | escala | desfoque |
+O slot é a **diferença de índice** entre a composição e a opção ativa:
+
+| diferença | slot | o que é |
+|---|---|---|
+| 0 | centro | a opção ativa, nítida e cheia |
+| −1 | esquerda | a anterior, miniatura e desfocada |
+| +1 | direita | a seguinte, miniatura e desfocada |
+| ≤ −2 | fora, pela esquerda | entrou ou saiu |
+| ≥ +2 | fora, pela direita | entrou ou saiu |
+
+| slot | posição | escala | desfoque |
 |---|---|---|---|
 | centro | 200, 356 | 1 | 0 |
-| prévia esquerda | −1173,444, 408 | 0,861111 | 4,306 |
-| prévia direita | 1784,556, 406 | 0,861111 | 4,306 |
+| esquerda | −1173,444, 408 | 0,861111 | 4,306 |
+| direita | 1784,556, 406 | 0,861111 | 4,306 |
 
-Ao trocar, a arte que estava no centro **encolhe e escurece** para a borda
-esquerda, e a que estava na prévia direita **cresce e afina** para o centro.
-Nenhuma arte é trocada: as duas se deslocam. É por isso que o gesto lê como
-carrossel e não como substituição de conteúdo.
+Ao trocar, a composição que estava no centro **encolhe e ganha blur** para a
+borda esquerda, e a que estava na miniatura direita **cresce e afina** para o
+centro. Nenhuma arte é trocada: as duas se deslocam — e o badge e o painel vão
+com elas, porque são o mesmo componente.
 
-O que **não** viaja é o badge e o painel de texto: as prévias do Figma não têm
-nenhum dos dois, e é a arte que sangra para fora. Eles trocam por cross-fade na
-janela.
+**O "fora" é do lado para onde o gesto vai**, e é além do quadro de 1920 — a
+seção recorta. É de lá que a composição entra e para onde ela sai, e é por
+isso que uma troca de duas ou mais posições **também anima**: as que saem
+deslizam para fora e a que entra vem de fora.
 
 **O painel de texto repete o reveal a cada troca.** É o mesmo `revealUp` do
 resto da landing (sobe 24 px, curva expo, 1,1 s) — e ele **repete** sempre que
 se troca de uma opção para a outra.
 
-### A transição é de CSS, e não do Motion
+O título da seção troca **rápido**, sem esperar a arte chegar: ele é a
+"chrome" da seção, e um bloco de texto em branco no alto durante toda a
+viagem pareceria defeito.
 
-O `transform` interpola de `translate(200px, 356px) scale(1)` para
-`translate(-1173.444px, 408px) scale(0.861111)`, e o CSS interpola listas de
-transform com a mesma estrutura de funções. O `filter` interpola junto.
+### A janela não recorta nada
 
-E é a peça mais barata de manter: **nenhum estado, nenhum `AnimatePresence`, e
-a arte continua sendo o mesmo elemento** — que é o que faz ela *viajar* em vez
-de trocar.
+A janela **não** tem `overflow-clip`, e é de propósito: um clip ali cortaria o
+badge e o painel no meio da viagem. O clip que importa é o do quadro da
+composição, que é quem recorta a ilustração.
 
-O desfoque é **local**: o `filter` é aplicado no espaço do quadro, e o quadro
-está escalado por 0,861111, então 5,001 local dá 4,306 na tela — que é o número
-do Figma.
+### Quem interpola o quê
+
+O **transform** e a **opacity** são variantes do Motion, porque o Motion
+interpola os dois. O **filter** é transição de CSS, porque o Motion **não**
+interpola `filter` — e o desfoque da miniatura é justamente o que precisa de
+interpolação.
+
+O valor do desfoque é **local**: o `filter` é aplicado no espaço do quadro, e
+o quadro está escalado por 0,861111, então 5,001 local dá 4,306 na tela — que é
+o número do Figma.
 
 **A curva e a duração.** A primeira versão usava `EASE_EMPHASIZED` e 800 ms.
 Medida, ela fazia **78% do caminho no primeiro quarto do tempo** — uma
@@ -1245,24 +1265,16 @@ A de agora tem partida macia, glide longo e chegada amortecida. Distribuição
 medida do caminho percorrido: **50% em 524 ms** (era 95%), 75% em 651 ms, 90%
 em 727 ms.
 
-### O badge e o painel viajam com a arte
+**A duração tem de bater com `CARROSSEL_DURACAO` em `lib/solutions.ts`**,
+porque o badge e o painel de texto esperam esse número para aparecerem quando
+a arte chega. É a mesma duplicação que os CTAs da header têm: o Tailwind só
+enxerga classes escritas por extenso, e esta transição é CSS.
 
-O conteúdo da janela **não fica parado** enquanto a arte sai. Ele acompanha a
-composição para a borda, encolhe com ela e some no caminho.
+### A janela não recorta nada
 
-A saída usa **o mesmo deslocamento, a mesma escala e a mesma curva** da viagem da
-arte (`VIAGEM` em `lib/solutions.ts`), e o `transform-origin` de cada um é o
-**canto da janela** — e não o do próprio elemento. É o que faz a saída casar
-com a arte: o badge termina a −28,37, que é exatamente onde ele ficaria se
-estivesse dentro do quadro da arte.
-
-Medido, o badge e a arte ficam **colados** durante toda a viagem: a diferença
-entre a posição real do badge e a posição que ele teria dentro do quadro da
-arte fica em **±1,8 px**, e volta a 0 no fim.
-
-Por isso a janela **não** tem `overflow-clip` — um clip ali cortaria o badge e
-o painel no meio da viagem. O clip que importa é o do quadro da arte, que é
-quem recorta a ilustração.
+A janela **não** tem `overflow-clip`, e é de propósito: um clip ali cortaria o
+badge e o painel no meio da viagem. O clip que importa é o do quadro da
+composição, que é quem recorta a ilustração.
 
 ### O badge e o painel só aparecem quando a arte chega
 
@@ -1270,10 +1282,9 @@ O conteúdo da janela **não** troca no meio da viagem. A linha do tempo é:
 
 | | |
 |---|---|
-| 0 – 240 ms | o badge e o painel **antigos** saem |
-| 240 – 1000 ms | **a arte viaja sozinha** |
+| 0 – 1000 ms | a composição viaja: a arte se desloca, e o badge e o painel **antigos** apagam com ela |
 | 1000 ms | a arte chega — e o badge e o painel **novos** entram |
-| ~1900 ms | tudo assentado |
+| ~2100 ms | tudo assentado |
 
 A espera é o mesmo número da transição da arte (`CARROSSEL_DURACAO` em
 `lib/solutions.ts`), e ela mora **dentro da variant** do painel — não na prop

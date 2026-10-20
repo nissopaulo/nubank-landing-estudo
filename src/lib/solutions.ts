@@ -259,21 +259,68 @@ export const PREVIEW_SCALE = 1308.889 / 1520;
 export const PREVIEW_BLUR = 4.306;
 
 /**
- * Os três slots do carrossel, em px do frame de 1920.
+ * Os slots do carrossel, em px do frame de 1920.
  *
- * O slot é **posição + escala**, e é isso que faz a virada ser um transform
- * só: a arte não muda de recorte, ela muda de lugar.
+ * Uma composição (arte + badge + painel) vive em **um** slot, e o slot é a
+ * única coisa que muda quando a opção troca. É por isso que tudo anda junto:
+ * a arte, o badge e o painel são o mesmo componente, no mesmo quadro.
+ *
+ * | slot | posição | escala | o que é |
+ * |---|---|---|---|
+ * | centro | 200, 356 | 1 | a opção ativa, nítida e cheia |
+ * | esquerda | −1173,444, 408 | 0,861111 | a anterior, miniatura e desfocada |
+ * | direita | 1784,556, 406 | 0,861111 | a seguinte, miniatura e desfocada |
+ *
+ * Os dois slots **de fora** são onde uma composição entra e de onde ela sai.
+ * São deliberadamente além do quadro de 1920 — a seção recorta — e do lado para
+ * onde o gesto está indo, para que a entrada e a saída continuem coladas com o
+ * movimento.
  */
-export const SLOTS = {
-  /** A opção ativa, no centro. */
-  centro: { x: 200, y: 356, scale: 1 },
-  /** A opção anterior, sangrando pela borda esquerda. */
-  esquerda: { x: -1173.444, y: 408, scale: PREVIEW_SCALE },
-  /** A opção seguinte, sangrando pela borda direita. */
-  direita: { x: 1784.556, y: 406, scale: PREVIEW_SCALE },
-} as const;
+export const SLOTS: Record<
+  SlotName,
+  { x: number; y: number; scale: number; blur: number }
+> = {
+  centro: { x: 200, y: 356, scale: 1, blur: 0 },
+  esquerda: { x: -1173.444, y: 408, scale: PREVIEW_SCALE, blur: PREVIEW_BLUR / PREVIEW_SCALE },
+  direita: { x: 1784.556, y: 406, scale: PREVIEW_SCALE, blur: PREVIEW_BLUR / PREVIEW_SCALE },
+};
 
-export type SlotName = keyof typeof SLOTS;
+export type SlotName = "centro" | "esquerda" | "direita";
+
+/**
+ * A posição **de fora** do quadro, do lado para onde o gesto está indo.
+ *
+ * É onde uma composição entra e de onde ela sai: além da borda do quadro de
+ * 1920, que a seção recorta. E ela depende da direção — indo para a frente a
+ * arte sai pela esquerda, voltando ela sai pela direita.
+ *
+ * O número é o mesmo nos dois casos: a faixa visível da miniatura vizinha,
+ * 135 px, que é o que a composição precisa atravessar para não ficar por cima
+ * da que está entrando.
+ */
+export function foraPara(direcao: number): { x: number; y: number; scale: number } {
+  return direcao > 0
+    ? { x: -1173.444 - 135.445, y: SLOTS.esquerda.y, scale: PREVIEW_SCALE }
+    : { x: 1784.556 + 135.444, y: SLOTS.direita.y, scale: PREVIEW_SCALE };
+}
+
+/**
+ * O slot de uma composição, em relação à opção ativa.
+ *
+ * A diferença de índice decide tudo:
+ *
+ * | diferença | slot |
+ * |---|---|
+ * | 0 | centro |
+ * | −1 | esquerda (a miniatura da anterior) |
+ * | +1 | direita (a miniatura da seguinte) |
+ * | ≤ −2 | fora, pela esquerda |
+ * | ≥ +2 | fora, pela direita |
+ */
+export function slotDe(diferenca: number): SlotName {
+  if (diferenca === 0) return "centro";
+  return diferenca < 0 ? "esquerda" : "direita";
+}
 
 /**
  * A duração da viagem da arte, em ms.
@@ -299,17 +346,9 @@ export const CARROSSEL_DURACAO = 1000;
 export const CARROSSEL_EASE: [number, number, number, number] = [0.6, 0.05, 0.3, 1];
 
 /**
- * O deslocamento de um slot para o outro, em px do frame de 1920.
+ * A curva da viagem, em CSS e em JS.
  *
- * É a diferença entre a posição do slot centro e a do slot da prévia
- * esquerda, e é o que faz o badge e o painel de texto **viajarem com a arte**
- * em vez de ficarem parados enquanto apagam.
- *
- * O `scale` vem junto porque a arte encolhe na viagem, e um painel que
- * saísse do lugar encolhendo leria como parte do mesmo movimento.
+ * O CSS interpola `filter` e o Motion interpola transform, então o desfoque é
+ * transição de CSS e o resto é variante do Motion. As duas coisas precisam da
+ * mesma curva e da mesma duração, e é aqui que elas moram.
  */
-export const VIAGEM = {
-  dx: SLOTS.esquerda.x - SLOTS.centro.x,
-  dy: SLOTS.esquerda.y - SLOTS.centro.y,
-  scale: PREVIEW_SCALE,
-};

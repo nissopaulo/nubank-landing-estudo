@@ -9,22 +9,15 @@ import {
   ACTIVE_INDEX,
   CARROSSEL_DURACAO,
   CARROSSEL_EASE,
-  PREVIEW_BLUR,
-  PREVIEW_SCALE,
   SLOTS,
   SOLUTIONS,
-  VIAGEM,
   WINDOW,
+  foraPara,
+  slotDe,
   type SlotName,
   type Solution,
 } from "@/lib/solutions";
-import {
-  DURATION,
-  EASE_OUT_EXPO,
-  revealUp,
-  SOLUTIONS_SLIDE,
-  staggerContainer,
-} from "@/lib/motion";
+import { DURATION, EASE_OUT_EXPO, revealUp, staggerContainer } from "@/lib/motion";
 import { PillTab } from "@/components/ui/PillTab";
 import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 import {
@@ -33,63 +26,56 @@ import {
 } from "@/components/solutions/use-background-parallax";
 
 /**
- * Solutions Section — Figma `Solutions Section - Safe` (`144:2`) e
- * `Solutions Section - Account` (`151:92`), 1920×1176.
+ * Solutions Section — Figma `Solutions Section - Safe` (`144:2`), `- Account`
+ * (`151:92`), `- Billing` (`153:125`) e `- Business` (`153:167`), 1920×1176.
  *
- * ## A seção é um carrossel, e a prévia é a JANELA encolhida
+ * ## Uma composição é UM componente
  *
- * A janela central mostra a opção **ativa** e as duas bordas mostram as
- * **vizinhas**: 135 px à esquerda são a opção anterior, 135 px à direita são a
- * seguinte. O frame do Safe não tem prévia esquerda — é a primeira opção.
+ * A arte, o badge e o painel de texto vivem no **mesmo quadro**, e esse quadro
+ * é o que muda de lugar quando a opção troca. Nada "flutua" — o badge está
+ * atrelado à arte dele porque está **dentro** do quadro dela.
  *
- * A prévia **não é uma miniatura**: é a janela escalada por 0,861111, com a
- * arte no mesmo recorte (o delta do recorte contra o da janela escalado é
- * 0,000 nos quatro números). Por isso a virada é **um transform só**: a arte
- * não muda de recorte, ela muda de lugar — sai da borda, cresce, e assume o
- * centro; e a que estava no centro encolhe para a borda e ganha o blur.
+ * ## O quadro tem três slots, e o slot é a diferença de índice
  *
- * ## O que se move, e o que não
+ * | diferença | slot | o que é |
+ * |---|---|---|
+ * | 0 | centro | a opção ativa, nítida e cheia |
+ * | −1 | esquerda | a anterior, miniatura e desfocada |
+ * | +1 | direita | a seguinte, miniatura e desfocada |
+ * | ≤ −2 | fora, pela esquerda | entrou ou saiu |
+ * | ≥ +2 | fora, pela direita | entrou ou saiu |
  *
- * Só a **arte** viaja. O badge e o painel de texto ficam ancorados na janela e
- * trocam por cross-fade: as prévias do Figma **não têm badge nem painel**, e
- * é a arte que sangra para fora.
- *
- * ## O painel de texto surge a cada troca
- *
- * O pedido foi explícito, e é o mesmo reveal do resto da landing: o painel
- * sobe 24 px e aparece, com a curva do `revealUp`. Ele **repete** a cada
- * troca — não é a entrada da seção, é a da opção.
+ * A miniatura é **a janela encolhida** por 0,861111, e o recorte da arte
+ * dentro dela é o da janela escalado pelo mesmo número — delta 0,000 nos
+ * quatro valores, nos quatro frames do Figma.
  *
  * ## Três âncoras diferentes, e por quê
  *
- * | Peça              | Âncora          | Por quê                                    |
- * |-------------------|-----------------|--------------------------------------------|
- * | badge e painel    | a **janela**    | mesma largura do `Main Content`, 256 px acima |
- * | arte              | o **slot**      | posição + escala, e é o que faz o carrossel  |
- * | seletor de pílulas | o `Title`       | `justify-between`: flush à direita           |
+ * | Peça | Âncora | Por quê |
+ * |---|---|---|
+ * | composição | o **slot** | é ela que viaja |
+ * | badge e painel | o quadro da composição | e é por isso que andam juntos |
+ * | seletor de pílulas | o `Title` | `justify-between`: flush à direita |
  *
  * O badge e o painel são posicionados **pela janela**, e não pelo `Main
  * Content`: a janela tem a mesma largura e começa 256 px mais abaixo, então
- * `(1330, 298)` no `Main Content` é `(1330, 42)` na janela. Ancorar na janela
- * deixa a composição ligada à imagem — e é o que faz o resultado bater com o
- * Figma mesmo com o título renderizando 0,16 px mais alto.
+ * `(1330, 298)` no `Main Content` é `(1330, 42)` na janela.
  *
  * ## O CTA é um link de texto, e não um `CtaLink`
  *
  * O `CtaLink` tem um `BASE` com `px-[18px] py-2.5` e `rounded-full`, e o
  * design deste CTA é só o texto com o caret — sem fundo e sem padding.
  * Acrescentar uma variante ao `CtaLink` brigaria com o `BASE` no CSS gerado
- * (utilitários base vencem utilitários base), então o link é montado aqui,
- * com o mesmo tratamento de link externo.
+ * (utilitários base vencem utilitários base), então o link é montado aqui.
  */
 export function SolutionsSection() {
   const [indice, setIndice] = useState(ACTIVE_INDEX);
   /**
    * A direção da troca: 1 = avançando, −1 = voltando.
    *
-   * Ela é o que decide de que lado a arte nova entra. E precisa ser estado,
-   * e não derivado do índice, porque dois índices podem ter a mesma diferença
-   * com sinais opostos.
+   * Ela decide de que lado a arte nova entra. E precisa ser estado, e não
+   * derivado do índice, porque dois índices podem ter a mesma diferença com
+   * sinais opostos.
    */
   const [direcao, setDirecao] = useState(1);
 
@@ -99,14 +85,13 @@ export function SolutionsSection() {
   /**
    * O instante em que a arte chega, em segundos.
    *
-   * É o tempo que a arte leva para completar a viagem entre os slots — o
-   * mesmo número da `transition` do `.sol-arte` no `globals.css`
-   * (`CARROSSEL_DURACAO`). O badge e o painel de texto esperam esse instante
-   * para aparecerem, para não trocarem no meio do movimento.
+   * É o tempo que a arte leva para completar a viagem — o mesmo número da
+   * transição do `.sol-arte` no `globals.css` (`CARROSSEL_DURACAO`). O badge e
+   * o painel esperam esse instante para aparecerem, para não trocarem no meio
+   * do movimento.
    *
-   * Sob movimento reduzido o atraso é **zero**: a preferência pede que a
-   * mudança seja instantânea, e esperar um segundo para o texto aparecer é
-   * exatamente o contrário disso.
+   * Sob movimento reduzido o atraso é **zero**: a preferência pede mudança
+   * instantânea, e esperar um segundo para o texto aparecer é o contrário.
    */
   const CHEGADA = usePrefersReducedMotion() ? 0 : CARROSSEL_DURACAO / 1000;
 
@@ -134,19 +119,15 @@ export function SolutionsSection() {
   }
 
   /*
-   * As opções visíveis, cada uma no seu slot.
+   * As composições visíveis: a anterior, a ativa e a seguinte.
    *
-   * A arte da opção anterior vai para a borda esquerda, a da atual fica no
-   * centro e a da seguinte vai para a borda direita. A arte é a mesma nos três
-   * casos — muda só o slot, que é posição e escala.
+   * As que ficam fora dessa janela **não são renderizadas** — e é o
+   * `AnimatePresence` que segura as que estão saindo, para elas animarem
+   * fora em vez de sumir.
    */
-  const visiveis: { opcao: Solution; slot: SlotName }[] = [
-    ...(indice > 0 ? [{ opcao: SOLUTIONS[indice - 1], slot: "esquerda" as const }] : []),
-    { opcao: solucao, slot: "centro" as const },
-    ...(indice < SOLUTIONS.length - 1
-      ? [{ opcao: SOLUTIONS[indice + 1], slot: "direita" as const }]
-      : []),
-  ];
+  const composicoes = SOLUTIONS.map((opcao, i) => ({ opcao, i })).filter(
+    ({ i }) => Math.abs(i - indice) <= 1,
+  );
 
   return (
     <section
@@ -162,11 +143,24 @@ export function SolutionsSection() {
         className="flex w-full flex-col gap-[100px]"
       >
         {/*
-          As artes, uma por opção visível.
+          As composições. Cada uma é um quadro de 1520 × 720 — a janela — com a
+          arte, o badge e o painel dentro.
+
+          O quadro viaja entre os slots, e é isso que faz a troca parecer um
+          carrossel: **nada é trocado, tudo se desloca**.
         */}
-        {visiveis.map((v) => (
-          <Arte key={v.opcao.id} opcao={v.opcao} slot={v.slot} parallax={parallax.values} />
-        ))}
+        <AnimatePresence initial={false} custom={direcao}>
+          {composicoes.map(({ opcao, i }) => (
+            <Composicao
+              key={opcao.id}
+              opcao={opcao}
+              slot={slotDe(i - indice)}
+              direcao={direcao}
+              chegada={CHEGADA}
+              parallax={parallax.values}
+            />
+          ))}
+        </AnimatePresence>
 
         {/*
           O Title é uma linha só: o texto à esquerda e o seletor à direita, os
@@ -180,20 +174,35 @@ export function SolutionsSection() {
           variants={revealUp}
           className="relative flex w-full items-end justify-between"
         >
-          <h2
-            id="solucoes-titulo"
-            /*
-             * `whitespace-pre` porque o Figma traz um espaço no fim da primeira
-             * linha do título, e ele conta na largura da caixa de texto: o nó
-             * `151:95` mede 554 e a linha sem o espaço mede 535,25. O espaço
-             * é invisível, mas a medida é a do design.
-             */
-            className="font-display text-[64px] font-bold leading-[1.22] whitespace-pre text-nu-brand"
-          >
-            {active.sectionTitle[0]}
-            <br />
-            {active.sectionTitle[1]}
-          </h2>
+          {/*
+            O título da seção também é por opção, e por isso ele troca junto —
+            mas **rápido**, sem esperar a arte chegar.
+
+            A espera não caberia aqui: o título ficaria vazio durante toda a
+            viagem, e um bloco de texto em branco no alto da seção parece
+            defeito. Ele é a "chrome" da seção, e a chrome troca na hora.
+          */}
+          <AnimatePresence initial={false} mode="wait">
+            <motion.h2
+              key={solucao.id}
+              id="solucoes-titulo"
+              /*
+               * `whitespace-pre` porque o Figma traz um espaço no fim da
+               * primeira linha do título, e ele conta na largura da caixa de
+               * texto: o nó `151:95` mede 554 e a linha sem o espaço mede
+               * 535,25. O espaço é invisível, mas a medida é a do design.
+               */
+              className="font-display text-[64px] font-bold leading-[1.22] whitespace-pre text-nu-brand"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+            >
+              {active.sectionTitle[0]}
+              <br />
+              {active.sectionTitle[1]}
+            </motion.h2>
+          </AnimatePresence>
 
           {/*
             O seletor. `role="tablist"` porque trocar de opção troca o
@@ -226,243 +235,72 @@ export function SolutionsSection() {
         </motion.div>
 
         {/*
-          A janela. Ela **não** tem a arte dentro: a arte vive no slot, e no
-          centro o slot cobre a janela exatamente. O que fica aqui é o que é
-          ancorado na janela — o badge e o painel de texto.
+          A janela. Ela **não** tem `overflow-clip`, e é de propósito: o badge e
+          o painel saem com a arte, e um clip aqui os cortaria no meio da
+          viagem. O clip que importa é o do quadro da composição.
 
-          `relative` porque é a âncora deles, e `overflow-clip` porque é ela
-          que recorta, como no Figma.
-
-          É aqui que o ponteiro é escutado: o efeito da arte fica **limitado a
-          esta tela**, e passar pelo título ou pelas pílulas não move nada.
+          E é aqui que o ponteiro é escutado: o efeito da arte fica **limitado
+          a esta tela**, e passar pelo título ou pelas pílulas não move nada.
         */}
         <motion.div
           role="tabpanel"
           id={`solucoes-painel-${solucao.id}`}
           aria-labelledby={`solucoes-aba-${solucao.id}`}
           variants={revealUp}
-          /*
-           * **Sem `overflow-clip`**, e é de propósito: o badge e o painel
-           * saem com a arte, e um clip aqui os cortaria no meio da viagem.
-           * O clip que importa é o do quadro da arte, que é quem recorta a
-           * ilustração.
-           */
           className="sol-window relative w-full"
           style={{ height: WINDOW.h, borderRadius: WINDOW.radius }}
           {...parallax.bind}
-        >
-          {/*
-            O badge. Cruza com a arte, sem se mover: ele está ancorado na
-            janela, e é a ilustração que passa por baixo dele.
-
-            **A entrada espera a arte chegar.** O pedido foi que o badge e o
-            painel só aparecessem quando a nova tela estivesse de fato aqui —
-            e não no meio da viagem. A saída é rápida (o conteúdo antigo sai
-            logo) e a entrada é adiada em `CARROSSEL_DURACAO`, que é o tempo
-            que a arte leva para chegar.
-          */}
-          <AnimatePresence initial={false} custom={direcao}>
-            <motion.div
-              key={solucao.id}
-              custom={direcao}
-              className="sol-badge absolute flex items-center justify-center rounded-[100px] border-2 border-nu-brand bg-nu-bg-secondary px-[22px] py-[10px]"
-              style={{
-                left: active.badgeBox.x,
-                top: active.badgeBox.y,
-                /*
-                 * A origem do transform é o **canto da janela**, e não o do
-                 * próprio badge — é o que faz a saída casar com a viagem da
-                 * arte. E a origem é a posição do badge dentro da janela, que
-                 * muda por opção.
-                 */
-                transformOrigin: `${-active.badgeBox.x}px ${-active.badgeBox.y}px`,
-              }}
-              initial={{ opacity: 0 }}
-              animate={{
-                opacity: 1,
-                transition: { duration: SOLUTIONS_SLIDE.fade, delay: CHEGADA },
-              }}
-              /*
-               * **A saída viaja com a arte.** O pedido foi que o badge e o
-               * painel não ficassem parados no lugar enquanto apagam — eles
-               * accompany a composição para a borda, encolhendo com ela.
-               *
-               * O deslocamento é o mesmo da arte (de um slot para o outro), e
-               * a curva e a duração também — as três coisas precisam bater com
-               * a transição do `.sol-arte`, e `VIAGEM` é a fonte da
-               * verdade do deslocamento.
-               */
-              exit={{
-                opacity: 0,
-                x: VIAGEM.dx,
-                y: VIAGEM.dy,
-                scale: VIAGEM.scale,
-                transition: {
-                  duration: CARROSSEL_DURACAO / 1000,
-                  ease: CARROSSEL_EASE,
-                },
-              }}
-            >
-              {/*
-                `leading-[1.2]`: o texto do Figma (`151:76`) tem 24 px de caixa
-                para 20 de fonte, e é essa altura que fecha o quadro em 48
-                (2 + 10 + 24 + 10 + 2). Com o `leading-[1.25]` do projeto ele
-                seria 25 e o badge teria 53.
-              */}
-              <p className="font-display text-[20px] font-semibold leading-[1.2] whitespace-nowrap text-nu-brand">
-                {active.badge}
-              </p>
-            </motion.div>
-          </AnimatePresence>
-
-          {/*
-            O painel de texto.
-
-            A **largura** é declarada porque o conteúdo é quebrado em linhas
-            explícitas: sem ela a caixa encolheria até a linha mais comprida.
-            A altura não é — no Figma ela é a sobra do auto-layout (235 px), e
-            declará-la com `overflow-clip` passaria a cortar o CTA por uma
-            fração de pixel, já que o `leading` do projeto não é o do Figma.
-
-            **A entrada é o `revealUp`**, o mesmo reveal do resto da landing
-            (sobe 24 px e aparece), e ele **repete a cada troca** — é o que o
-            pedido foi: o texto tem que surgir de novo sempre que se troca de
-            uma opção para a outra.
-
-            E a entrada **espera a arte chegar**: o `delay` é o tempo que a
-            arte leva para completar a viagem, para o texto não aparecer
-            enquanto a tela ainda está em movimento.
-          */}
-          <AnimatePresence initial={false} custom={direcao}>
-            <motion.div
-              key={solucao.id}
-              custom={direcao}
-              className="sol-textbox absolute flex flex-col items-start gap-[64px] rounded-[42px] bg-nu-bg-secondary px-[42px] py-[32px]"
-              style={{
-                left: active.textBox.x,
-                top: active.textBox.y,
-                width: active.textBox.w,
-                /* A origem é o canto da janela — ver o badge. */
-                transformOrigin: `${-active.textBox.x}px ${-active.textBox.y}px`,
-              }}
-              /*
-               * A variant tem o **atraso dentro dela**, e não na prop
-               * `transition`. Com o `animate` apontando para um rótulo de
-               * variant, é a transition da variant que vale — a prop é
-               * ignorada. Medido: com o atraso na prop, o painel aparecia em
-               * 250 ms, no meio da viagem da arte, que é exatamente o que o
-               * pedido foi para evitar.
-               *
-               * A forma é a do `revealUp` (sobe 24 px e aparece), e a duração
-               * também — o que muda é só o **quando**.
-               */
-              variants={{
-                hidden: { opacity: 0, y: 24 },
-                visible: {
-                  opacity: 1,
-                  y: 0,
-                  transition: {
-                    duration: DURATION.slow,
-                    delay: CHEGADA,
-                    ease: EASE_OUT_EXPO,
-                  },
-                },
-              }}
-              initial="hidden"
-              animate="visible"
-              /* A saída viaja com a arte — ver o badge. */
-              exit={{
-                opacity: 0,
-                x: VIAGEM.dx,
-                y: VIAGEM.dy,
-                scale: VIAGEM.scale,
-                transition: {
-                  duration: CARROSSEL_DURACAO / 1000,
-                  ease: CARROSSEL_EASE,
-                },
-              }}
-            >
-              <p className="font-display text-[24px] font-bold leading-[1.21] whitespace-pre text-nu-brand">
-                {active.title.map((linha) => (
-                  <span key={linha}>
-                    {linha}
-                    <br />
-                  </span>
-                ))}
-              </p>
-
-              {/*
-                O caret do Figma é um `CaretDown` girado −90°, que é um caret
-                para a direita — e é o `CaretRight` do Phosphor, o mesmo que a
-                Ecossystem usa no CTA dela.
-              */}
-              <a
-                href="https://www.nubank.com.br/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-[10px] text-nu-brand transition-opacity hover:opacity-75"
-              >
-                <span className="font-display text-[16px] font-semibold leading-[1.25] whitespace-nowrap">
-                  {active.cta}
-                </span>
-                <CaretRight size={20} weight="regular" aria-hidden="true" />
-              </a>
-            </motion.div>
-          </AnimatePresence>
-        </motion.div>
+        />
       </motion.div>
     </section>
   );
 }
 
 /**
- * A arte de uma opção, no slot em que ela está.
+ * Uma composição: a arte, o badge e o painel de texto, no mesmo quadro.
  *
- * ## O quadro é a janela, e a prévia é ele encolhido
+ * ## O quadro viaja, e o que ele leva junto
  *
- * O elemento tem **sempre** 1520 × 720, com a arte no recorte da janela. O
- * que muda entre os slots é a `transform` — posição e escala — e o desfoque.
+ * A arte, o badge e o painel estão **dentro** do quadro, e o quadro é o que
+ * muda de slot. É por isso que o badge está atrelado à arte dele: não é uma
+ * coincidência de posição, é a mesma árvore.
  *
- * Por isso o raio não precisa ser animado: 25 px escalados por 0,861111 dão
- * 21,528, que é **exatamente** o raio que o Figma dá nas prévias.
+ * ## O desfoque é de CSS, e o resto é do Motion
  *
- * ## O desfoque é local, e por isso vale 5 px
- *
- * O `filter` é aplicado no espaço local do quadro, e o quadro está escalado
- * por 0,861111. Para que o desfoque **na tela** seja 4,306 — o valor do
- * Figma —, o valor local tem de ser 4,306 / 0,861111 = 5,001.
- *
- * ## A transição é uma transição de CSS, e não do Motion
- *
- * O `transform` interpola de "translate(200px, 356px) scale(1)" para
- * "translate(-1173.444px, 408px) scale(0.861111)", e o CSS interpola listas
- * de transform com a mesma estrutura de funções. É a peça mais barata de
- * manter: nenhum estado, nenhum `AnimatePresence`, e a arte continua sendo o
- * mesmo elemento — que é o que faz ela **viajar** em vez de trocar.
+ * O Motion interpola `transform` e `opacity`, mas **não** interpola o `filter`
+ * — e o desfoque da miniatura é justamente o que precisa de interpolação. Por
+ * isso o `filter` fica no estilo inline com uma transição de CSS, e o
+ * transform e a opacidade são variantes do Motion.
  */
-function Arte({
+function Composicao({
   opcao,
   slot,
+  direcao,
+  chegada,
   parallax,
 }: {
   opcao: Solution;
   slot: SlotName;
+  direcao: number;
+  chegada: number;
   parallax: BackgroundParallaxValues;
 }) {
-  const art = opcao.art;
-  if (!art) return null;
+  const active = opcao.active;
+  if (!active) return null;
 
   const s = SLOTS[slot];
-  const preview = slot !== "centro";
-  /*
-   * O desfoque local: 0 no centro e 5,001 nas prévias. O valor local de 5,001
-   * é o que dá 4,306 na tela, que é o número do Figma.
-   */
-  const blurLocal = preview ? PREVIEW_BLUR / PREVIEW_SCALE : 0;
+  const miniatura = slot !== "centro";
 
   return (
-    <div
-      aria-hidden="true"
+    <motion.div
+      /*
+       * O `custom` entrega a **direção** à variant "fora" — é por ele que a
+       * composição sabe de que lado entrar e de que lado sair. Na entrada
+       * vale o `custom` do próprio quadro; na saída, o do `AnimatePresence`,
+       * que é o do gesto atual.
+       */
+      custom={direcao}
+      aria-hidden={miniatura ? "true" : undefined}
       className="sol-arte absolute overflow-clip"
       style={{
         left: 0,
@@ -470,29 +308,73 @@ function Arte({
         width: WINDOW.w,
         height: WINDOW.h,
         borderRadius: WINDOW.radius,
-        transform: `translate(${s.x}px, ${s.y}px) scale(${s.scale})`,
+        /*
+         * A origem do transform é o **canto do quadro**, e não o centro: é o
+         * que faz a escala encolher a partir do mesmo lugar de onde a
+         * miniatura é posicionada.
+         */
         transformOrigin: "0 0",
-        filter: `blur(${blurLocal}px)`,
+        /*
+         * O desfoque é local: o `filter` é aplicado no espaço do quadro, e o
+         * quadro está escalado por 0,861111 — então 5,001 local dá 4,306 na
+         * tela, que é o número do Figma.
+         */
+        filter: `blur(${s.blur}px)`,
       }}
+      variants={{
+        centro: { x: SLOTS.centro.x, y: SLOTS.centro.y, scale: 1, opacity: 1 },
+        esquerda: {
+          x: SLOTS.esquerda.x,
+          y: SLOTS.esquerda.y,
+          scale: SLOTS.esquerda.scale,
+          opacity: 1,
+        },
+        direita: {
+          x: SLOTS.direita.x,
+          y: SLOTS.direita.y,
+          scale: SLOTS.direita.scale,
+          opacity: 1,
+        },
+        /*
+         * "fora" é uma **função**, e é por isso que ela recebe a direção: o
+         * `custom` do `AnimatePresence` é o que carrega a direção do gesto
+         * até a saída — e é o `custom` do próprio componente que a carrega até
+         * a entrada.
+         */
+        fora: (d: number) => {
+          const f = foraPara(d);
+          return { x: f.x, y: f.y, scale: f.scale, opacity: 0 };
+        },
+      }}
+      /*
+       * O `initial` é "fora" e não `false`: uma composição que **entra**
+       * tem de vir de fora do quadro, senão ela simplesmente aparece no lugar
+       * e a troca não parece uma troca. O `AnimatePresence` com
+       * `initial={false}` é o que impede isso na **primeira** renderização —
+       * na carga da página a composição já nasce no centro, sem escorregar.
+       */
+      initial="fora"
+      animate={slot}
+      exit="fora"
+      transition={{ duration: CARROSSEL_DURACAO / 1000, ease: CARROSSEL_EASE }}
     >
       {/*
-        A arte dentro do quadro, no recorte da janela. É ela que o parallax
-        move — e o movimento é local, então nas prévias ele encolhe junto com
-        o quadro.
+        A arte, no recorte da janela. E é ela que o parallax move — e o
+        movimento é local, então nas miniaturas ele encolhe junto com o quadro.
       */}
       <motion.div
         className="absolute will-change-transform"
         style={{
-          left: art.imageBox.x,
-          top: art.imageBox.y,
-          width: art.imageBox.w,
-          height: art.imageBox.h,
+          left: opcao.art?.imageBox.x,
+          top: opcao.art?.imageBox.y,
+          width: opcao.art?.imageBox.w,
+          height: opcao.art?.imageBox.h,
           x: parallax.x,
           y: parallax.y,
         }}
       >
         <Image
-          src={art.src}
+          src={opcao.art?.src ?? ""}
           alt=""
           fill
           className="object-cover"
@@ -500,6 +382,89 @@ function Arte({
           unoptimized
         />
       </motion.div>
-    </div>
+
+      {/*
+        O badge. Ele está **dentro** do quadro, e é por isso que acompanha a
+        arte — não há nada para sincronizar, é a mesma árvore.
+
+        E a opacidade dele é a da miniatura: a opacidade do quadro já resolve
+        o resto.
+      */}
+      <motion.div
+        className="sol-badge absolute flex items-center justify-center rounded-[100px] border-2 border-nu-brand bg-nu-bg-secondary px-[22px] py-[10px]"
+        style={{ left: active.badgeBox.x, top: active.badgeBox.y }}
+        variants={{
+          centro: {
+            opacity: 1,
+            transition: { duration: 0.4, delay: chegada },
+          },
+          esquerda: { opacity: 0, transition: { duration: CARROSSEL_DURACAO / 1000 } },
+          direita: { opacity: 0, transition: { duration: CARROSSEL_DURACAO / 1000 } },
+          fora: { opacity: 0 },
+        }}
+      >
+        {/*
+          `leading-[1.2]`: o texto do Figma (`151:76`) tem 24 px de caixa para
+          20 de fonte, e é essa altura que fecha o quadro em 48
+          (2 + 10 + 24 + 10 + 2).
+        */}
+        <p className="font-display text-[20px] font-semibold leading-[1.2] whitespace-nowrap text-nu-brand">
+          {active.badge}
+        </p>
+      </motion.div>
+
+      {/*
+        O painel de texto. A mesma história do badge: dentro do quadro, e com a
+        entrada **atrasada até a arte chegar**.
+      */}
+      <motion.div
+        className="sol-textbox absolute flex flex-col items-start gap-[64px] rounded-[42px] bg-nu-bg-secondary px-[42px] py-[32px]"
+        style={{ left: active.textBox.x, top: active.textBox.y, width: active.textBox.w }}
+        variants={{
+          centro: {
+            opacity: 1,
+            y: 0,
+            transition: { duration: DURATION.slow, delay: chegada, ease: EASE_OUT_EXPO },
+          },
+          esquerda: {
+            opacity: 0,
+            y: 0,
+            transition: { duration: CARROSSEL_DURACAO / 1000, ease: CARROSSEL_EASE },
+          },
+          direita: {
+            opacity: 0,
+            y: 0,
+            transition: { duration: CARROSSEL_DURACAO / 1000, ease: CARROSSEL_EASE },
+          },
+          fora: { opacity: 0, y: 0 },
+        }}
+      >
+        <p className="font-display text-[24px] font-bold leading-[1.21] whitespace-pre text-nu-brand">
+          {active.title.map((linha) => (
+            <span key={linha}>
+              {linha}
+              <br />
+            </span>
+          ))}
+        </p>
+
+        {/*
+          O caret do Figma é um `CaretDown` girado −90°, que é um caret para a
+          direita — e é o `CaretRight` do Phosphor, o mesmo que a Ecossystem usa
+          no CTA dela.
+        */}
+        <a
+          href="https://www.nubank.com.br/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-[10px] text-nu-brand transition-opacity hover:opacity-75"
+        >
+          <span className="font-display text-[16px] font-semibold leading-[1.25] whitespace-nowrap">
+            {active.cta}
+          </span>
+          <CaretRight size={20} weight="regular" aria-hidden="true" />
+        </a>
+      </motion.div>
+    </motion.div>
   );
 }

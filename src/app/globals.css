@@ -794,20 +794,15 @@
 }
 
 /*
- * A arte da Solutions Section, no slot do carrossel.
+ * A composição da Solutions Section, no slot do carrossel.
  *
- * A transição é de **CSS**, e não do Motion, e o motivo é estrutural: a arte
- * **viaja** entre os slots — ela é o mesmo elemento o tempo todo, mudando de
- * lugar. Se cada slot fosse um elemento diferente, a arte trocaria de
- * identidade no meio do caminho e o gesto deixaria de ser um gesto.
+ * Só o **filter** é transição de CSS. O `transform` e a `opacity` são
+ * variantes do Motion, porque o Motion não interpola `filter` — e o
+ * desfoque da miniatura é justamente o que precisa de interpolação.
  *
- * O `transform` interpola de "translate(200px, 356px) scale(1)" para
- * "translate(-1173.444px, 408px) scale(0.861111)", e o CSS interpola listas de
- * transform com a mesma estrutura de funções.
- *
- * O desfoque interpela junto, e o valor é **local**: o `filter` é aplicado no
- * espaço do quadro, e o quadro está escalado por 0,861111 — então 5,001 local
- * dá 4,306 na tela, que é o número do Figma.
+ * O valor do desfoque é **local**: o `filter` é aplicado no espaço do quadro,
+ * e o quadro está escalado por 0,861111 — então 5,001 local dá 4,306 na tela,
+ * que é o número do Figma.
  *
  * ## A curva e a duração
  *
@@ -825,9 +820,7 @@
  * Tailwind só enxerga classes escritas por extenso, e esta transição é CSS.
  */
 .sol-arte {
-  transition:
-    transform 1000ms cubic-bezier(0.6, 0.05, 0.3, 1),
-    filter 1000ms cubic-bezier(0.6, 0.05, 0.3, 1);
+  transition: filter 1000ms cubic-bezier(0.6, 0.05, 0.3, 1);
 }
 
 /*

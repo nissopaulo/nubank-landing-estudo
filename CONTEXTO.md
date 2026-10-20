@@ -209,7 +209,14 @@ provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
     teria dentro do quadro da arte fica em **±1,8 px** durante toda a viagem.
     E a janela **não** tem `overflow-clip`: um clip ali cortaria o badge e o
     painel no meio da viagem.
-22. **O seletor de opções é o mesmo componente nas duas seções.** A Cards
+22. **A composição (arte + badge + painel) é UM componente, e é ela que viaja.**
+    Os três vivem no mesmo quadro de 1520 × 720, e é o quadro que muda de slot.
+    O badge não está "atrelado" à arte por cálculo de posição: está **dentro**
+    do quadro dela, e por isso não tem como ficar para trás.
+    O slot é a **diferença de índice** entre a composição e a opção ativa: 0 é o
+    centro, −1 a miniatura esquerda, +1 a direita, e o resto é "fora", do lado
+    para onde o gesto vai.
+23. **O seletor de opções é o mesmo componente nas duas seções.** A Cards
     Section e a Solutions Section têm o mesmo seletor, e agora são o mesmo
     código: `components/ui/PillTab.tsx` + a regra `.pill-tab`. O que muda
     entre elas é só a paleta, e ela chega por custom property — as duas seções
@@ -3152,5 +3159,95 @@ Todas as quatro opções trocam, e o carrossel vai e volta.
 
 Movimento reduzido: a arte **já** está no destino em 120 ms e o conteúdo chega
 a opacidade 1 sem atraso.
+
+tsc --noEmit, eslint e next build limpos.
+
+### 2026-10-20 — a composição virou um componente só (e os quatro defeitos caíram juntos)
+
+O usuário reportou quatro defeitos da troca de opção, e **todos vinham da mesma
+causa**: o badge e o painel de texto viviam em um elemento **separado** da arte,
+dentro da janela. Separados, eles não podiam acompanhar a arte — e a direção do
+movimento deles era fixa, o que produzia metade dos sintomas.
+
+1. "quando troca, as imagens estão ficando uma por cima da outra" — o badge e o
+   painel antigos (que ficavam parados) ficavam por cima da arte nova.
+2. "a solução que estava antes simplesmente some, não parece que tudo faz parte
+   de um componente só" — exatamente: eram coisas separadas.
+3. "quando eu volto o badge e o text box vão para a esquerda" — a saída usava
+   **sempre** o deslocamento para a prévia esquerda, voltar ou não.
+4. "quando clico do final pro começo ou do meio pro final buga tudo, não tem
+   animação" — as composições eram renderizadas a partir do índice atual, e as
+   que saíam do conjunto **sumiam** em vez de animarem.
+
+#### A correção
+
+A arte, o badge e o painel passaram a viver no **mesmo quadro** de 1520 × 720,
+e o quadro é o que viaja. O slot é a diferença de índice:
+
+| diferença | slot |
+|---|---|
+| 0 | centro (escala 1, sem blur) |
+| −1 | esquerda (escala 0,861111, blur 4,306) |
+| +1 | direita (mesma escala e blur) |
+| ≤ −2 | fora, pela esquerda |
+| ≥ +2 | fora, pela direita |
+
+O "fora" é do lado para onde o gesto vai, e é além do quadro de 1920 — a seção
+recorta. É de lá que a composição entra e para onde ela sai.
+
+**Com isso os quatro defeitos caem juntos:** o badge não tem como ficar para
+trás (é a mesma árvore), a direção acompanha o slot automaticamente, e uma
+troca de duas ou mais posições também anima — as que saem deslizam para fora e a
+que entra vem de fora.
+
+#### O "fora" é uma FUNÇÃO da direção, e isso não é detalhe
+
+A posição de fora depende do sentido do gesto, e o Motion só entrega a
+direção por um dos dois caminhos do `custom`:
+
+- na **entrada**, o `custom` do próprio quadro;
+- na **saída**, o `custom` do `AnimatePresence` — e é o do gesto **atual**, não
+  o do render antigo.
+
+Por isso a variant "fora" é uma **função** (`fora: (d) => ...`), e não um
+objeto: só uma variant recebe o `custom`. É a mesma armadilha que a Cards
+Section já tinha encontrado na virada do cartão.
+
+#### O que é CSS e o que é do Motion
+
+O Motion interpola `transform` e `opacity`, mas **não** interpola `filter` —
+e o desfoque da miniatura é justamente o que precisa de interpolação. Então o
+`filter` fica no estilo inline com uma transição de CSS, e o resto são
+variantes do Motion.
+
+A janela perdeu o `overflow-clip`: um clip ali cortaria o badge e o painel no
+meio da viagem.
+
+#### O título da seção troca rápido, e não com a arte
+
+Ele é a "chrome" da seção. Se esperasse a arte chegar, ficaria **vazio**
+durante toda a viagem — e um bloco de texto em branco no alto da seção parece
+defeito. Ele troca com um cross-fade de 220 ms.
+
+#### Verificação
+
+Chrome e Firefox, dentro de 0,05 px. Todas as sete trocas foram medidas — as
+seis adjacentes e o salto do Empréstimos para o Caixinhas:
+
+| troca | arte no centro | miniatura esquerda | miniatura direita |
+|---|---|---|---|
+| Caixinhas → Conta e Pix | serenity | safe | upstairs |
+| Conta e Pix → Investimentos | upstairs | serenity | trade |
+| Investimentos → Empréstimos | trade | upstairs | — |
+| Empréstimos → Investimentos | upstairs | serenity | trade |
+| Investimentos → Conta e Pix | serenity | safe | upstairs |
+| Conta e Pix → Caixinhas | safe | — | serenity |
+| **Empréstimos → Caixinhas** | **safe** | — | **serenity** |
+
+O badge no centro fica em x 1513 (Conta e Pix), 1483 (Investimentos), 1492
+(Empréstimos) e 1530 (Caixinhas) — os números do Figma, opção por opção.
+
+Movimento reduzido: a arte **já** está no destino em 150 ms, e o badge e o
+painel chegam a opacidade 1 sem atraso.
 
 tsc --noEmit, eslint e next build limpos.
