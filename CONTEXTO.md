@@ -157,6 +157,18 @@ provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
     número do Figma é reproduzido, inclusive a posição do texto dentro da caixa.
     **A Cards Section tem o mesmo desvio e ainda não foi corrigida** — ver a
     pendência nº 17.
+16. **A arte da Solutions Section segue o ponteiro, e o sentido é o do
+    pedido.** A ilustração dentro da janela desliza *para onde* o ponteiro está,
+    e o conteúdo dela junto — o que a pessoa percebe como "o fundo me segue".
+    Só a arte se move: o badge e o painel ficam ancorados na janela. O
+   _listener_ é a seção inteira (a resposta começa quando o ponteiro entra na
+    seção) e a direção é medida contra a janela.
+    **A amplitude não é livre:** a arte é maior que a janela e a janela a
+    recorta, então a folga é assimétrica — **73,348 px** para a esquerda
+    (a borda direita encosta na janela), 289 px para a direita, 182,567 px para
+    cima e 118 px para baixo. Os 44 px usados são 60% da folga mais apertada.
+    O sinal oposto (o parallax clássico, em que a cena recua do cursor) é
+    trocar um sinal em `use-background-parallax.ts`.
 
 ---
 
@@ -2512,3 +2524,85 @@ interação entre as pílulas ainda não existe — só o `144:2` está liberado
 Liberar o `151:92` (Conta e Pix), que é a segunda opção da mesma seção. O
 preenchimento é o campo `active` em `lib/solutions.ts` e nada mais muda no
 componente — a mesma mecânica dos quatro frames da Cards Section.
+
+### 2026-10-20 — a arte da Solutions Section segue o ponteiro
+
+Segundo passo da Solutions Section, a pedido do usuário: a ilustração dentro
+da janela desliza na direção do ponteiro, para dar dinamismo à seção.
+
+#### O que foi implementado
+
+- `src/components/solutions/use-background-parallax.ts` — o hook.
+- `src/lib/motion.ts` — a constante `BACKGROUND_PARALLAX`.
+- `src/components/solutions/SolutionsSection.tsx` — a arte passou a ser um
+  `motion.div` com o `x`/`y` da mola, e a seção passou a escutar o ponteiro.
+
+O modelo é o mesmo da inclinação do cartão de crédito (`use-card-tilt.ts`):
+direção normalizada e saturada em ±1 contra a caixa da janela, força que vale
+1 dentro dela e morre `reach` px depois da borda, e mola por cima. O corte de
+movimento reduzido é no **handler**, e não no `MotionConfig`, porque isto é
+um motion value.
+
+#### A amplitude não é livre, e isso é a parte que ninguém adivinha
+
+No Figma a arte **não** é dimensionada pela janela: ela é maior e deslocada, e
+é a janela que recorta. Em `144:2` são 1882,348 × 1020,567 a partir de
+(−289, −118) dentro de uma janela de 1520 × 720.
+
+A margem é **assimétrica**, e ela é o que limita o deslocamento:
+
+| direção | folga |
+|---|---|
+| esquerda | **73,348 px** — a borda direita da arte encosta na janela |
+| direita | 289 px |
+| cima | 182,567 px |
+| baixo | 118 px |
+
+Os 44 px horizontais usam 60% da folga mais apertada. **Acima de 73 px a borda
+direita da arte apareceria**, e o defeito seria de uma faixa de 1 px na borda
+da janela — o tipo de coisa que só aparece em quem olha com atenção.
+
+#### O sentido foi medido e olhado, não escolhido no chute
+
+A primeira implementação tinha o sinal **negativo** (a arte vai para o lado
+oposto ao ponteiro), e o comentário dizia que isso fazia "o conteúdo
+acompanhar o ponteiro". **O comentário estava errado, e a captura provou.**
+
+A razão: a arte e o conteúdo estão pintados um no outro, então andam juntos.
+Com o sinal negativo, o ponteiro à direita fazia a arte ir para a esquerda e o
+conteúdo **fugir** do cursor — o oposto de "segue". Para o conteúdo ir na
+direção do ponteiro, a arte tem de ir **na mesma** direção.
+
+A confirmação foi por **correlação cruzada** entre duas capturas (a ponta
+esquerda e a ponta direita da janela): o conteúdo andou **84,52 px** entre
+elas — exatamente o dobro da amplitude, que é a diferença entre −42,26 e
++42,26. É a prova de que a arte e o que está pintado nela andam juntos.
+
+Meus olhos, olhando as duas capturas, diziam o contrário do que a correlação
+disse. **A medida ganha.**
+
+#### Verificação
+
+Chrome e Firefox, dentro de 0,05 px:
+
+| ponteiro | x | y |
+|---|---|---|
+| centro | 0 | 0 |
+| borda esquerda | −43,7 | 0 |
+| borda direita | +43,7 | 0 |
+| borda de cima | 0 | −27,7 |
+| 120 px acima | 0 | −14,0 |
+| 240 px acima | 0 | 0 |
+
+A arte **cobre a janela em todos os estados**, verificado pelos retângulos.
+Volta ao repouso ao sair da seção. Sob `prefers-reduced-motion`, o
+deslocamento é 0,00 com o ponteiro na borda.
+
+#### Nota sobre as imagens
+
+O usuário confirmou que os PNGs de `public/images/backgrounds/` eram dele, em
+alta qualidade (2800 × 1519). Eles **foram** usados na resolução cheia — o
+WebP é só o formato de entrega, como o resto do projeto. A qualidade 86 foi
+mantida depois de medir as alternativas: o erro médio é de 1,37 nível em
+1882 × 1020 (0,5%), e subir para 92 só ganha 0,2 de MAE por 60% a mais de
+peso. Lossless daria 0,47 de MAE por 2,8 MB (12 MB no total), o que não compensa.

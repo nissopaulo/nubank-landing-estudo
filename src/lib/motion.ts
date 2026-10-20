@@ -334,6 +334,55 @@ export const CARD_FLIP = {
 } as const;
 
 /**
+ * A arte de fundo da Solutions Section responde ao ponteiro.
+ *
+ * ## A amplitude não é livre — a janela corta a arte
+ *
+ * No Figma a imagem **não** é dimensionada pela janela: ela é maior e fica
+ * deslocada, e é a janela que recorta. Em `144:2` a arte ocupa 1882,348 ×
+ * 1020,567 a partir de (−289, −118) dentro de uma janela de 1520 × 720.
+ *
+ * A margem disponível é, portanto, assimétrica, e é ela que limita o
+ * deslocamento:
+ *
+ * | direção | quanto a arte aguenta antes de appear a borda |
+ * |---|---|
+ * | para a esquerda | **73,348 px** (a borda direita encosta na janela) |
+ * | para a direita   | 289 px |
+ * | para cima       | 182,567 px |
+ * | para baixo      | 118 px |
+ *
+ * A amplitude horizontal de 44 px usa 60% da folga mais apertada. Acima de
+ * 73 px a borda direita da arte apareceria — e é por isso que o valor está
+ * aqui, num lugar só.
+ *
+ * ## A mola é o que faz o movimento parecer vivo
+ *
+ * Sem mola a arte grudaria no cursor, como um adesivo. Com mola, ela chega
+ * depois e volta antes — e é esse atraso entre o gesto e a resposta que dá a
+ * sensação de objeto pesado.
+ *
+ * O amortecimento é ligeiramente **superamortecido** (ζ ≈ 1,12): sem overshoot,
+ * porque uma ilustração grande que oscila parece emperra e não viva.
+ *
+ * ## O sentido é o do pedido
+ *
+ * A arte vai **para onde o ponteiro está**, e o conteúdo dela junto. O sinal
+ * contrário — o parallax clássico, em que a cena recua do cursor — é trocar um
+ * sinal em `use-background-parallax.ts`. Foi medido e olhado nos dois
+ * sentidos antes de escolher.
+ */
+export const BACKGROUND_PARALLAX = {
+  /** Amplitude horizontal máxima, em px. */
+  amplitudeX: 44,
+  /** Amplitude vertical máxima, em px. */
+  amplitudeY: 28,
+  /** Distância da borda da janela em que a resposta morre, em px. */
+  reach: 240,
+  spring: { stiffness: 120, damping: 22, mass: 0.8 },
+} as const;
+
+/**
  * A virada do fundo da seção ao trocar de pilar.
  *
  * O Figma **não define** animação para os frames da Cards Section — e também não

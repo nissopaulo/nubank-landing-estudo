@@ -75,6 +75,7 @@ src/
       CardsShowcase.tsx composição de cards: entrada, parallax, ponteiro
     solutions/
       SolutionsSection.tsx  seção de soluções (nó 144:2) e seu seletor
+      use-background-parallax.ts  a arte de fundo seguindo o ponteiro
     site/
       SiteHeader.tsx   cabeçalho fixo, condensa ao rolar
       SiteFooter.tsx   rodapé + aviso legal + seções pendentes
@@ -1252,6 +1253,65 @@ O Figma não dimensiona a imagem pela janela: ele a põe num retângulo maior
 mesmo motivo pelo qual a sombra dos cards da Hero vai na `<img>` e não na caixa
 do slot.
 
+### A arte de fundo segue o ponteiro
+
+A ilustração dentro da janela desliza na direção do ponteiro, com inércia. É
+desvio autoral — o Figma não define animação para nada (decisão 8) — e segue o
+mesmo vocabulário de movimento do resto do projeto.
+
+**Só a arte se move.** O badge e o painel de texto ficam ancorados na janela e
+a ilustração passa por baixo deles: é o que faz a leitura ser de "janela" e não
+de "cartão inteiro mexendo".
+
+| | valor | por quê |
+|---|---|---|
+| amplitude horizontal | 44 px | 60% da folga mais apertada da arte |
+| amplitude vertical | 28 px | |
+| alcance (`reach`) | 240 px | a resposta morre 240 px depois da borda da janela |
+| mola | `stiffness 120 / damping 22 / mass 0.8` | ζ ≈ 1,12, sem overshoot |
+
+**A amplitude não é livre.** No Figma a arte **não** é dimensionada pela
+janela: ela é maior e deslocada, e é a janela que recorta. Em `144:2` a arte
+ocupa 1882,348 × 1020,567 a partir de (−289, −118) dentro de uma janela de
+1520 × 720 — e a margem disponível é assimétrica:
+
+| direção | quanto a arte aguenta antes de aparecer a borda |
+|---|---|
+| para a esquerda | **73,348 px** (a borda direita encosta na janela) |
+| para a direita | 289 px |
+| para cima | 182,567 px |
+| para baixo | 118 px |
+
+Os 44 px usam 60% da folga mais apertada. **Acima de 73 px a borda direita da
+arte apareceria** — e é por isso que o número mora num lugar só.
+
+**O sentido é o do pedido:** a arte vai *para onde* o ponteiro está, e o
+conteúdo dela junto. O sinal contrário (o parallax clássico, em que a cena
+recua do cursor) é trocar um sinal em `use-background-parallax.ts`. Foi
+medido e olhado nos dois sentidos antes de escolher — com o sinal invertido, a
+moldura do quadro na árvore saía pela borda esquerda da janela, que é o oposto
+de "segue".
+
+**Medido** (Chrome e Firefox, dentro de 0,05 px):
+
+| Ponteiro | `x` | `y` |
+|---|---|---|
+| centro da janela | 0 | 0 |
+| borda esquerda | −43,7 | 0 |
+| borda direita | +43,7 | 0 |
+| borda de cima | 0 | −27,7 |
+| 120 px acima da janela | 0 | −14,0 (força 0,5) |
+| 240 px acima | 0 | 0 (a resposta morreu) |
+
+E o deslocamento do **conteúdo** foi conferido por correlação cruzada entre
+duas capturas: 84,52 px entre a ponta esquerda e a ponta direita da janela —
+exatamente o dobro da amplitude, o que confirma que a arte e o que está
+pintado nela andam juntos.
+
+Sob `prefers-reduced-motion` o deslocamento é **0,00** com o ponteiro na borda
+da janela. O corte é no *handler* e não no `MotionConfig`, porque isto é um
+motion value e não uma animação.
+
 ### Fidelidade medida contra o frame `144:2`
 
 Geometria lida do DOM (`getBoundingClientRect`), em coordenadas de documento,
@@ -1318,6 +1378,9 @@ movimento foi desenhado aqui:
 7. **Cartão de crédito** — a seção inteira responde ao ponteiro: o cartão
    inclina em 3D e um reflexo viaja com ele, ambos desvanecendo com a distância.
    Ver a seção da Cards Section.
+8. **Fundo da Solutions Section** — a arte dentro da janela segue o ponteiro,
+   com mola, e volta ao repouso quando ele sai. Só a arte se move: os painéis
+   ficam ancorados na janela. Ver a seção da Solutions.
 
 ### O corte de movimento reduzido não vem só do `MotionConfig`
 

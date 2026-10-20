@@ -13,6 +13,7 @@ import {
   WINDOW_RADIUS,
 } from "@/lib/solutions";
 import { revealFade, revealUp, staggerContainer } from "@/lib/motion";
+import { useBackgroundParallax } from "@/components/solutions/use-background-parallax";
 
 /**
  * Solutions Section — Figma `Solutions Section - Safe` (nó `144:2`), 1920×1316.
@@ -73,6 +74,17 @@ export function SolutionsSection() {
   const active = solution.active;
 
   /*
+   * A arte de fundo segue o ponteiro. O ouvinte é a seção inteira — é o que
+   * faz a resposta começar quando o ponteiro entra na seção, e não só quando
+   * ele chega em cima da arte — e a direção é medida contra a janela.
+   *
+   * O hook vem **antes** do `return` antecipado: a regra de hooks exige a
+   * mesma ordem em todo render, e um hook depois de uma saída antecipada é
+   * exatamente o que ela proíbe.
+   */
+  const parallax = useBackgroundParallax();
+
+  /*
    * O `active` ausente é o estado de "frame ainda não liberado". Ele existe
    * para a regra acima valer de forma mecânica, e não por commento.
    */
@@ -87,6 +99,7 @@ export function SolutionsSection() {
       id="solucoes"
       aria-labelledby="solucoes-titulo"
       className="relative flex flex-col items-center gap-[100px] overflow-clip bg-white px-[200px] py-[100px]"
+      {...parallax.bind}
     >
       {/*
         `overflow-clip` na seção porque a prévia desfocada vai **além** da
@@ -128,11 +141,27 @@ export function SolutionsSection() {
             a janela recortar. É o que dá o enquadramento da arte, e o mesmo
             motivo pelo qual a sombra dos cards da Hero vai na `<img>` e não
             na caixa do slot.
+
+            **A arte é a única coisa que se move.** O badge e o painel ficam
+            ancorados na janela, e a ilustração desliza por baixo deles — é o
+            que faz a leitura ser de "janela" e não de "cartão inteiro mexendo".
+
+            `will-change: transform` é o custo consciente de mover uma arte de
+            1882 × 1020: sem uma camada própria, cada quadro do ponteiro
+            repintaria a região recortada. Com a camada, o compositor só move a
+            textura.
           */}
-          <div
+          <motion.div
             aria-hidden="true"
-            className="absolute"
-            style={{ left: image.x, top: image.y, width: image.w, height: image.h }}
+            className="absolute will-change-transform"
+            style={{
+              left: image.x,
+              top: image.y,
+              width: image.w,
+              height: image.h,
+              x: parallax.values.x,
+              y: parallax.values.y,
+            }}
           >
             <Image
               src={active.image}
@@ -142,7 +171,7 @@ export function SolutionsSection() {
               sizes="(min-width: 1920px) 1882px, 100vw"
               unoptimized
             />
-          </div>
+          </motion.div>
 
           {/*
             O badge. `revealFade` e não `revealUp`: ele é posicionado em
