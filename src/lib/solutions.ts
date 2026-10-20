@@ -76,8 +76,37 @@ export type SolutionOption = {
     desc: string;
     /** Rótulo do CTA. */
     cta: string;
+    /**
+     * Largura do painel de vidro, em px — a do Figma.
+     *
+     * **É por quadro.** O `178:281` (Empréstimos) tem **820**, e não os 680
+     * dos dois primeiros: o Figma dimensiona o painel pelo texto que cabe
+     * nele, e "Um próximo passo começa" é bem mais largo que "Seu dinheiro,
+     * no ritmo".
+     *
+     * E a largura não é só um número na caixa: ela decide onde o texto
+     * quebra. Por isso o texto do painel tem a largura **desta** opção, e
+     * não a do vidro — senão o texto antigo se re-quebraria no meio do
+     * *dissolve*, que é a pior coisa que pode acontecer com ele.
+     */
+    largura: number;
   };
 };
+
+/**
+ * Geometria do painel de vidro.
+ *
+ * O padding mora aqui porque a largura do texto é **derivada**: a largura do
+ * painel menos duas vezes o padding. Se o padding mudasse no CSS e não
+ * aqui, o texto vazaria para fora do vidro — e ninguém veria o motivo. É a
+ * mesma razão do `CARD_GEOMETRY` em `card-showcase.ts`.
+ */
+export const PAINEL_GEOMETRIA = {
+  /** Padding do painel, em px. */
+  padding: 48,
+  /** Largura do painel quando a opção não diz outra, em px. */
+  largura: 680,
+} as const;
 
 export const SOLUTIONS: SolutionOption[] = [
   {
@@ -88,6 +117,7 @@ export const SOLUTIONS: SolutionOption[] = [
       title: "Seus planos merecem sair do papel.",
       desc: "Organize seu dinheiro por objetivos, guarde no seu ritmo e acompanhe cada passo até chegar onde você quer.",
       cta: "Conheça mais sobre",
+      largura: 680,
     },
   },
   {
@@ -98,12 +128,19 @@ export const SOLUTIONS: SolutionOption[] = [
       title: "Seu dinheiro, no ritmo da sua vida.",
       desc: "Pague, transfira, receba e acompanhe suas movimentações em uma conta digital feita para simplificar o seu dia a dia.",
       cta: "Conheça mais sobre",
+      largura: 680,
     },
   },
   {
     id: "advance",
     label: "Empréstimos",
     background: "/images/backgrounds/advance-bg.webp",
+    showcase: {
+      title: "Um próximo passo começa com boas escolhas.",
+      desc: "Conheça opções de crédito, consulte as condições disponíveis para você e avalie o que faz sentido para os seus planos.",
+      cta: "Conheça mais sobre",
+      largura: 820,
+    },
   },
   {
     id: "more",

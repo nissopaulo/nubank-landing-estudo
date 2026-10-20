@@ -48,6 +48,12 @@ entre as duas é uma **troca de cena**: a arte que sai perde o foco (blur
 do painel **surge de novo** a cada troca — sobe, aparece e vai entrando em
 foco. 60 fps cravados, com o desfoque de tela cheia e tudo.
 
+**Três frames liberados** (2026-10-20, mais tarde): o `178:281`
+(Empréstimos) entrou, e com ele a **largura do vidro passou a ser dado** —
+820 no Empréstimos, 680 nos outros dois. O texto do painel tem a largura da
+**sua** opção, para a largura do vidro crescendo não re-quebrar as linhas do
+texto antigo no meio do fade.
+
 A composição: a imagem principal em janela arredondada, o badge e o painel de
 texto sobre ela, e as **prévias das vizinhas sangrando pelas bordas** — 135 px
 à esquerda e 135 px à direita. E o seletor de pílulas no pé, com o parallax do
@@ -326,6 +332,24 @@ provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
     **Isso vale mais do que o efeito em si:** o *pull* de foco da arte e a
     emergência do texto só foram possíveis porque o desfoque pôde ser animado
     pelo Motion, e não por transition de CSS.
+34. **A largura do vidro é POR QUADRO, e ela é dado — não constante.** O
+    `178:281` (Empréstimos) tem o painel com **820** (o `Content`, 724) e os
+    outros dois com 680 (584). O Figma dimensiona o vidro pelo texto que cabe
+    nele, e o quadro registra isso. A largura passou a ser campo do `showcase`.
+35. **O texto do painel tem a largura da SUA opção, e não a do vidro.** É o
+    cuidado que a largura variável exige: se o texto preenchesse o vidro, a
+    largura do vidro crescendo **re-quebraria as linhas do texto antigo no meio
+    do fade** — e um texto que muda de quebra de linha enquanto some é a pior
+    coisa que pode acontecer com ele. Medido: o texto antigo mantém os 584
+    durante a troca, e o novo nasce nos 724.
+36. **A transição do `width` do vidro dura o mesmo que a saída do texto (180
+    ms).** Assim o vidro já assentou quando o texto novo entra (medido: 820 no
+    +202 ms), e o texto antigo **desliza com o vidro** em vez de saltar. E o
+    vidro é o único elemento que muda de tamanho na troca — o resto do
+    layout é o mesmo nos três frames.
+    O `width` é transição de **CSS** (e não do Motion) porque é layout, e o
+    Motion pularia a animação sob movimento reduzido — o que, para um vidro que
+    abre e fecha, é exatamente o certo.
 
 ---
 
@@ -457,22 +481,21 @@ Escrever a mensagem num arquivo e usar `git commit -F <arquivo>`.
 | 15 | **O nome no cartão do Croma reprova AA em texto pequeno** — 4,26:1 no design, 4,12:1 com o grão. `Purple/800` sobre o gradiente do cartão. O pior ponto é a **base** do texto, onde o gradiente já passou da parada `bfb299`. Implementado como o Figma pede | `card-showcase.ts` |
 | 16 | **O nome em gradiente do Ultravioleta reprova AA em texto pequeno — 1,93:1, a pior reprovação do projeto.** O texto é `background-clip: text` indo de `Neutral/400` (#9ca3af) a `Neutral/100` (#f3f4f6), e a primeira parada vale 0,81826% do gradiente — está quase no fim da rampa, sobre a parte mais clara do cartão. O par medido é #9ca3af sobre rgb(159,62,228). O número é conservador por construção: a sonda emparelha a parada mais escura com o pior pixel; a outra ponta, #f3f4f6 sólido, daria 4,45:1 contra o mesmo fundo — **as duas reprovam**. Implementado como o Figma pede | `card-showcase.ts` |
 | 17 | ~~As pílulas da Cards Section estão 6,33 px mais largas e 2 px mais altas que o Figma.~~ — **resolvido 2026-10-20**, com a unificação do seletor das duas seções. O `PillTab` compartilhado compensa o padding pela metade da borda, e as pílulas passaram de 520,33 × 42 para **512,33 × 40** (o Figma dá 514 × 40; a diferença que resta é a métrica do texto) | `components/ui/PillTab.tsx` |
-| 18 | **A descrição do painel da Solutions Section reprova AA em texto pequeno — 4,42:1 (Piggybank) e 4,15:1 (Conta) a 16 px.** E o caso é diferente dos outros: **a tinta do Figma passa** (5,70:1 sem grão) e o que derruba é o **grão da página**, que clareia o texto escuro (a tinta vai de 75 para 100 no canal mais escuro). Mediana dos pixels do glifo: 5,37:1 (Piggybank) e 5,42:1 (Conta); percentil 5: 4,63 e 4,45 — só o pior canto reprova. Implementado como o Figma pede (`Text/text-secondary`, #4b5563). **A correção não é de tinta, é do grão** — que hoje é uma camada de página inteira por cima de tudo, e deveria ser por seção e *abaixo* do texto (decisão 14, pendência que já existe lá) | `src/lib/solutions.ts` / `globals.css` |
+| 18 | **A descrição do painel da Solutions Section reprova AA em texto pequeno — 4,42:1 (Piggybank), 4,15:1 (Conta) e 4,28:1 (Advance) a 16 px.** E o caso é diferente dos outros: **a tinta do Figma passa** (5,70:1 sem grão) e o que derruba é o **grão da página**, que clareia o texto escuro (a tinta vai de 75 para 100 no canal mais escuro). Mediana dos pixels do glifo: 5,37 / 5,42 / 5,26; percentil 5: 4,63 / 4,45 / 4,56 — só o pior canto reprova. Implementado como o Figma pede (`Text/text-secondary`, #4b5563). **A correção não é de tinta, é do grão** — que hoje é uma camada de página inteira por cima de tudo, e deveria ser por seção e *abaixo* do texto (decisão 14, pendência que já existe lá) | `src/lib/solutions.ts` / `globals.css` |
 | 19 | **O bloco `Steps Progress` do quadro `178:205` (nó `180:322`) está oculto no Figma e não foi implementado.** Quatro passos de 162,5 px, em x = 840, y = 860, com 10 de gap — 620 de largura, alinhado com o painel. Fica registrado para quando ele aparecer | `src/components/solutions/SolutionsSection.tsx` |
 | 20 | ~~A troca de opção da Solutions Section está escrita e nunca executou~~ — **resolvido 2026-10-20**, com a liberação do frame `178:262` (Conta). A troca foi medida quadro a quadro: o *pull* de foco da arte, a emergência do texto, a trava do clique duplicado e o caminho de movimento reduzido | `src/components/solutions/SolutionsSection.tsx` |
-| 21 | **A largura do painel é POR FRAME, e o próximo frame já mostra isso.** No `178:281` (Empréstimos, ainda oculto) o `Container` tem **820** de largura (e o `Content`, 724) — e não os 680/584 dos dois frames liberados. O código tem `w-[680px]` fixo, então a liberação desse frame vai exigir um campo de largura no dado. A posição também muda: o painel do Advance está em x = 700, e não em 840 | `src/lib/solutions.ts` |
+| 21 | ~~A largura do painel é POR FRAME~~ — **resolvido 2026-10-20**, com a liberação do frame `178:281` (Empréstimos). A largura passou a ser campo do `showcase` (680/680/820), e o texto do painel passou a ter a largura da SUA opção — senão o vidro crescendo re-quebraria as linhas do texto antigo no meio do fade | `src/lib/solutions.ts` |
 
 **No Figma hoje existem dezesseis frames visíveis** — `Hero Section` (`14:446`),
 os **quatro** da Ecossystem (`52:3` Nubank, `76:3` Croma, `77:40` Ultravioleta,
 `80:77` Business), os **quatro** da Cards Section (`97:2` Nubank, `103:248`
-Croma, `103:318` Ultravioleta, `103:383` Business), os **dois** da Solutions
-Section nova (`178:205` Piggybank e `178:262` Account) e o `144:2` Solutions
-Section - Safe (o carrossel antigo, que continua no arquivo) — mais os 4
-frames soltos de arte dos cartões. A Ecossystem está completa, e a Cards
-Section também. Na Solutions Section nova **dois frames estão liberados**; os
-outros dois (`178:281` Advance e `178:296` More) estão ocultos por decisão de
-processo. Não há design das seções seguintes — por isso os itens 2 e 3
-bloqueiam o resto.
+Croma, `103:318` Ultravioleta, `103:383` Business), os **três** da Solutions
+Section nova (`178:205` Piggybank, `178:262` Account e `178:281` Advance) e o
+`144:2` Solutions Section - Safe (o carrossel antigo, que continua no arquivo)
+— mais os 4 frames soltos de arte dos cartões. A Ecossystem está completa, e a
+Cards Section também. Na Solutions Section nova **três frames estão liberados**;
+o último (`178:296` More) está oculto por decisão de processo. Não há design
+das seções seguintes — por isso os itens 2 e 3 bloqueiam o resto.
 
 ### Antes de sugerir código
 
@@ -3712,3 +3735,61 @@ O `178:281` (Empréstimos, ainda oculto) tem o painel com **820** de largura
 em 840. **A largura do painel é por frame**, e o código tem `w-[680px]` fixo:
 a liberação desse frame vai exigir um campo no dado. Registrado como
 pendência nº 21.
+
+### 2026-10-20 — o quadro "Advance" e a largura que é dado
+
+O usuário liberou o terceiro quadro (`178:281`, *Advance*): *"Já sabe o que
+tem que ser feito."* E a pendência nº 21 — que eu tinha registrado olhando o
+quadro antes da hora — era exatamente o que faltava.
+
+#### A largura do vidro é por quadro
+
+O `178:281` tem o `Container` com **820** de largura (e o `Content`, 724) —
+e não os 680/584 dos dois primeiros. O Figma dimensiona o vidro pelo texto que
+cabe nele, e o quadro registra isso. A largura passou a ser campo do
+`showcase`, e o `PAINEL_GEOMETRIA` (padding e largura padrão) foi para o
+`lib/solutions.ts` — a mesma razão do `CARD_GEOMETRY` em `card-showcase.ts`:
+o padding não pode morar em dois lugares, porque a largura do texto é
+derivada dele.
+
+#### O cuidado que a largura variável exige
+
+**O texto do painel tem a largura da SUA opção, e não a do vidro.** Se o
+texto preenchesse o vidro, a largura do vidro crescendo **re-quebraria as
+linhas do texto antigo no meio do fade** — e um texto que muda de quebra de
+linha enquanto some é a pior coisa que pode acontecer com ele.
+
+E a transição do `width` do vidro dura exatamente o mesmo tempo que a saída
+do texto (180 ms), para o vidro já ter assentado quando o texto novo entra.
+
+**Medido:**
+
+| momento | vidro | texto na tela |
+|---|---|---|
+| +110 ms | 802,8 (crescendo) | o antigo, **584** — sem re-quebrar |
+| +202 ms | **820** (assentado) | o novo, **724** |
+
+E o texto antigo **desliza com o vidro** (x 1088 → 965) em vez de saltar —
+que é o que a transição de `width` faz, e é a diferença entre uma troca
+suave e um corte.
+
+#### Verificação
+
+`tsc --noEmit`, `eslint` e `next build` limpos.
+
+Geometria do Advance, lida do DOM: painel em **x 900** (o Figma dá 700 dentro
+do `Main Content`, que é 900 na página) com **820 × 398,13**; título 48 px em
+**724 × 117,09**; descrição 16 px em **724 × 39,03**, duas linhas; CTA
+232,69 × 40. As quebras de linha batem com o Figma: "Um próximo passo começa
+/ com boas escolhas.".
+
+**60 fps cravados** na troca que muda a largura — mediana de 16,7 ms e
+percentil 95 de 16,8 ms, com o desfoque de tela cheia, o `backdrop-blur` do
+vidro e a animação de `width` ao mesmo tempo.
+
+Movimento reduzido: o vidro **salta** para 820 (a transition de CSS é cortada
+pela regra global), a arte troca na hora e o texto aparece sem deslocamento —
+o `transform` é pulado e o elemento nasce no lugar.
+
+Contraste do Advance: título 5,11:1 ✅, pílula inativa 5,80:1 ✅, CTA 7,21:1 ✅,
+**descrição 4,28:1** ⚠️ — a pendência nº 18, agora com três pontos de dados.

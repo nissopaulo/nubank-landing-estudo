@@ -8,7 +8,7 @@ import { CaretRight } from "@phosphor-icons/react/dist/ssr/CaretRight";
 import { CtaLink } from "@/components/ui/CtaLink";
 import { PillTab } from "@/components/ui/PillTab";
 import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
-import { ACTIVE_SOLUTION, SOLUTIONS } from "@/lib/solutions";
+import { ACTIVE_SOLUTION, PAINEL_GEOMETRIA, SOLUTIONS } from "@/lib/solutions";
 import { revealUp, SOLUTIONS_ART, SOLUTIONS_TEXT, staggerContainer } from "@/lib/motion";
 
 /**
@@ -122,6 +122,24 @@ export function SolutionsSection() {
   const movimentoReduzido = usePrefersReducedMotion();
 
   const visivel = SOLUTIONS[ativo];
+
+  /** Largura do vidro, da opção visível — o Figma varia por quadro. */
+  const largura = visivel.showcase?.largura ?? PAINEL_GEOMETRIA.largura;
+
+  /**
+   * A largura do TEXTO, e não a do vidro.
+   *
+   * As duas são diferentes de propósito. O vidro muda de largura na troca
+   * (680 no Caixinhas, 820 nos Empréstimos) e o texto tem que ficar na
+   * largura **da sua** opção: se ele preenchesse o vidro, a largura do vidro
+   * crescendo re-quebraria as linhas do texto antigo **no meio do fade** — e
+   * um texto que muda de quebra de linha enquanto some é a pior coisa que
+   * pode acontecer com ele.
+   *
+   * E o texto que entra já nasce na largura certa, porque a troca do vidro
+   * dura exatamente o mesmo tempo que a saída do texto antigo.
+   */
+  const larguraTexto = largura - PAINEL_GEOMETRIA.padding * 2;
 
   function select(index: number) {
     const destino = SOLUTIONS[index];
@@ -248,19 +266,29 @@ export function SolutionsSection() {
           do conteúdo: o painel não é remontado na troca (só o conteúdo dentro
           dele é), então a entrada acontece uma vez — quando a seção chega na
           tela — e a troca de opção faz só o *cross-fade* do texto.
+
+          **A largura é do dado e ela ANIMA.** O Figma dá 680 no Caixinhas e
+          na Conta, e 820 nos Empréstimos — e um vidro que mudasse de tamanho
+          num salto seria o único corte duro de uma troca que é toda suave.
+          A transição do `width` dura exatamente o mesmo tempo que a saída do
+          texto (180 ms), então o vidro já assentou quando o texto novo
+          entra.
         */}
         <motion.div
           role="tabpanel"
           id={`solucoes-painel-${visivel.id}`}
           aria-labelledby={`solucoes-aba-${visivel.id}`}
-          className="flex w-[680px] flex-col items-start gap-[64px] rounded-[24px] bg-white/90 p-[48px]
-            shadow-[6px_6px_20px_0_rgba(0,0,0,0.2)] backdrop-blur-[10px]"
+          className="flex flex-col items-start gap-[64px] rounded-[24px] bg-white/90
+            shadow-[6px_6px_20px_0_rgba(0,0,0,0.2)] backdrop-blur-[10px]
+            transition-[width] duration-[180ms] ease-out"
+          style={{ width: largura, padding: PAINEL_GEOMETRIA.padding }}
           variants={revealUp}
         >
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={visivel.id}
-              className="flex w-full flex-col gap-[42px]"
+              className="flex flex-col gap-[42px]"
+              style={{ width: larguraTexto }}
               variants={texto}
               initial="hidden"
               animate="visible"

@@ -1158,25 +1158,24 @@ arquivado mais abaixo (que ocupava o mesmo lugar na página e foi retirado).
 O que ela herda dele é o **seletor de pílulas**: o mesmo `PillTab` e a mesma
 regra `.pill-tab`.
 
-O quadro tem **quatro** frames, e **dois** estão liberados:
+O quadro tem **quatro** frames, e **três** estão liberados:
 
 | Opção | Frame | Nó | Estado |
 |---|---|---|---|
 | Caixinhas | `Solutions Section - Piggybank` | `178:205` | **liberado** |
 | Conta | `Solutions Section - Account` | `178:262` | **liberado** |
-| Empréstimos | `Solutions Section - Advance` | `178:281` | oculto |
+| Empréstimos | `Solutions Section - Advance` | `178:281` | **liberado** |
 | E muito mais | `Solutions Section - More` | `178:296` | oculto |
 
-As quatro pílulas aparecem — é o que o frame mostra — e as duas liberadas
-trocam de verdade. As outras duas são `<button>` reais com `aria-disabled` e
-aviso para o leitor de tela, a mesma regra dos pilares do Ecossystem e das
-pílulas da Cards Section: **um botão que não faz nada não existe em
-silêncio.**
+As quatro pílulas aparecem — é o que o frame mostra — e as três liberadas
+trocam de verdade. A última é `<button>` real com `aria-disabled` e aviso para
+o leitor de tela, a mesma regra dos pilares do Ecossystem e das pílulas da
+Cards Section: **um botão que não faz nada não existe em silêncio.**
 
-Os dois frames liberados são **idênticos fora da arte e do texto**: o vidro, o
-raio, a sombra, o padding, o título em 48 px, a descrição em 16 px e o CTA são
-os mesmos. O que muda é a **cena** de fundo e o **texto** do painel — e é por
-isso que a troca é animada em duas partes independentes.
+Os frames liberados são **iguais fora da arte e do texto** — o vidro, o raio, a
+sombra, o padding, o título em 48 px, a descrição em 16 px e o CTA são os
+mesmos. O que muda é a **cena** de fundo, o **texto** do painel e **a largura
+do vidro** (veja abaixo).
 
 ### A arte é o fundo da seção, e não uma imagem numa janela
 
@@ -1234,26 +1233,47 @@ altura, texto a 18 da borda); a sem borda usa 18/10 (`10 + 20 + 10 = 40`, texto
 a 18 da borda). As duas dão a mesma caixa do Figma — 514×40 na Cards Section,
 116×40 na pílula "Caixinhas".
 
-### Fidelidade medida contra o frame `178:205`
+### O vidro muda de largura, e o texto não pode acompanhar
+
+O quadro `178:281` (Empréstimos) tem o painel com **820** de largura — e não os
+680 dos outros dois. O Figma dimensiona o vidro pelo texto que cabe nele
+("Um próximo passo começa" é bem mais largo que "Seu dinheiro, no ritmo"), e
+o quadro registra isso. A largura é, portanto, **dado da opção**, não
+constante do componente.
+
+E aí está o cuidado: **o texto do painel tem a largura da SUA opção**, e não a
+do vidro. Se ele preenchesse o vidro, a largura do vidro crescendo
+re-quebraria as linhas do texto antigo **no meio do *fade*** — e um texto que
+muda de quebra de linha enquanto some é a pior coisa que pode acontecer com
+ele.
+
+| momento | vidro | texto na tela |
+|---|---|---|
+| +110 ms | 802,8 (crescendo) | o antigo, **584** — sem re-quebrar |
+| +202 ms | **820** (assentado) | o novo, **724** |
+
+A transição do `width` dura exatamente o mesmo tempo que a saída do texto
+(180 ms), então o vidro já assentou quando o texto novo entra — e o texto
+antigo, que sai com o vidro, **desliza com ele** em vez de saltar.
+
+### Fidelidade medida contra os três frames liberados
 
 Geometria lida do DOM (`getBoundingClientRect`), em coordenadas de documento, a
-1920×1080. As duas últimas colunas são o frame do Piggybank e o da Conta — e
-eles batem igual, porque o layout é o mesmo:
+1920×1080:
 
-| | Figma | Piggybank | Conta | |
-|---|---|---|---|---|
-| Seção | 1920 × 1080 | 1920 × 1080 | 1920 × 1080 | ✅ |
-| Seletor | x 200 · y 100 · 597 × 64 | x 200 · y 100 · **594,36** × 64 | idem | ⚠️ |
-| Pílula "Caixinhas" | 116 × 40 | **115,41** × 40 | idem | ⚠️ |
-| Pílula "Conta" | 85 × 40 | **84,64** × 40 | idem | ⚠️ |
-| Pílula "Empréstimos" | 147 × 40 | **146,14** × 40 | idem | ⚠️ |
-| Pílula "E muito mais" | 145 × 40 | **144,17** × 40 | idem | ⚠️ |
-| Painel | x 1040 · y 580 · 680 × 400 | x 1040 · y **581,95** · 680 × **398,13** | idem | ⚠️ |
-| Título | 48 px · 584 × 118 | 48 px · 584 × **117,09** | idem | ⚠️ |
-| Descrição | 16 px · 584 × 40 | 16 px · 584 × **39,03** | idem | ⚠️ |
-| CTA | 48,312 · 233 × 40 | 48, **310,13** · **232,69** × 40 | idem | ⚠️ |
+| | Figma | Piggybank | Conta | Advance | |
+|---|---|---|---|---|---|
+| Seção | 1920 × 1080 | 1920 × 1080 | idem | idem | ✅ |
+| Seletor | x 200 · y 100 · 597 × 64 | x 200 · y 100 · **594,36** × 64 | idem | idem | ⚠️ |
+| Pílula "Caixinhas" | 116 × 40 | **115,41** × 40 | idem | idem | ⚠️ |
+| Pílula "Conta" | 85 × 40 | **84,64** × 40 | idem | idem | ⚠️ |
+| Pílula "Empréstimos" | 147 × 40 | **146,14** × 40 | idem | idem | ⚠️ |
+| Painel | 680 × 400 | x 1040 · 680 × **398,13** | idem | **x 900 · 820** × **398,13** | ⚠️ |
+| Título | 48 px · 584 × 118 | 48 px · 584 × **117,09** | idem | 48 px · **724** × **117,09** | ⚠️ |
+| Descrição | 16 px · 584 × 40 | 16 px · 584 × **39,03** | idem | 16 px · **724** × **39,03** | ⚠️ |
+| CTA | 48,312 · 233 × 40 | 48, **310,13** · **232,69** × 40 | idem | idem | ⚠️ |
 
-Os dois deltas têm a **mesma causa**, e ela é o arredondamento do Figma: o
+Os deltas têm a **mesma causa**, e ela é o arredondamento do Figma: o
 `leading: normal` do Montserrat é 1,219, e o Figma **arredonda a caixa do texto
 para cima** (48 × 1,219 = 58,51 → duas linhas dariam 117,03, e ele escreve
 118). O projeto usa `leading-[1.22]` — a mesma constante da Hero, calibrada
@@ -1265,9 +1285,9 @@ E a largura das pílulas: os 2,64 px que faltam no seletor são a métrica do
 texto (a mesma diferença que já existia na Cards Section, onde o Figma dá 514
 e o navegador dá 512,33).
 
-A quebra de linha do texto também bate com o Figma: o título da Conta quebra
-em "Seu dinheiro, no ritmo / da sua vida." e a descrição em "…em uma / conta
-digital…", nas mesmas posições do quadro.
+A quebra de linha do texto também bate com o Figma nos três: "Seu dinheiro, no
+ritmo / da sua vida.", "Um próximo passo começa / com boas escolhas." e as
+descrições em duas linhas, nas mesmas posições dos quadros.
 
 ### A entrada é por scroll, e as duas peças têm reveles próprios
 
@@ -1390,12 +1410,12 @@ apagar a tinta do texto, esperar o repaint e fotografar o fundo real atrás do
 glifo, comparando pixel a pixel na mesma coordenada. As duas colunas são os
 dois frames liberados:
 
-| Texto | Piggybank | Conta | Mínimo | |
-|---|---|---|---|---|
-| Título do painel, 48 px (texto grande) | 5,36:1 | 5,15:1 | 3:1 | ✅ |
-| Pílula inativa, 16 px | 5,17:1 | 5,66:1 | 4,5:1 | ✅ |
-| CTA, 16 px (branco sobre `#820ad1`) | 7,21:1 | 7,21:1 | 4,5:1 | ✅ |
-| **Descrição, 16 px** | **4,42:1** | **4,15:1** | 4,5:1 | ⚠️ **reprova** |
+| Texto | Piggybank | Conta | Advance | Mínimo | |
+|---|---|---|---|---|---|
+| Título do painel, 48 px (texto grande) | 5,36:1 | 5,15:1 | 5,11:1 | 3:1 | ✅ |
+| Pílula inativa, 16 px | 5,17:1 | 5,66:1 | 5,80:1 | 4,5:1 | ✅ |
+| CTA, 16 px (branco sobre `#820ad1`) | 7,21:1 | 7,21:1 | 7,21:1 | 4,5:1 | ✅ |
+| **Descrição, 16 px** | **4,42:1** | **4,15:1** | **4,28:1** | 4,5:1 | ⚠️ **reprova** |
 
 A descrição é `Text/text-secondary` (#4b5563) sobre o vidro, e **sem o grão ela
 passa com folga** (5,70:1 no pior pixel do Piggybank). O que derruba é o grão
@@ -2130,10 +2150,10 @@ tem 16 px. Implementado como o Figma pede; a discussão está na seção do
 Ecossystem.
 
 - **A Solutions Section (nova) tem uma reprovação, e ela é do grão.** A
-  descrição do painel mede 4,42:1 (Piggybank) e 4,15:1 (Conta) com o grão
-  ligado — e 5,70:1 sem ele. A tinta é a do Figma (`Text/text-secondary`,
-  #4b5563) e ela passa; o que derruba é o grão de página, que clareia o texto
-  escuro. A tabela está na seção da Solutions.
+  descrição do painel mede 4,42:1 (Piggybank), 4,15:1 (Conta) e 4,28:1
+  (Advance) com o grão ligado — e 5,70:1 sem ele. A tinta é a do Figma
+  (`Text/text-secondary`, #4b5563) e ela passa; o que derruba é o grão de
+  página, que clareia o texto escuro. A tabela está na seção da Solutions.
 
 ### Cards Section
 
@@ -2267,11 +2287,12 @@ com `PROVISÓRIO`:
   `aria-disabled`. A virada foi verificada com os quatro, inclusive nos saltos
   que forçam a troca do slot escondido, em Chrome e Firefox, movimento normal e
   reduzido.
-- **A Solutions Section está com dois frames liberados** — o `178:205`
-  (Caixinhas) e o `178:262` (Conta) trocam de verdade; as outras duas pílulas
-  são botões desativados com aviso para leitor de tela. É decisão de processo,
-  não falta de design: os quatro frames existem no Figma, dois deles ocultos.
-  (O `144:2` do carrossel antigo é outra seção, e está arquivada.)
+- **A Solutions Section está com três frames liberados** — o `178:205`
+  (Caixinhas), o `178:262` (Conta) e o `178:281` (Empréstimos) trocam de
+  verdade; a última pílula é um botão desativado com aviso para leitor de tela.
+  É decisão de processo, não falta de design: os quatro frames existem no
+  Figma, um deles oculto. (O `144:2` do carrossel antigo é outra seção, e está
+  arquivada.)
 - **Texto do rodapé** com o aviso legal — redigido para este estudo.
 
 Além disso, **não há** números de usuários, taxas, limites, depoimentos nem
@@ -2356,10 +2377,10 @@ redirecionadores — esta página não tem função de cadastro.
 
 ## Próximos passos
 
-1. **Liberar o terceiro frame da Solutions Section** (o `178:281`,
-   Empréstimos). É só preencher o `showcase` em `src/lib/solutions.ts` — a
-   troca, o *pull* de foco da arte e a emergência do texto já estão prontos e
-   medidas. Enquanto isso, o bloco `Steps Progress` (nó `180:322`, oculto no
+1. **Liberar o último frame da Solutions Section** (o `178:296`, "E muito
+   mais"). É só preencher o `showcase` em `src/lib/solutions.ts` — o quadro dele
+   tem o painel com 680 (o mesmo dos dois primeiros), então não deve dar
+   trabalho. Enquanto isso, o bloco `Steps Progress` (nó `180:322`, oculto no
    Figma) continua sem implementação.
 2. Decidir as quatro reprovações de contraste da Cards Section, que são **do
    design** e estão implementadas como o Figma pede: nº 12 (pílula inativa do
