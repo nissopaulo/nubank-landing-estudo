@@ -94,6 +94,52 @@
   --font-display: var(--font-nu-montserrat), ui-sans-serif, system-ui, sans-serif;
   --font-body: var(--font-nu-montserrat), ui-sans-serif, system-ui, sans-serif;
 
+  /*
+   * Tipografia de display — **fluida**, e ancorada no quadro de 1920.
+   *
+   * Os três tamanhos de display do Figma (96 na Hero, 64 nos títulos de
+   * seção, 48 no painel da Solutions) são proporções do quadro de 1920, não
+   * tamanhos absolutos:
+   *
+   *   96/1920 = 5,0000%      64/1920 = 3,3333%      48/1920 = 2,5000%
+   *
+   * É isso que a coluna de conteúdo faz: a 1280px ela tem 1013px (79,17% da
+   * tela), e o título de 64px vira 42,7px — a mesma fração, a mesma
+   * composição. Com o tamanho fixo, a 1280 o título da Hero (96px) não cabia
+   * em uma linha e a composição inteira quebrava: o título invadia três
+   * linhas e colidia com os cards.
+   *
+   * O `clamp` trava no valor do Figma a partir de 1920 — acima disso a
+   * tipografia **não** cresce, porque o quadro não cresce (ver `.nu-frame`).
+   *
+   * O texto pequeno (16px) **não** é fluido: ele é a menor coisa legível, e
+   * encolher 16px para 13,3px a 1280 só produziria uma página que ninguém
+   * consegue ler.
+   */
+  --text-nu-hero: clamp(2.25rem, 5vw, 6rem);
+  --text-nu-display: clamp(2rem, 3.3333vw, 4rem);
+  --text-nu-title: clamp(1.5rem, 2.5vw, 3rem);
+
+  /*
+   * Espaçamentos proporcionais ao quadro de 1920.
+   *
+   * São os intervalos verticais da Hero, e eles existem **por causa** dos
+   * cards: o card mais alto do Figma começa em y = 693, e o CTA fica em
+   * y = 565. São 88px de respiro entre os dois.
+   *
+   * A tipografia encolhe com o quadro, mas o **intervalo** não encolhia: o
+   * `mt-16` de 64px continuava 64px a 1280, e o CTA subia bem menos do que
+   * os cards desciam — o resultado era o CTA "Explore o Universo Nu" atrás do
+   * leque de cartões, a 720p.
+   *
+   * O `min()` trava no valor do Figma a partir de 1920, porque acima disso o
+   * quadro não cresce (ver `.nu-frame`).
+   */
+  --spacing-nu-hero-top: min(6.4583vw, 124px);
+  --spacing-nu-hero-gap: min(5.2083vw, 100px);
+  --spacing-nu-hero-sub: min(1.25vw, 24px);
+  --spacing-nu-hero-cta: min(3.3333vw, 64px);
+
   /* Curvas de movimento no espírito Apple: saídas longas e suaves. */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   /*
@@ -107,6 +153,19 @@
    * divergirem.
    */
   --ease-emphasized: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /*
+   * As duas bandas do anel de foco.
+   *
+   * A banda do `outline` é a que contrasta com a **página**; a do `box-shadow`
+   * é a que separa o anel do **elemento**. A geometria está na regra de foco,
+   * em `@layer base`.
+   *
+   * Estes são os valores da superfície **clara** — a que é o padrão da página.
+   * A superfície escura troca os dois de lugar; ver `[data-surface="dark"]`.
+   */
+  --nu-focus-outline: #1c1c1e;
+  --nu-focus-halo: #ffffff;
 }
 
 @layer base {
@@ -121,13 +180,85 @@
   }
 
   /*
-   * Foco visível e consistente. Nunca removemos o outline — só o estilizamos.
-   * O anel branco sobre o gradiente roxo garante contraste em toda a Hero.
+   * Foco visível: **duas bandas**, e pelo menos uma delas sempre aparece.
+   *
+   * Antes era um anel branco só, e ele **desaparecia em quase toda a página**.
+   * Medido sobre cada superfície real:
+   *
+   *   card recolhido da Ecossystem (#e5e7eb)   1,28:1   ❌
+   *   seção da Ecossystem (#ffffff)             1,00:1   ❌
+   *   vidro da Solutions (branco a 90%)         ~1,05:1  ❌
+   *   CTA do rodapé (#f3e8ff)                   1,18:1   ❌
+   *
+   * Quem navega por teclado na seção branca não via onde estava. O anel era
+   * branco porque a Hero é roxa — e a regra é global, então o resto da página
+   * herdou a solução de uma seção que não é a dela.
+   *
+   * Agora são duas bandas concêntricas:
+   *
+   *     0 → 2 px    box-shadow   separa o anel do elemento
+   *     2 → 5 px    outline      contrasta com a página
+   *
+   * **A banda que precisa contrastar com a página é sempre a do outline.** Por
+   * isso a superfície escura troca as cores de lugar: sobre um fundo roxo um
+   * outline escuro some, e o que fica legível é o claro.
+   *
+   * Contraste da banda do outline, **medido em pixel** (o anel focado, com o
+   * grão ligado, contra o fundo real ao lado dele):
+   *
+   * | superfície                   | fundo medido   | anel medido   | contraste |
+   * |------------------------------|----------------|---------------|-----------|
+   * | seção da Ecossystem          | 254,254,254    | 36,36,38      | 15,36:1   |
+   * | card recolhido da Ecossystem | 229,231,235    | 36,36,38      | 12,10:1   |
+   * | CTA do rodapé                | 241,242,244    | 38,38,40      | 13,48:1   |
+   * | vidro da Solutions           | 247,246,246    | 33,33,35      | 14,90:1   |
+   * | pílula da Cards Section      | 222,194,243    | 36,36,38      |  9,68:1   |
+   * | Hero, no meio                | 161,63,232     | 249,249,249   |  4,54:1   |
+   * | skip link sobre a Hero       | 135,24,209     | 255,255,255   |  6,81:1   |
+   *
+   * As quatro primeiras eram invisíveis: 1,00:1, 1,28:1, 1,18:1 e ~1,05:1.
+   *
+   * O `border-radius: 4px` que estava aqui **não** arredondava o anel: ele
+   * mudava o raio do próprio elemento, e as classes de raio do Tailwind
+   * (camada utilities, que vem depois da base) sempre venceram — ou seja,
+   * nunca fez nada. Tirou: o `outline` segue o `border-radius` real do
+   * elemento, que é o que se quer num botão de pílula.
    */
   :focus-visible {
-    outline: 3px solid #ffffff;
-    outline-offset: 3px;
-    border-radius: 4px;
+    outline: 3px solid var(--nu-focus-outline);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 5px var(--nu-focus-halo);
+  }
+
+  /*
+   * Superfície escura: as duas bandas trocam de lugar.
+   *
+   * O `outline` fica branco — é ele que contrasta com a página escura — e o
+   * `box-shadow` ganha o roxo mais profundo do design, que separa o anel do
+   * elemento (o CTA claro da Hero, por exemplo).
+   *
+   * A ausência do atributo é a superfície **clara**, que é o padrão da
+   * página; quem marca `data-surface="dark"` está dizendo "aqui o fundo é
+   * escuro".
+   */
+  [data-surface="dark"] {
+    --nu-focus-outline: #ffffff;
+    --nu-focus-halo: #2e1065;
+  }
+
+  /*
+   * Modo de cores forçadas (alto contraste do sistema).
+   *
+   * Nesse modo o navegador **remove o `box-shadow`** e força a cor do
+   * `outline` para a cor do sistema. O anel duplo vira um `outline` só — e é
+   * justamente o `outline` que sobrevive, então o foco continua visível.
+   */
+  @media (forced-colors: active) {
+    :focus-visible {
+      outline: 3px solid;
+      outline-offset: 2px;
+      box-shadow: none;
+    }
   }
 
   /* Setas de rolagem / âncoras */
@@ -235,6 +366,100 @@
     opacity: var(--nu-grain-opacity, 0.12);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E");
     background-repeat: repeat;
+  }
+}
+
+/*
+ * O skip link é o único elemento focável da página que tem `box-shadow` — e o
+ * anel de foco **substitui** o `box-shadow` de quem entra em foco.
+ *
+ * Aqui ele é só visível quando está focado (a regra de `sr-only-focusable`
+ * acima esconde o resto do tempo), então perder a sombra seria perder a
+ * elevação o tempo todo. As duas sombras convivem: a do anel e a de elevação.
+ *
+ * **Fica fora de qualquer camada, de propósito.** A regra de `box-shadow` do
+ * anel vive em `@layer base`, e a utilitária de elevação do Tailwind vive em
+ * `@layer utilities` — que vem depois e ganha. Fora de camada, a regra ganha
+ * de qualquer uma das duas.
+ */
+.sr-only-focusable:focus-visible {
+  box-shadow: 0 0 0 5px var(--nu-focus-halo), var(--shadow-lg);
+}
+
+/**
+ * A moldura da página.
+ *
+ * ## O que ela resolve
+ *
+ * O Figma desenha tudo em 1920×1080, e o conteúdo das seções vive numa coluna
+ * de 1520 (1920 − 200 de gutter de cada lado). **Acima de 1920 essa coluna não
+ * cresce**: ela fica no meio, e o que sobra é fundo. Abaixo de 1920 o gutter
+ * encolhe na mesma proporção do quadro, e a coluna continua sendo a mesma
+ * fração da tela.
+ *
+ * Sem isso, cada seção tinha a sua própria expressão do gutter — havia
+ * quatro (200px, `clamp(200px, 10.4vw, 320px)`, 20px/40px e a ausência de
+ * padding) — e a coluna de conteúdo mudava de largura conforme a seção. A
+ * 2560, por exemplo:
+ *
+ * |                        | 1920 (Figma) | 2560 (antes) |
+ * |------------------------|--------------|--------------|
+ * | coluna de conteúdo     | 1520         | 2028         |
+ * | card ativo da Ecossystem | 1163       | 1671         |
+ *
+ * O card ativo esticava, a pessoa do pilar crescia junto (a posição dela é uma
+ * fração da coluna) e a composição deixava de ser a do Figma. É o defeito que
+ * a moldura resolve: **os componentes ficam no meio, no tamanho e na estrutura
+ * originais, e não se esticam.**
+ *
+ * ## O gutter
+ *
+ * `min(200px, 10.4167%)` — 200px é o gutter do Figma, e 10,4167% é a mesma
+ * proporção (200/1920) aplicada a uma tela menor. A porcentagem resolve contra
+ * a largura do bloco que contém a moldura, que é a largura da seção: acima de
+ * 1920 o `min()` trava em 200px, e a moldura em si é limitada a 1920px, então
+ * a coluna de conteúdo nunca passa de 1520px.
+ *
+ * ## O que NÃO entra na moldura
+ *
+ * Os **fundos** das seções continuam sangrando. O gradiente da Hero é
+ * vertical, então esticá-lo na horizontal não muda nada; o lilás da Cards
+ * Section é um gradiente radial e acompanha a seção; e a arte da Solutions
+ * Section é a seção — ela entra com a moldura do quadro 16:9, que é o
+ * enquadramento do Figma.
+ */
+@layer components {
+  .nu-frame {
+    width: 100%;
+    max-width: 1920px;
+    margin-inline: auto;
+    padding-inline: 20px;
+  }
+
+  /*
+   * Só o gutter, sem a moldura.
+   *
+   * Para as seções **centradas** — a Cards Section, cujo conteúdo é centralizado
+   * em vez de alinhado a uma coluna — o que importa é o gutter, não a coluna de
+   * 1520. A seção continua sangrando (o gradiente é o fundo dela) e o conteúdo
+   * continua no centro, como no Figma.
+   */
+  .nu-gutter {
+    padding-inline: 20px;
+  }
+
+  @media (min-width: 768px) {
+    .nu-frame,
+    .nu-gutter {
+      padding-inline: 40px;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .nu-frame,
+    .nu-gutter {
+      padding-inline: min(200px, 10.4167%);
+    }
   }
 }
 
@@ -503,7 +728,7 @@
  * ## A paleta da seção é uma camada, e não o `background-image`
  *
  * `background-image` não é animável, então a virada do fundo é uma camada por
- * cima que entra e some. Ver `CARD_BG`.
+ * cima que entra e some. Ver `BG_SWAP`.
  *
  * A camada é posicionada com `z-index: -1`, e a seção cria contexto de
  * empilhamento com `isolation: isolate` para isso dar certo: ela então pinta
@@ -731,6 +956,30 @@
 #cartoes {
   isolation: isolate;
   overflow: hidden;
+
+  /*
+   * O gradiente de fundo da seção precisa de `background-size` explícito — e
+   * este era o **único** data URI do projeto que ficava sem ele.
+   *
+   * O motivo é o mesmo do `.cc-face` e do `.cc-bg-entra`, e a consequência é
+   * maior aqui, porque a imagem é a de **fundo da seção**: o SVG do gradiente
+   * tem `viewBox` e **não** tem `width`/`height`, e aí ele não tem tamanho
+   * intrínseco — só proporção. Cada motor escolhe o que fazer com isso:
+   *
+   *   - o Chrome e o Firefox esticam a imagem até a caixa;
+   *   - o Safari usa o *default object size* (300×150), e o ladrilho
+   *     **repete** — com `background-repeat: repeat` (o padrão), a seção
+   *     aparece com o mesmo gradiente várias vezes lado a lado.
+   *
+   * Foi o que o usuário reportou: *"parece que tem vários backgrounds"*.
+   *
+   * Com `100% 100%` o ladrilho **é** a caixa da seção, em qualquer motor, e
+   * repetir deixa de ser possível. E é a mesma receita do resto do projeto —
+   * a lição já estava escrita no README: *"um asset com tamanho intrínseco
+   * ausente é uma divergência entre motores esperando para acontecer"*.
+   */
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
 }
 
 /*

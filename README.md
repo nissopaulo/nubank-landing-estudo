@@ -203,6 +203,125 @@ perto dos cards. Se preferir fidelidade máxima, volte as paradas em
 
 ---
 
+## A moldura da página
+
+O Figma desenha tudo em **1920×1080**, e o conteúdo das seções vive numa
+coluna de **1520** (1920 − 200 de gutter de cada lado). Essa coluna é a
+unidade de layout da página inteira, e ela é a mesma em toda resolução:
+
+> **Acima de 1920 a coluna não cresce.** Ela fica no meio, e o que sobra é
+> fundo. Abaixo de 1920 o gutter encolhe na mesma proporção do quadro, e a
+> coluna continua sendo a mesma fração da tela (79,17%).
+
+A regra está em uma classe só, `.nu-frame` (`globals.css`):
+
+```css
+.nu-frame {
+  width: 100%;
+  max-width: 1920px;      /* a moldura é o quadro do Figma */
+  margin-inline: auto;    /* e ela é centralizada */
+  padding-inline: min(200px, 10.4167%);  /* o gutter: 200px, ou 200/1920 da tela */
+}
+```
+
+O `min()` é o que faz as duas pontas: **acima de 1920** o gutter trava em
+200px e a coluna fica com 1520; **abaixo de 1920** o gutter vira 10,4167% da
+tela (133,3px a 1280) e a coluna continua sendo 79,17% dela.
+
+### Por que isso existia: quatro gutters diferentes
+
+Antes desta mudança cada seção tinha a sua própria expressão do gutter — e
+eram **quatro**: `200px` fixo, `clamp(200px, 10.4vw, 320px)`, `20px`/`40px` e
+a ausência total de padding. A coluna de conteúdo mudava de largura conforme
+a seção, e a 2560 isso aparecia como *estiramento*:
+
+| | 1920 (Figma) | 2560 (antes) | 2560 (agora) |
+|---|---|---|---|
+| coluna de conteúdo | 1520 | 2028 | **1520** |
+| card ativo da Ecossystem | 1163 | 1671 | **1163** |
+| pessoa do pilar (x) | 410 | 585,3 | **730** (410 + o centramento) |
+| painel da Solutions (x) | 1040 | 1360 | **1360** (1520 centralizado) |
+
+O card ativo da Ecossystem saía com 1671px em vez dos 1163px do design, e a
+pessoa do pilar crescia junto — porque a posição dela é uma fração da coluna.
+Agora os dois são os do Figma, em qualquer resolução.
+
+### O que entra na moldura e o que não
+
+**Entram** (tudo que é *conteúdo*): o header, o texto da Hero, a linha de
+cards da Ecossystem, o parágrafo e o CTA dela, o seletor e o painel da
+Solutions, o bloco "Em construção" e o rodapé.
+
+**Não entram** (tudo que é *fundo*): o gradiente da Hero, o gradiente da
+Cards Section e a arte da Solutions Section. Os fundos **sangram** — e é
+seguro, porque o gradiente da Hero é vertical, e o da Cards Section é um
+gradiente radial feito para acompanhar a seção.
+
+A **arte da Solutions** é o caso especial: ela **é** a seção, e por isso a
+seção tem `aspect-[16/9]` — o quadro do Figma. Assim o enquadramento da arte
+nunca muda: a arte tem 2048×1112 (1,84173) e a caixa 16:9 (1,77778), então o
+`cover` transborda 1,8% de cada lado — a 1920 são os 34,6px do Figma, e a 2560
+são 46px num quadro maior, ou seja, **o mesmo corte relativo**. Antes a seção
+tinha altura fixa (1080px) e a arte era esticada para 2560×1080: o porco
+saía cortado pela metade.
+
+### A tipografia de display é fluida
+
+Os três tamanhos de display do Figma (96 na Hero, 64 nos títulos de seção,
+48 no painel da Solutions) são **proporções do quadro de 1920**, e é assim
+que eles estão no `@theme`:
+
+| token | clamp | 1920 | 1280 | |
+|---|---|---|---|---|
+| `--text-nu-hero` | `clamp(2.25rem, 5vw, 6rem)` | 96px | 64px | título da Hero |
+| `--text-nu-display` | `clamp(2rem, 3.3333vw, 4rem)` | 64px | 42,7px | títulos de seção |
+| `--text-nu-title` | `clamp(1.5rem, 2.5vw, 3rem)` | 48px | 32px | título do painel |
+
+O `clamp` trava no valor do Figma a partir de 1920 — acima disso a tipografia
+**não** cresce, porque o quadro não cresce.
+
+O texto pequeno (16px) **não** é fluido: ele é a menor coisa legível, e
+encolher 16px para 13,3px a 1280 só produziria uma página que ninguém
+consegue ler.
+
+### Os intervalos da Hero também são proporcionais
+
+O `mt-16` de 64px entre o subtítulo e o CTA não encolhia, e a 1280 o CTA
+subia bem menos do que os cards desciam — o "Explore o Universo Nu" ficava
+**atrás do leque de cartões**. Os quatro intervalos da Hero estão no `@theme`
+como `--spacing-nu-hero-*`, e todos usam `min(…, valor do Figma)`.
+
+### O header em telas estreitas
+
+A coluna de conteúdo tem 79,17% da tela, e a 1280 ela tem 1013px. A nav
+(650px) mais os dois CTAs (369px) mais o logo (64px) passam de 1080 — e o
+último item da nav invadia o CTA. As regras:
+
+| | |
+|---|---|
+| nav | aparece a partir de **1280px** (`xl:block`) |
+| "Login Empresas" | aparece a partir de **1536px** (`max-2xl:hidden`) |
+| "Quero ser Nubank" | sempre |
+
+Entre 1024 e 1279 fica o logo e o CTA principal. O menu completo (o botão de
+hamburger com os painéis) continua dependendo do Figma — ver a pendência nº 4
+no `CONTEXTO.md`.
+
+### A descrição do card da Ecossystem tem largura máxima
+
+A pessoa é desenhada **por cima** do card, e o texto não pode entrar embaixo
+dela. A largura máxima da descrição é a **própria caixa do Figma escalada
+com a coluna** (30,5%, ou seja, os 445px do nó `52:156`).
+
+O número vem de uma medição do **canal alfa** da arte, nas linhas em que a
+descrição aparece: o corpo da pessoa do Nubank começa em x = 531,8 do `Main
+Content`, e o texto começa em 24 — sobram 507,8px, dos quais o Figma usa 445.
+A 1920 a largura máxima não aperta nada (o texto já tem 444,5px naturais e
+continua em duas linhas); a 1280 ela segura a descrição antes da pessoa, em
+vez de deixá-la sumir atrás dela.
+
+---
+
 ## Como a composição de cards funciona
 
 No Figma, o wrapper `cards` usa `display: contents`, então as coordenadas dos
@@ -215,7 +334,10 @@ Em `lib/hero-cards.ts` isso vira custom properties:
 .card-slot { left: var(--card-cx); top: var(--card-cy); width: var(--card-w); aspect-ratio: var(--card-aspect); }
 ```
 
-- `cx`/`cy`/`w` em **`cqw`** (1% da largura da Hero) — escalam com a viewport.
+- `cx`/`cy`/`w` em **`cqw`** (1% da largura do **palco**) — e o palco é a
+  moldura de 1920, não a viewport (ver "A moldura da página"). É o que
+  impede o leque de esticar: a 2560 os cards continuam com a geometria do
+  Figma, centralizados.
 - A **altura** vem do `aspect-ratio`, nunca de pixel fixo — por isso a
   composição não distorce em telas com proporção diferente de 16:9.
 - A arte usa `height: <fração>%`: a caixa já está rotacionada, então a fração
@@ -527,8 +649,12 @@ idênticas — a linha preenche tudo, não há o que centralizar. No hover diver
 e é aí que importa: com `center` o card cresceria dos dois lados e atravessaria
 o alinhamento de 200 px da seção.
 
-`:focus-visible` entra junto do `:hover` nos quatro cards, senão quem navega por
-teclado fica sem o feedback.
+`:focus-visible` entra junto do `:hover` **nos cards recolhidos**, senão quem navega
+por teclado fica sem o feedback. **No card ativo a regra é só `:hover`** — o
+`:focus-visible` não está lá, e quem chega nele por teclado não vê o
+crescimento do card (o indicador de foco global continua aparecendo, mas o
+gesto não). A correção está registrada como pendência **P-07** da auditoria de
+2026-10-20, no `CONTEXTO.md`.
 
 ### O cursor dos cards
 
@@ -1122,6 +1248,34 @@ não aparece, sem erro no console. E `background-size: 100% 100%` +
 na seção do Ecossystem: o SVG tem `viewBox` e não tem `width`/`height`, e o
 Firefox **repete** em vez de esticar.
 
+### O fundo da seção também é data URI — e ele repetia
+
+O gradiente de fundo da seção (`chrome.background`, um `radialGradient` de 8
+paradas em um quadro de 1920×1086) é o **único** data URI do projeto que ficava
+sem `background-size` explícito. Foi o que o usuário reportou em 2026-10-22:
+*"parece que tem vários backgrounds"*.
+
+A causa é a mesma de sempre, e ela é mais séria aqui porque a imagem é o
+**fundo da seção**: o SVG tem `viewBox` e não tem `width`/`height`, e então ele
+não tem tamanho intrínseco — só proporção. Cada motor escolhe o que fazer:
+
+| motor | o que faz com `background-size: auto` |
+|---|---|
+| Chrome, Firefox | estica a imagem até a caixa |
+| Safari | usa o *default object size* (300×150) e **repete** o ladrilho |
+
+Com `background-repeat: repeat` (o padrão), a seção aparece com o mesmo
+gradiente repetido lado a lado — seis vezes, a 1920.
+
+**Reproduzido** emulating o motor: forçando `background-size: 300px auto`, a
+seção aparece com o gradiente repetido em faixas verticais, que é exatamente a
+imagem do bug. Com a regra (`background-size: 100% 100%` + `no-repeat`) o
+ladrilho **é** a caixa da seção em qualquer motor, e repetir deixa de ser
+possível.
+
+No Chrome a correção é **pixel a pixel idêntica** — 0 pixels diferentes de
+2.073.600 — porque ele já esticava. A divergência era só dos outros motores.
+
 ### Comparação de pixel com o export do Figma
 
 Grão desligado (é desvio autoral e, ligado, produz um offset uniforme que
@@ -1184,19 +1338,29 @@ há janela**. A arte ocupa a seção inteira, sangrando pelas bordas, e o
 seletor e o painel flutua por cima dela. A seção tem, portanto, duas peças de
 vidro — não um cartão de imagem.
 
-O `object-fit: cover` reproduz o desenho sem número mágico: a arte tem
-2048×1112 (1,84173) e a caixa 1920×1080 (1,77778), então o `cover` escala
-pela altura, deixa a largura em 1989,2 e transborda 34,6 px para cada lado —
-que é exatamente o `103,65%` de largura com `-1,82%` de deslocamento que o
-Figma declara. Na vertical não sobra um pixel, e por isso a posição do
-`object-position` é irrelevante.
+**A seção é o quadro 16:9 do Figma** (`aspect-[16/9]`), e é isso que mantém o
+enquadramento da arte em qualquer resolução. O `object-fit: cover` reproduz o
+desenho sem número mágico: a arte tem 2048×1112 (1,84173) e a caixa 16:9
+(1,77778), então o `cover` escala pela altura, deixa a largura em 1989,2 e
+transborda 34,6 px para cada lado — que é exatamente o `103,65%` de largura
+com `-1,82%` de deslocamento que o Figma declara. Na vertical não sobra um
+pixel, e por isso a posição do `object-position` é irrelevante.
 
-### A geometria vem do padding e do `justify-between`
+Como a caixa é sempre 16:9, o **corte relativo é o mesmo em qualquer
+resolução**: a 2560 a arte transborda 46px num quadro maior, e não é
+"esticada". Antes a seção tinha altura fixa (1080px) e a arte preenchia
+2560×1080 — o porco saía cortado pela metade.
+
+### A geometria vem da moldura e do `justify-between`
 
 O Figma dá a navegação em (200, 100) e o painel em (1040, 580), dentro de um
 `Main Content` de 1520×880. Traduzido para fluxo:
 
-- `px-[200px] py-[100px]` — a borda do conteúdo;
+- a **moldura** (`.nu-frame`) — a coluna de 1520, centralizada (ver "A
+  moldura da página");
+- `py-[5.2083%]` — o padding vertical é **em porcentagem da largura da
+  seção** (100px em 1920), que é a proporção do Figma e acompanha a altura do
+  quadro 16:9;
 - `justify-between` — o seletor em cima, o painel embaixo;
 - `items-end` — o painel encosta na borda direita (840 + 680 = 1520).
 
@@ -1311,62 +1475,57 @@ Sob `prefers-reduced-motion` o mesmo caminho **sem deslocamento**: o
 ### A troca de opção é uma troca de cena
 
 `background-image` não é animável, então a troca é feita com **duas camadas** —
-a que sai e a que entra — e cada uma faz um gesto **diferente**. É essa
-assimetria que dá a sensação de profundidade em vez de *dissolve*:
+a que sai e a que entra. E o gesto é **exatamente o mesmo da troca de paleta da
+Cards Section** (`BG_SWAP`): a que sai desaparece e a que entra assenta no
+lugar.
 
 | camada | opacidade | escala | desfoque |
 |---|---|---|---|
-| que sai | 1 → 0 | — | 0 → **14 px** |
-| que entra | 0 → 1 | **1,03 → 1** | — |
+| que sai | 1 → 0 | — | — |
+| que entra | 0 → 1 | **1,02 → 1** | — |
 
-A que sai **perde o foco** (é a parte *soft* do gesto) e a que entra **assenta
-no lugar** (é a parte *dinâmica*). E a que entra **nunca fica desfocada**: em
-qualquer instante há uma cena nítida na tela, e o que se vê no meio da troca é
-a cena nova emergindo de baixo da cena velha — e não duas cenas misturadas.
+**Não há desfoque.** A versão anterior desta seção desfocava a arte que saía
+(0 → 14 px) e o texto que entrava (6 px → 0), e era a única do projeto a
+fazê-lo: o header, a Hero, a Cards Section e a Ecossystem Section movem tudo
+com `transform` e `opacity`. A auditoria de 2026-10-20 registrou o caso como a
+exceção da pendência E-07 ("só transform e opacity"), e o desfoque de tela
+cheia era caro — um `blur` por quadro em cima de uma arte de 2048px.
 
-A curva é `cubic-bezier(0.4, 0, 0.2, 1)` (a padrão do Material), que começa
-de leve, acelera no meio e assenta de leve, em 0,7 s. A enfática do projeto
-(0,32 · 0,72 · 0 · 1) foi descartada: ela resolve o gesto em um quinto do
-tempo e depois finge que continua, e num *dissolve* de tela cheia isso aparece
-como a cena "travando" no fim.
+O que se perde é a leitura de "pull" de foco, e o que se ganha é a coerência:
+a seção passa a se mover como as outras. E a cena que entra **nunca** está
+desfocada — em qualquer instante há uma cena nítida na tela.
 
-A escala de 3% é pequena de propósito: a arte tem 1,84173 de proporção e a
-caixa 1,77778, então o `cover` já transborda 34,6 px de cada lado. Mais que
-isso e a arte "pula" no enquadramento.
+A curva é a enfática do projeto (`cubic-bezier(0.32, 0.72, 0, 1)`), a mesma
+da Cards Section, em 0,7 s — que é `DURATION.base`.
 
-**Medido** (a cada ~90 ms, no navegador, arte em `op` / `blur` / `scale`):
+**Medido** (a cada ~100 ms, no navegador, arte em `op` / `scale`):
 
 | momento | que sai | que entra |
 |---|---|---|
-| +109 ms | op 0,96 · blur 0,6 px | op 0,04 · scale 1,0287 |
-| +205 ms | op 0,72 · blur 3,98 px | op 0,28 · scale 1,0215 |
-| +299 ms | op 0,40 · blur 8,35 px | op 0,60 · scale 1,0121 |
-| +392 ms | op 0,18 · blur 11,42 px | op 0,82 · scale 1,0055 |
-| +485 ms | op 0,07 · blur 12,98 px | op 0,93 · scale 1,0022 |
-| +671 ms | op 0,002 · blur 13,97 px | op 0,998 · scale 1,0001 |
-| +763 ms | (desmontada) | op 1 · blur 0 · `transform: none` |
+| +117 ms | op 0,472 | op 0,528 · scale 1,0094 |
+| +227 ms | op 0,143 | op 0,857 · scale 1,0029 |
+| +335 ms | op 0,052 | op 0,948 · scale 1,0010 |
+| +446 ms | op 0,021 | op 0,979 · scale 1,0004 |
+| +665 ms | op 0 | op 1 · scale 1,0000 |
+| +775 ms | (desmontada) | op 1 · `transform: none` |
 
-**60 fps cravados durante a troca**, com o desfoque de tela cheia e tudo:
-mediana de 16,7 ms entre quadros e percentil 95 de 16,8 ms.
+O `filter` computado é **`none`** em todos os quadros — não há desfoque em
+nenhum momento da troca.
 
 ### O texto do painel surge de novo a cada troca
 
 O texto **repete** a entrada a cada clique — não é a entrada da seção, é a da
-opção. E o gesto é o `revealUp` de sempre (sobe e aparece) com um acréscimo:
-um **desfoque que se resolve**.
+opção. E o gesto é o `revealUp` de sempre: **sobe e aparece**.
 
 | | o que faz | duração |
 |---|---|---|
-| saída | desfoca e some, **no lugar** | 0,18 s |
-| entrada | sobe 18 px, aparece e vai entrando em foco | 0,55 s |
+| saída | some em *fade*, **no lugar** | 0,18 s |
+| entrada | sobe 18 px e aparece | 0,55 s |
 
-O desfoque é o que faz o "surgir" ser suave em vez de um corte com *fade*: o
-olho percebe a cena entrando em foco, e não o texto acendendo.
-
-A saída é um **desfoque**, e não um deslocamento, por um motivo medido: sob
+A saída é um **fade**, e não um deslocamento, por um motivo medido: sob
 `prefers-reduced-motion` o Motion pula a animação de transform e o elemento
 **salta** para o valor final — quem pede menos movimento veria o texto dar um
-pulo de 8 px antes de sumir. Um desfoque não desloca nada.
+pulo de 8 px antes de sumir. Um fade não desloca nada.
 
 `mode="wait"`: o texto velho termina de sair antes do novo começar. Sem isso os
 dois textos ficariam sobrepostos no mesmo quadro de 584 × 200 — que é
@@ -1374,14 +1533,13 @@ exatamente o defeito que a Cards Section já teve.
 
 **Medido** (o bloco de texto, no navegador):
 
-| momento | texto na tela | op | blur | y |
-|---|---|---|---|---|
-| +109 ms | *o velho* | 0,70 | 1,8 px | −2,4 |
-| +205 ms | *o novo* | 0 | 6,0 px | +18 |
-| +298 ms | *o novo* | 0,70 | 1,8 px | +5,5 |
-| +392 ms | *o novo* | 0,90 | 0,6 px | +1,9 |
-| +488 ms | *o novo* | 0,97 | 0,2 px | +0,5 |
-| +675 ms | *o novo* | 1,00 | 0,0 px | 0 |
+| momento | texto na tela | op | y |
+|---|---|---|---|
+| +117 ms | *o velho* | 0,511 | 0 |
+| +227 ms | *o novo* | 0,304 | +12,5 |
+| +335 ms | *o novo* | 0,845 | +2,8 |
+| +446 ms | *o novo* | 0,958 | +0,76 |
+| +665 ms | *o novo* | 0,999 | +0,01 |
 
 A arte acaba em 0,70 s e o texto em 0,73 s — **eles chegam juntos**.
 
@@ -1930,9 +2088,17 @@ movimento foi desenhado aqui:
    inclina em 3D e um reflexo viaja com ele, ambos desvanecendo com a distância.
    Ver a seção da Cards Section.
 8. **Fundo da Solutions Section** — na seção **nova**, o seletor e o painel
-   entram por scroll, escalonados. Na versão **arquivada** (o carrossel), a arte
-   dentro da janela seguia o ponteiro, com mola, e voltava ao repouso quando ele
-   saía. Ver as duas seções da Solutions.
+   entram por scroll, escalonados; e a troca de opção é uma **troca de cena**
+   (a que sai desaparece, a que entra assenta de 1,02 para 1) — o mesmo
+   mecanismo da troca de paleta da Cards Section, e sem desfoque. Na versão
+   **arquivada** (o carrossel), a arte dentro da janela seguia o ponteiro, com
+   mola, e voltava ao repouso quando ele saía. Ver as duas seções da Solutions.
+
+> **O vocabulário de movimento é `transform` e `opacity` — e só isso.** A
+> Solutions Section usava `filter: blur` na arte e no texto, e era a única
+> exceção da página; foi corrigida em 2026-10-22. O `filter` é caro (uma
+> camada de tela cheia por quadro) e o `MotionConfig` de movimento reduzido
+> não o cobre: ele desliga *animações*, e o desfoque continuava rodando.
 
 ### O corte de movimento reduzido não vem só do `MotionConfig`
 

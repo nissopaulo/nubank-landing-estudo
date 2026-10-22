@@ -9,7 +9,7 @@ import { CtaLink } from "@/components/ui/CtaLink";
 import { PillTab } from "@/components/ui/PillTab";
 import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 import { ACTIVE_SOLUTION, PAINEL_GEOMETRIA, SOLUTIONS } from "@/lib/solutions";
-import { revealUp, SOLUTIONS_ART, SOLUTIONS_TEXT, staggerContainer } from "@/lib/motion";
+import { revealUp, BG_SWAP, SOLUTIONS_TEXT, staggerContainer } from "@/lib/motion";
 
 /**
  * Solutions Section — Figma `Solutions Section - Piggybank` (nó `178:205`) e
@@ -72,35 +72,37 @@ import { revealUp, SOLUTIONS_ART, SOLUTIONS_TEXT, staggerContainer } from "@/lib
 /**
  * O texto do painel, na entrada e na saída.
  *
- * A entrada é o `revealUp` de sempre (sobe e aparece) com um **desfoque que se
- * resolve** por cima — é o que faz o "surgir" ser suave em vez de um corte com
- * fade. A saída é o inverso e é rápida, porque a cena nova já está entrando.
+ * A entrada é o `revealUp` de sempre (sobe e aparece) e a saída é um **fade**,
+ * sem deslocamento — o mesmo gesto do texto da Ecossystem Section, e o mesmo
+ * de todo reveal da landing.
+ *
+ * **Sem desfoque.** A versão anterior desta seção animava `filter: blur` na
+ * entrada e na saída, e era a única do projeto a fazer isso: o cabeçalho, a
+ * Hero, a Cards Section e a Ecossystem Section movem tudo com `transform` e
+ * `opacity`. Além da incoerência, o desfoque de tela cheia a cada troca era
+ * caro — e o `MotionConfig` do projeto não o cobre: sob movimento reduzido
+ * ele continuaria rodando.
  */
 const texto: Variants = {
   hidden: {
     opacity: 0,
     y: SOLUTIONS_TEXT.y,
-    filter: `blur(${SOLUTIONS_TEXT.blur}px)`,
   },
   visible: {
     opacity: 1,
     y: 0,
-    filter: "blur(0px)",
     transition: { duration: SOLUTIONS_TEXT.enter, ease: SOLUTIONS_TEXT.ease },
   },
   exit: {
     opacity: 0,
     /*
-     * A saída é um **desfoque**, e não um deslocamento.
+     * A saída é um **fade**, e não um deslocamento.
      *
-     * O texto antigo desfoca e some, no lugar. Subir 8 px seria bonito — e
-     * seria um movimento: sob `prefers-reduced-motion` o Motion pula a
-     * animação de transform e o elemento **salta** para o valor final, e
-     * quem pediu menos movimento veria o texto dar um pulo de 8 px antes de
-     * sumir. Um desfoque não desloca nada, e é o gesto que combina com a
-     * entrada (que sobe e entra em foco).
+     * Subir alguns pixels seria bonito — e seria um movimento: sob
+     * `prefers-reduced-motion` o Motion pula a animação de transform e o
+     * elemento **salta** para o valor final, e quem pediu menos movimento veria
+     * o texto dar um pulo antes de sumir. Um fade não desloca nada.
      */
-    filter: `blur(${SOLUTIONS_TEXT.blur}px)`,
     transition: { duration: SOLUTIONS_TEXT.exit, ease: "easeIn" },
   },
 };
@@ -138,6 +140,10 @@ export function SolutionsSection() {
    *
    * E o texto que entra já nasce na largura certa, porque a troca do vidro
    * dura exatamente o mesmo tempo que a saída do texto antigo.
+   *
+   * O `min(…, 100%)` é o teto: a coluna de conteúdo tem 79,17% da tela, e a
+   * 1024 ela tem 810,7px — menos que os 820 do vidro dos Empréstimos. Sem o
+   * teto, o vidro dos Empréstimos começava 9,3px **antes** da coluna.
    */
   const larguraTexto = largura - PAINEL_GEOMETRIA.padding * 2;
 
@@ -153,30 +159,47 @@ export function SolutionsSection() {
     <section
       id="solucoes"
       aria-label="Soluções"
-      className="relative isolate flex min-h-[1080px] flex-col overflow-hidden bg-nu-action-surface"
+      /*
+       * Superfície clara: o que recebe o foco aqui é o que está **dentro** dos
+       * vidros (o seletor e o CTA), e os dois são brancos a 90% — a arte que
+       * passa por baixo não chega a 10%.
+       */
+      data-surface="light"
+      /*
+       * `w-full` é obrigatório com o `aspect-ratio`: sem uma largura
+       * explícita, o navegador calcula a **largura** pela proporção a partir
+       * da altura mínima — e a 1024 a seção saía com 1244px de largura, 220px
+       * além da tela (com o scroll horizontal junto).
+       */
+      className="relative isolate flex aspect-[16/9] min-h-[700px] w-full flex-col overflow-hidden bg-nu-action-surface"
     >
       {/*
         A arte de fundo.
 
-        Duas camadas com a **mesma** geometria — a que sai e a que entra — e
-        cada uma com o seu gesto: a que sai perde o foco, a que entra assenta
-        no lugar. A curva e os números estão em `SOLUTIONS_ART`.
+        Duas camadas com a **mesma** geometria — a que sai e a que entra — e o
+        mesmo gesto das duas: a que sai **desaparece** e a que entra **assenta**
+        no lugar (`1,02 → 1`). É o mecanismo da troca de fundo da Cards
+        Section, com os mesmos números (`BG_SWAP`).
 
-        `object-cover` reproduz o desenho: a arte tem 2048×1112 (1,84173) e a
-        caixa 1920×1080 (1,77778), então o `cover` escala pela altura, deixa a
-        largura em 1989,2 e transborda 34,6 px para cada lado — que é
-        exatamente o `103,65%` de largura com `-1,82%` de deslocamento que o
-        Figma declara. Na vertical não há sobra nenhuma, e por isso a posição
-        do `object-position` é irrelevante.
+        **A seção é o quadro 16:9 do Figma** (`aspect-[16/9]`), e é isso que
+        mantém o enquadramento da arte em qualquer resolução: a arte tem
+        2048×1112 (1,84173) e a caixa 16:9 (1,77778), então o `cover` transborda
+        1,8% de cada lado — a 1920 são os 34,6px do Figma, e a 2560 são 46px
+        num quadro maior, ou seja, **o mesmo corte relativo**. Antes a seção
+        tinha altura fixa (1080px) e a arte era esticada para 2560×1080: o
+        porco saía cortado pela metade.
+
+        `object-cover` reproduz o desenho: na vertical não sobra um pixel, e por
+        isso a posição do `object-position` é irrelevante.
 
         **`initial={false}`**: a primeira arte entra com a página, sem
         cross-fade — a entrada da seção é do `revealUp` do conteúdo, e uma
         arte que nascesse desfocada brigaria com ele.
 
         **Sob movimento reduzido a troca é instantânea**: a duração vai a zero
-        e não há *dissolve* nem desfoque. Quem pede menos movimento não deve
-        ver a cena escurecer e clarear — e o `MotionConfig` sozinho não cobre
-        esse caso (foi medido na Cards Section: a camada ficava congelada em
+        e não há *dissolve*. Quem pede menos movimento não deve ver a cena
+        escurecer e clarear — e o `MotionConfig` sozinho não cobre esse caso
+        (foi medido na Cards Section: a camada ficava congelada em
         `opacity: 0,007` e a seção mostrava a paleta antiga para sempre).
       */}
       <div aria-hidden="true" className="absolute inset-0 -z-10">
@@ -184,20 +207,12 @@ export function SolutionsSection() {
           <motion.div
             key={visivel.id}
             className="absolute inset-0"
-            initial={{
-              opacity: 0,
-              scale: SOLUTIONS_ART.scale,
-              filter: "blur(0px)",
-            }}
-            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-            exit={{
-              opacity: 0,
-              scale: 1,
-              filter: `blur(${SOLUTIONS_ART.blur}px)`,
-            }}
+            initial={{ opacity: 0, scale: BG_SWAP.from }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1 }}
             transition={{
-              duration: movimentoReduzido ? 0 : SOLUTIONS_ART.duration,
-              ease: SOLUTIONS_ART.ease,
+              duration: movimentoReduzido ? 0 : BG_SWAP.duration,
+              ease: BG_SWAP.ease,
             }}
           >
             <Image
@@ -219,9 +234,18 @@ export function SolutionsSection() {
         o que observar, e a entrada nunca rodaria. (Foi exatamente esse o modo
         de falha na Cards Section: as pílulas ficavam presas 24px abaixo do
         lugar, sem erro em lugar nenhum.)
+
+        **A moldura (`.nu-frame`)** é a coluna de 1520 do Figma, centralizada:
+        o seletor encosta na borda esquerda dela e o painel na direita, como no
+        desenho — e a 2560 eles continuam nas mesmas posições, em vez de
+        espalhados pelos 2028px que a seção ocupava.
+
+        O padding vertical é **em porcentagem da largura da seção** (5,2083% =
+        100px em 1920): é a proporção do Figma, e ela acompanha a altura da
+        seção, que é a do quadro 16:9.
       */}
       <motion.div
-        className="relative z-10 flex flex-1 flex-col items-end justify-between px-[200px] py-[100px]"
+        className="nu-frame relative z-10 flex flex-1 flex-col items-end justify-between py-[5.2083%]"
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.25 }}
@@ -281,20 +305,20 @@ export function SolutionsSection() {
           className="flex flex-col items-start gap-[64px] rounded-[24px] bg-white/90
             shadow-[6px_6px_20px_0_rgba(0,0,0,0.2)] backdrop-blur-[10px]
             transition-[width] duration-[180ms] ease-out"
-          style={{ width: largura, padding: PAINEL_GEOMETRIA.padding }}
+          style={{ width: `min(${largura}px, 100%)`, padding: PAINEL_GEOMETRIA.padding }}
           variants={revealUp}
         >
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={visivel.id}
               className="flex flex-col gap-[42px]"
-              style={{ width: larguraTexto }}
+              style={{ width: `min(${larguraTexto}px, 100%)` }}
               variants={texto}
               initial="hidden"
               animate="visible"
               exit="exit"
             >
-              <h2 className="font-display text-[48px] font-bold leading-[1.22] text-nu-brand">
+              <h2 className="font-display text-nu-title font-bold leading-[1.22] text-nu-brand">
                 {visivel.showcase?.title}
               </h2>
               <p className="font-display text-[16px] font-medium leading-[1.22] text-nu-text-secondary">

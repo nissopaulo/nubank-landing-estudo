@@ -23,23 +23,32 @@ export function HeroSection() {
     <section
       id="conteudo"
       aria-labelledby="hero-titulo"
-      className="hero relative isolate flex min-h-[100svh] flex-col overflow-clip pt-20 md:pt-24 lg:pt-[124px]
-        bg-[linear-gradient(180deg,#820ad1_0%,#9b2fe8_52%,#d8b4fe_86%,#f3e8ff_100%)]
-        [container-type:inline-size]"
+      /* Superfície escura: o gradiente da Hero começa em #820ad1, e é contra
+          ele que a banda do anel de foco precisa contrastar. */
+      data-surface="dark"
+      className="hero relative isolate flex min-h-[100svh] flex-col overflow-clip pt-20 md:pt-24 lg:pt-nu-hero-top
+        bg-[linear-gradient(180deg,#820ad1_0%,#9b2fe8_52%,#d8b4fe_86%,#f3e8ff_100%)]"
     >
       <CardsShowcase />
 
       <motion.div
-        className="relative z-10 flex w-full flex-1 flex-col px-5 md:px-10 lg:px-[200px] 2xl:px-[clamp(200px,10.4vw,320px)]"
+        /*
+         * A moldura da página (`.nu-frame`): a coluna de 1520 do Figma,
+         * centralizada, com o gutter que encolhe junto com o quadro. Antes o
+         * padding era `clamp(200px, 10.4vw, 320px)`, que a 2560 abria a coluna
+         * para 2028px — o título saía do lugar em relação aos cards, que são
+         * posicionados no quadro de 1920.
+         */
+        className="nu-frame relative z-10 flex flex-1 flex-col"
         variants={staggerContainer(0.1, 0.15)}
         initial="hidden"
         animate="visible"
       >
         {/* gap de 100px entre o header (que é fixo) e o bloco de conteúdo */}
-        <div className="mt-[clamp(2.5rem,9vh,6.5rem)] flex flex-col items-start lg:mt-25">
+        <div className="mt-[clamp(2.5rem,9vh,6.5rem)] flex flex-col items-start lg:mt-nu-hero-gap">
           <h1
             id="hero-titulo"
-            className="font-display text-[clamp(2.25rem,7.6vw,6rem)] font-bold leading-[1.22] tracking-[-0.02em] text-white"
+            className="font-display text-nu-hero font-bold leading-[1.22] tracking-[-0.02em] text-white"
           >
             <motion.span variants={revealUp} className="block">
               Seu dinheiro.
@@ -61,13 +70,13 @@ export function HeroSection() {
              * aparência na prática) e chegamos a 3.4:1. Ainda não atinge 4.5:1;
              * ver README > Acessibilidade para as opções de correção.
              */
-            className="mt-6 max-w-[46ch] font-body text-base leading-[1.2] text-white lg:mt-6 lg:max-w-none lg:text-base"
+            className="mt-6 max-w-[46ch] font-body text-base leading-[1.2] text-white lg:mt-nu-hero-sub lg:max-w-none lg:text-base"
           >
             Uma experiência financeira feita para acompanhar você, simplificar
             decisões e abrir novas possibilidades.
           </motion.p>
 
-          <motion.div variants={revealUp} className="mt-10 flex flex-wrap items-center gap-3 lg:mt-16">
+          <motion.div variants={revealUp} className="mt-10 flex flex-wrap items-center gap-3 lg:mt-nu-hero-cta">
             <CtaLink variant="solid" href="https://www.nubank.com.br/">
               Quero ser Nubank
             </CtaLink>

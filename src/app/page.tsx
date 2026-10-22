@@ -11,6 +11,13 @@ export default function Home() {
     <>
       <a
         href="#conteudo"
+        /*
+         * `data-surface="dark"`: o skip link aparece no topo esquerdo, **por
+         * cima da Hero**, que é roxa. O fundo dele é branco, mas o que está
+         * atrás é a superfície escura — e é contra ela que a banda do anel de
+         * foco precisa contrastar.
+         */
+        data-surface="dark"
         className="sr-only-focusable absolute left-4 top-4 z-[100] rounded-full bg-white px-5 py-3 font-display font-semibold text-nu-brand shadow-lg"
       >
         Pular para o conteúdo

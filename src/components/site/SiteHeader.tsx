@@ -58,12 +58,29 @@ export function SiteHeader() {
   return (
     <header
       data-condensed={condensed || undefined}
+      /*
+       * A superfície do header **muda com o estado**: transparente, ele está
+       * sobre o gradiente roxo da Hero (superfície escura); condensado, ele
+       * ganha o branco a 85% (superfície clara). É o que decide qual das duas
+       * bandas do anel de foco contrasta com o fundo.
+       */
+      data-surface={condensed ? "light" : "dark"}
       className={`fixed inset-x-0 top-0 z-50 transition-[background-color,box-shadow,border-color] duration-300 ease-out
         group
         data-[condensed]:border-b data-[condensed]:border-nu-neutral-200 data-[condensed]:bg-white/85 data-[condensed]:shadow-sm data-[condensed]:backdrop-blur-xl
         ${tone}`}
     >
-      <div className="flex h-16 w-full items-center justify-between px-5 md:h-20 md:px-10 lg:h-25 lg:px-[200px] 2xl:px-[clamp(200px,10.4vw,320px)]">
+      {/*
+        O conteúdo do header vive na **moldura da página** (`.nu-frame`): a
+        mesma coluna de 1520 que as seções usam, com o mesmo gutter. Antes cada
+        seção tinha a sua expressão do gutter, e o logo do header acabava
+        desalinhado do título da Hero a 2560.
+
+        O `whitespace-nowrap` nos itens da nav é o que impede o texto de quebrar
+        em duas linhas quando a coluna aperta — a 1280px, sem ele, "Para Você"
+        e "Saiba Mais" quebravam e o último encostava no CTA.
+      */}
+      <div className="nu-frame flex h-16 items-center justify-between md:h-20 lg:h-25">
         <div className="flex items-center gap-8 md:gap-12">
           {/*
             `shrink-0` fica aqui, no wrapper, e não no `<a>`.
@@ -136,14 +153,26 @@ export function SiteHeader() {
             </a>
           </span>
 
-          <nav aria-label="Navegação principal" className="hidden lg:block">
+          <nav aria-label="Navegação principal" className="hidden xl:block">
+            {/*
+              A nav aparece a partir de **1280px**, e não de 1024.
+
+              A coluna de conteúdo é 79,17% da tela, então a 1024 ela tem
+              810px — e a nav (650px) mais os dois CTAs (369px) mais o logo
+              (64px) não cabem: o último item da nav invadia o CTA. A 1280 a
+              coluna tem 1013px e cabe com folga.
+
+              Entre 1024 e 1279 fica o logo e o CTA principal. O menu completo
+              (o botão de hamburger com os painéis) continua dependente do
+              Figma — ver a pendência nº 4 no `CONTEXTO.md`.
+            */}
             <ul className="flex items-center">
               {NAV_ITEMS.map((item, i) => (
                 <li key={item} className="header-enter" style={enter(ENTER.nav[i])}>
                   <button
                     type="button"
                     aria-disabled="true"
-                    className="flex items-center gap-2.5 rounded-full px-[18px] py-2.5
+                    className="flex items-center gap-2.5 whitespace-nowrap rounded-full px-[18px] py-2.5
                       font-display text-base leading-[1.25] transition-opacity hover:opacity-75 aria-disabled:cursor-not-allowed"
                   >
                     {item}
@@ -157,14 +186,20 @@ export function SiteHeader() {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* No mobile fica só o CTA principal: o menu completo depende dos
-              painéis que ainda não existem no design. */}
+          {/*
+            O CTA de contorno aparece a partir de 1536px.
+
+            A coluna de conteúdo tem 79,17% da tela: a 1280 ela tem 1013px, e a
+            nav (650px) + os dois CTAs (369px) + o logo (64px) passam de 1080 —
+            o último item da nav invadia o CTA. O CTA principal fica; o de
+            contorno sai. Acima de 1536 os dois cabem, e é o que o Figma mostra.
+          */}
           <span className="header-enter" style={enter(ENTER.ctaOutline)}>
             <CtaLink
               variant="outline"
               href="https://www.nubank.com.br/"
               /*
-               * `max-sm:hidden` e não `hidden sm:inline-flex`: o `inline-flex`
+               * `max-2xl:hidden` e não `hidden 2xl:inline-flex`: o `inline-flex`
                * da base do CtaLink é um utilitário de display sem variante e,
                * no Tailwind, utilitários base vencem utilitários base. Usando
                * uma variante, ela é emitida depois e o `hidden` passa a valer.
@@ -175,7 +210,7 @@ export function SiteHeader() {
                * do header condensado some. Brand sobre branco dá 7,2:1 (AA pede
                * 4,5:1). Desvio consciente: ver CONTEXTO.md > Decisão 13.
                */
-              className="max-sm:hidden group-data-[condensed]:border-nu-brand group-data-[condensed]:text-nu-brand group-data-[condensed]:hover:bg-nu-brand group-data-[condensed]:hover:text-white group-data-[condensed]:active:bg-nu-purple-800"
+              className="max-2xl:hidden group-data-[condensed]:border-nu-brand group-data-[condensed]:text-nu-brand group-data-[condensed]:hover:bg-nu-brand group-data-[condensed]:hover:text-white group-data-[condensed]:active:bg-nu-purple-800"
             >
               Login Empresas
             </CtaLink>

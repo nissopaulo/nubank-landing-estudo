@@ -57,6 +57,19 @@ export type CardChrome = {
   background: string;
 
   /**
+   * A superfície da seção é **clara** ou **escura**.
+   *
+   * Não é estilo: é o que decide **qual das duas bandas do anel de foco**
+   * contrasta com o fundo — e o fundo é o gradiente deste frame, que muda de
+   * claro para escuro entre eles.
+   *
+   * Vem do mesmo fato que `titleInk`: a tinta que o Figma escolhe para o
+   * título só funciona sobre a superfície em que ele foi posto. Tinta clara
+   * (branco) é fundo escuro; tinta da marca é fundo claro.
+   */
+  surface: "light" | "dark";
+
+  /**
    * Tinta do título abaixo do cartão.
    *
    * Entra no `chrome` e não no `showcase` porque é uma cor da seção, e as
@@ -246,6 +259,7 @@ export const CARDS: ShowcaseCard[] = [
         idleBorder: "#820ad1",
       },
       titleInk: "#820ad1",
+      surface: "light",
     },
     showcase: {
       layout: "stack",
@@ -297,6 +311,7 @@ export const CARDS: ShowcaseCard[] = [
         idleBorder: "#8f7f64",
       },
       titleInk: "#820ad1",
+      surface: "light",
     },
     showcase: {
       layout: "rotated",
@@ -355,6 +370,8 @@ export const CARDS: ShowcaseCard[] = [
       },
       /** `Text/text-on-brand`: branco. Sobre o roxo escuro do fundo. */
       titleInk: "#ffffff",
+      /** O gradiente vai de #9b2fe8 a #2e1065: fundo escuro. */
+      surface: "dark",
     },
     showcase: {
       /**
@@ -427,6 +444,8 @@ export const CARDS: ShowcaseCard[] = [
         idleBorder: "#820ad1",
       },
       titleInk: "#820ad1",
+      /** O gradiente vai de #ffffff a #d1d5db: fundo claro. */
+      surface: "light",
     },
     showcase: {
       /**

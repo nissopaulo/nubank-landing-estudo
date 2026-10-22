@@ -13,7 +13,8 @@ export function PendingSections() {
     <section
       id="proximas-secoes"
       aria-labelledby="proximas-secoes-titulo"
-      className="w-full px-5 py-24 md:px-10 lg:px-[200px] 2xl:px-[clamp(200px,10.4vw,320px)] lg:py-32"
+      data-surface="light"
+      className="nu-frame py-24 lg:py-32"
     >
       <h2
         id="proximas-secoes-titulo"
@@ -43,8 +44,11 @@ export function PendingSections() {
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-nu-neutral-200 bg-nu-neutral-100">
-      <div className="w-full px-5 py-14 md:px-10 lg:px-[200px] 2xl:px-[clamp(200px,10.4vw,320px)]">
+    <footer
+      data-surface="light"
+      className="border-t border-nu-neutral-200 bg-nu-neutral-100"
+    >
+      <div className="nu-frame py-14">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-[68ch]">
             <p className="font-display text-lg font-semibold text-nu-neutral-800">

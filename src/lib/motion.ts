@@ -334,72 +334,29 @@ export const CARD_FLIP = {
 } as const;
 
 /**
- * A troca de opção da Solutions Section.
- *
- * ## A arte é a seção inteira
- *
- * A Solutions Section (nó `178:205`) não tem janela: a arte **é** o fundo,
- * sangrando pelas bordas, e o seletor e o painel flutuam por cima dela. Trocar
- * de opção troca a cena inteira, e a troca é feita com **duas camadas** — a
- * que sai e a que entra — porque `background-image` não é animável.
- *
- * ## O gesto é "a cena perde o foco e a outra chega"
- *
- * As duas camadas não fazem a mesma coisa, e é essa assimetria que dá a
- * sensação de profundidade em vez de dissolve:
- *
- * | camada | opacidade | escala | desfoque |
- * |---|---|---|---|
- * | que sai | 1 → 0 | — | 0 → 14 px |
- * | que entra | 0 → 1 | 1,03 → 1 | — |
- *
- * A que sai **desfoca** (é a parte "soft" do gesto) e a que entra **assenta**
- * (é a parte "dinâmica"). E a que entra nunca fica desfocada: em qualquer
- * instante há uma cena nítida na tela, e o que se vê no meio da troca é a cena
- * nova emergindo de baixo da cena velha — e não duas cenas misturadas.
- *
- * A escala de 3% na entrada é pequena de propósito: a arte tem 1,84173 de
- * proporção e a caixa 1,77778, então o `cover` já transborda 34,6 px de cada
- * lado. Mais que isso e a arte "pula" no enquadramento.
- *
- * ## A curva é simétrica, e não a enfática
- *
- * `cubic-bezier(0.4, 0, 0.2, 1)` — a curva padrão do Material — começa de
- * leve, acelera no meio e assenta de leve. A enfática (0,32 · 0,72 · 0 · 1) é
- * rápida no começo: ela resolveria o gesto em um quinto do tempo e depois
- * fingiria que continua, e num *dissolve* de tela cheia isso aparece como a
- * cena "travando" no fim.
- */
-export const SOLUTIONS_ART = {
-  /** Duração da troca da arte, em segundos. */
-  duration: 0.7,
-  /** Curva da troca. */
-  ease: [0.4, 0, 0.2, 1] as [number, number, number, number],
-  /** De quanto a arte que entra vem "acima". */
-  scale: 1.03,
-  /** Quão desfocada a arte que sai fica antes de sumir, em px. */
-  blur: 14,
-} as const;
-
-/**
- * O texto do painel, a cada troca de opção.
+ * O texto do painel da Solutions Section, a cada troca de opção.
  *
  * ## Ele **repete** a cada troca
  *
- * Não é a entrada da seção — é a da opção. E é o mesmo pedido de sempre: o
- * texto "surge" de novo a cada clique, e o movimento é o do resto da landing
- * (`revealUp`), com dois acréscimos.
+ * Não é a entrada da seção — é a da opção. E é o pedido de sempre: o texto
+ * "surge" de novo a cada clique.
  *
- * ## Sobe, aparece e sai do foco
+ * ## O gesto é o do resto da landing
  *
- * O `revealUp` de sempre (sobe 24 px e aparece) é a base. Aqui ele ganha um
- * **desfoque que se resolve**: o texto nasce desfocado e vai ficando nítido
- * enquanto sobe. É o que faz o "surgir" ser suave em vez de um corte com
- * fade — o olho percebe a cena entrando em foco, e não o texto acendendo.
+ * **Sobe e aparece** — opacidade e deslocamento, que é o `revealUp` de toda a
+ * página (aqui com 18px em vez de 24px, porque o painel é menor e o deslocamento
+ * maior empurrava o texto para fora do vidro).
  *
- * O texto da saída é o inverso — sobe 8 px e some em 0,18 s — e é rápido de
- * propósito: a cena nova já está entrando, e um texto que demora a sair
- * segura a troca.
+ * A saída é um **fade**, e não um deslocamento: sob `prefers-reduced-motion` o
+ * Motion pula a animação de transform e o elemento **saltaria** para o valor
+ * final — quem pede menos movimento veria o texto dar um pulo antes de sumir.
+ * Um fade não desloca nada.
+ *
+ * **Antes esta seção era a única do projeto com `filter: blur`**: o texto
+ * nascia desfocado e o que saía também. Nenhuma outra seção da landing usa
+ * desfoque para isso, e a auditoria registrou o caso como a exceção da
+ * pendência E-07 ("só transform e opacity"). O desfoque também era caro: um
+ * `blur` de tela cheia por quadro, em cima de uma arte de 2048px.
  *
  * ## A opacidade sai antes do resto
  *
@@ -416,14 +373,19 @@ export const SOLUTIONS_TEXT = {
   ease: EASE_OUT_EXPO,
   /** Deslocamento de entrada, em px. */
   y: 18,
-  /** Desfoque de entrada, em px. */
-  blur: 6,
 } as const;
 
 /**
- * A virada do fundo da seção ao trocar de pilar.
+ * A troca de fundo de uma seção — **um mecanismo só, duas seções**.
  *
- * O Figma **não define** animação para os frames da Cards Section — e também não
+ * A Cards Section troca a paleta do gradiente ao virar o cartão; a Solutions
+ * Section troca a cena inteira (a arte que **é** o fundo da seção) ao trocar
+ * de opção. As duas fazem a mesma coisa, e é por isso que os números vivem
+ * aqui: a Solutions usava antes um desfoque de tela cheia que nenhuma outra
+ * seção usava, e a auditoria registrou o caso como a exceção da pendência
+ * E-07 ("só transform e opacity").
+ *
+ * O Figma **não define** animação para os frames das duas seções — e também não
  * define para o resto do arquivo. Então isto é desvio autoral, como a sombra do
  * cartão e o grão da página.
  *
@@ -461,7 +423,7 @@ export const SOLUTIONS_TEXT = {
  * destino com o fundo ainda chegando; fazer durar menos cortaria o gesto em dois.
  *together é o que faz parecer um gesto só.
  */
-export const CARD_BG = {
+export const BG_SWAP = {
   /** 0,7s — o mesmo `DURATION.base`, e o que a meia-volta inteira leva. */
   duration: DURATION.base,
   ease: EASE_EMPHASIZED,

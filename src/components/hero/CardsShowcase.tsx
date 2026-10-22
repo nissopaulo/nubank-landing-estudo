@@ -73,74 +73,94 @@ export function CardsShowcase() {
       onPointerMove={handlePointerMove}
       onPointerLeave={resetPointer}
     >
-      {HERO_CARDS.map((card) => (
-        <div
-          key={card.id}
-          data-card={card.id}
-          className="card-slot absolute"
-          style={
-            {
-              "--card-cx": `${card.centerX}cqw`,
-              "--card-cy": `${card.centerY}cqw`,
-              "--card-w": `${card.width}cqw`,
-              "--card-rot": `${card.rotate}deg`,
-              "--card-aspect": String(card.boxAspect),
-              // `translate` (propriedade CSS) é independente de `transform`,
-              // então não briga com o `y` do Motion aplicado na camada acima.
-              translate: "-50% -50%",
-            } as React.CSSProperties
-          }
-        >
-          {/* Rotação final: fica no HTML do servidor, então não há "flash"
-              de card torto antes da hidratação. */}
-          <div className="card-art mt-40 flex size-full items-center justify-center">
-            <motion.div
-              /*
-               * `size-full` é obrigatório: sem altura definida neste
-               * intermediário, o `height: N%` da imagem não tem base e o
-               * navegador cai no tamanho natural (681x1080 em vez de
-               * 373x593). Com a cadeia de alturas definida, a caixa também
-               * tem área desde o primeiro frame — o que permite ao Chrome
-               * avaliar a interseção e disparar o lazy-load.
-               */
-              className="flex size-full items-center justify-center will-change-transform"
-              style={{ transformOrigin: FAN.origin }}
-              /*
-               * Só `rotate` e `y`. Sem `opacity` e sem `scale`, que é o que
-               * fazia o card "surgir": ele já nasce renderizado, opaco e no
-               * tamanho final. O que o esconde no primeiro frame é estar em
-               * `y` abaixo da Hero, de onde o `overflow-clip` da seção o
-               * recorta. O leque é o que o traz para dentro da tela.
-               */
-              initial={{ rotate: FAN.from, y: FAN.y }}
-              animate={{ rotate: 0, y: 0 }}
-              transition={{
-                duration: DURATION.slow * 1.25,
-                ease: EASE_OUT_EXPO,
-                delay: card.delay,
-              }}
-            >
-              <Image
-                src={card.src}
-                alt={card.alt}
-                width={374}
-                height={593}
-                // `width` inline é necessário: sem ele o `width: 100%` do
-                // Tailwind resolveria contra o pai de largura automática e
-                // inflaria a arte. A fração vem de `artWidthPct`.
-                sizes="(min-width: 1440px) 340px, (min-width: 1024px) 280px, 60vw"
-                className="card-shadow w-auto max-w-none"
-                // Altura em % da caixa: a caixa tem altura definida pelo
-                // aspect-ratio, então a fração resolve sem dependência do
-                // carregamento da imagem (evita 0x0 e o lazy-load travado).
-                style={{ height: `${card.artHeightPct}%` }}
-                loading={card.eager ? "eager" : "lazy"}
-                unoptimized
-              />
-            </motion.div>
+      {/*
+        O palco da composição: a **moldura de 1920**, centralizada.
+
+        É aqui que o `cqw` do `.card-slot` é resolvido, e é por isso que a
+        composição não estica. Antes, o container era a seção inteira, e o
+        `cqw` media a **viewport**: a 2560 os quatro cards cresciam 33% e o
+        leque saía do lugar — o mesmo defeito de estiramento que a coluna de
+        conteúdo da Ecossystem tinha.
+
+        Com o palco limitado a 1920, os cards mantêm a geometria do Figma em
+        qualquer resolução acima dela, e a 1920 nada muda: o `cqw` mede
+        exatamente os mesmos 19,2px de antes.
+
+        A altura é a da Hero inteira, e não 16/9: a posição vertical dos cards
+        é medida a partir do topo da seção, e é o **recorte** da Hero que corta
+        o leque na borda inferior — como no Figma, onde os cards também estão
+        cortados pelo limite do quadro.
+      */}
+      <div className="absolute inset-0 mx-auto w-full max-w-[1920px] [container-type:inline-size]">
+        {HERO_CARDS.map((card) => (
+          <div
+            key={card.id}
+            data-card={card.id}
+            className="card-slot absolute"
+            style={
+              {
+                "--card-cx": `${card.centerX}cqw`,
+                "--card-cy": `${card.centerY}cqw`,
+                "--card-w": `${card.width}cqw`,
+                "--card-rot": `${card.rotate}deg`,
+                "--card-aspect": String(card.boxAspect),
+                // `translate` (propriedade CSS) é independente de `transform`,
+                // então não briga com o `y` do Motion aplicado na camada acima.
+                translate: "-50% -50%",
+              } as React.CSSProperties
+            }
+          >
+            {/* Rotação final: fica no HTML do servidor, então não há "flash"
+                de card torto antes da hidratação. */}
+            <div className="card-art mt-40 flex size-full items-center justify-center">
+              <motion.div
+                /*
+                 * `size-full` é obrigatório: sem altura definida neste
+                 * intermediário, o `height: N%` da imagem não tem base e o
+                 * navegador cai no tamanho natural (681x1080 em vez de
+                 * 373x593). Com a cadeia de alturas definida, a caixa também
+                 * tem área desde o primeiro frame — o que permite ao Chrome
+                 * avaliar a interseção e disparar o lazy-load.
+                 */
+                className="flex size-full items-center justify-center will-change-transform"
+                style={{ transformOrigin: FAN.origin }}
+                /*
+                 * Só `rotate` e `y`. Sem `opacity` e sem `scale`, que é o que
+                 * fazia o card "surgir": ele já nasce renderizado, opaco e no
+                 * tamanho final. O que o esconde no primeiro frame é estar em
+                 * `y` abaixo da Hero, de onde o `overflow-clip` da seção o
+                 * recorta. O leque é o que o traz para dentro da tela.
+                 */
+                initial={{ rotate: FAN.from, y: FAN.y }}
+                animate={{ rotate: 0, y: 0 }}
+                transition={{
+                  duration: DURATION.slow * 1.25,
+                  ease: EASE_OUT_EXPO,
+                  delay: card.delay,
+                }}
+              >
+                <Image
+                  src={card.src}
+                  alt={card.alt}
+                  width={374}
+                  height={593}
+                  // `width` inline é necessário: sem ele o `width: 100%` do
+                  // Tailwind resolveria contra o pai de largura automática e
+                  // inflaria a arte. A fração vem de `artWidthPct`.
+                  sizes="(min-width: 1440px) 340px, (min-width: 1024px) 280px, 60vw"
+                  className="card-shadow w-auto max-w-none"
+                  // Altura em % da caixa: a caixa tem altura definida pelo
+                  // aspect-ratio, então a fração resolve sem dependência do
+                  // carregamento da imagem (evita 0x0 e o lazy-load travado).
+                  style={{ height: `${card.artHeightPct}%` }}
+                  loading={card.eager ? "eager" : "lazy"}
+                  unoptimized
+                />
+              </motion.div>
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </motion.div>
   );
 }

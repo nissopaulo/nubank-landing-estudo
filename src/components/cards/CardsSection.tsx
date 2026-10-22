@@ -10,7 +10,7 @@ import { CtaLink } from "@/components/ui/CtaLink";
 import { PillTab } from "@/components/ui/PillTab";
 import { CARDS, type ShowcaseCard } from "@/lib/card-showcase";
 import {
-  CARD_BG,
+  BG_SWAP,
   CARD_FLIP,
   revealScale,
   revealUp,
@@ -124,7 +124,7 @@ export function CardsSection() {
    * dois gradientes o tempo todo e exigiria um estado por camada. Uma camada só
    * temporária é o custo menor, e some sozinha no `onAnimationComplete`.
    *
-   * Ver `CARD_BG` para o porquê de a seção segurar o fundo que SAI.
+   * Ver `BG_SWAP` para o porquê de a seção segurar o fundo que SAI.
    */
   const [saindo, setSaindo] = useState<ShowcaseCard | null>(null);
 
@@ -284,10 +284,16 @@ export function CardsSection() {
     <section
       id="cartoes"
       aria-label="Cartões"
-      className="relative flex flex-col items-center gap-[100px] px-[200px] py-[100px]"
+      /*
+       * A superfície acompanha o frame visível: o gradiente da seção muda de
+       * claro para escuro entre eles (o Ultravioleta é roxo até #2e1065), e é
+       * contra ele que a banda do anel de foco precisa contrastar.
+       */
+      data-surface={visivel.chrome.surface}
+      className="nu-gutter relative flex flex-col items-center gap-[100px] py-[100px]"
       style={{
         // Durante a virada a seção segura o fundo que está SAINDO, e a camada de
-        // baixo é a que entra. Ver `CARD_BG`.
+        // baixo é a que entra. Ver `BG_SWAP`.
         backgroundImage: (saindo ?? visivel).chrome.background,
       }}
       {...tilt.bind}
@@ -311,9 +317,9 @@ export function CardsSection() {
           aria-hidden="true"
           className="cc-bg-entra"
           style={{ backgroundImage: visivel.chrome.background }}
-          initial={{ opacity: 0, scale: CARD_BG.from }}
+          initial={{ opacity: 0, scale: BG_SWAP.from }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: CARD_BG.duration, ease: CARD_BG.ease }}
+          transition={{ duration: BG_SWAP.duration, ease: BG_SWAP.ease }}
           onAnimationComplete={() => setSaindo(null)}
         />
       ) : null}
@@ -487,7 +493,7 @@ export function CardsSection() {
             porque o fundo é roxo escuro e o roxo da marca sumiria nele.
           */}
           <h2
-            className="font-display text-[64px] font-bold leading-[1.22]"
+            className="font-display text-nu-display font-bold leading-[1.22]"
             style={{ color: visivel.chrome.titleInk }}
           >
             {visivel.showcase?.title}

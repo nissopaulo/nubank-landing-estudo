@@ -20,6 +20,12 @@
 
 ## Estado atual
 
+**A página tem uma moldura, e ela é o quadro de 1920 do Figma.** Todo o
+conteúdo vive numa coluna de 1520 centralizada, que não cresce acima de
+1920 e encolhe proporcionalmente abaixo (decisão 38). Os **fundos** sangram;
+os **componentes** não se esticam. As seções foram medidas de 1024 a 3840 e
+não têm mais scroll horizontal em nenhuma delas.
+
 **Quatro** telas implementadas e funcionando. A **Hero**, com header fixo, cards
 em parallax e rodapé. Abaixo dela a **Ecossystem Section**, carrossel de pilares
 — **completa: os quatro desenhados**, os quatro clicáveis, e nenhum `PROVISÓRIO`
@@ -350,6 +356,107 @@ provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
     O `width` é transição de **CSS** (e não do Motion) porque é layout, e o
     Motion pularia a animação sob movimento reduzido — o que, para um vidro que
     abre e fecha, é exatamente o certo.
+37. **A faixa de trabalho da landing passa a ser 1024–2560 px; o mobile
+    (<1024 px) fica para depois.** A auditoria de 2026-10-20 mediu o layout real
+    em 2560, 1920, 1440, 1024, 768 e 360 px, e o que ela encontrou se divide em
+    dois problemas de natureza diferente.
+
+    As quebras **dentro da faixa de trabalho** são defeitos do produto: o header
+    estoura 105 px a 1024; o card ativo do Ecossystem vira 0,74:1 a 1024 e
+    4,89:1 a 2560, contra os 3,43:1 do design; a arte da Solutions troca o
+    eixo do recorte em 1920 px; o anel de foco branco some em toda superfície
+    clara; os gutters divergem entre seções acima de 1536 px.
+
+    As quebras **abaixo de 1024 px** são a consequência direta da decisão 7: o
+    padding de 200 px sem variante, o painel de vidro da Solutions em x = −127
+    a 768, o card ativo do Ecossystem com largura zero e o scroll horizontal de
+    312 px a 360. São o **design mobile que não existe**, não um defeito de
+    implementação — e corrigir layout estreito sem o desenho seria inventar
+    composição, que é a regra 1.
+
+    **A partir de agora, correção de layout, foco e interação é para
+    1024–2560 px.** O que for encontrado abaixo de 1024 px fica registrado como
+    pendência e não é corrigido agora. A decisão 7 continua valendo no que
+    define: o mobile é adiado, não abandonado — e esta é a primeira fatia
+    concretizada dele.
+38. **A página tem UMA moldura, e ela é o quadro de 1920 do Figma.**
+    Pedido do usuário em 2026-10-22, depois de ver a coluna de conteúdo esticada
+    a 2560: *"os componentes criados nas seções se mantessem no meio, na
+    estrutura original e não se esticassem"*.
+
+    A regra está em uma classe só, `.nu-frame` (`globals.css`): `max-width:
+    1920px`, centralizada, com `padding-inline: min(200px, 10.4167%)`. O
+    `min()` faz as duas pontas — acima de 1920 o gutter trava em 200px e a
+    coluna fica com 1520; abaixo, o gutter vira 200/1920 da tela e a coluna
+    continua sendo 79,17% dela.
+
+    **O que entrou na moldura:** header, texto da Hero, linha de cards da
+    Ecossystem, parágrafo e CTA dela, seletor e painel da Solutions, bloco
+    "Em construção" e rodapé. **O que não entrou:** os fundos (o gradiente
+    vertical da Hero, o radial da Cards Section) e a arte da Solutions — a
+    arte é a seção, e vai no quadro 16:9 (decisão 39).
+
+    Havia **quatro** expressões diferentes de gutter antes disso (200px,
+    `clamp(200px, 10.4vw, 320px)`, 20/40px e nenhuma) — e é a pendência E-01.
+39. **A Solutions Section é o quadro 16:9, e a arte nunca é recortada de
+    outro jeito.** A seção tem `aspect-[16/9]`, que é a proporção do quadro do
+    Figma (1920×1080). Como a arte tem 1,84173 e a caixa 1,77778, o `cover`
+    transborda 1,8% de cada lado — e isso é o mesmo **corte relativo** em
+    qualquer resolução: 34,6px a 1920, 46px a 2560.
+
+    Antes a seção tinha altura fixa (1080px) e a arte preenchia 2560×1080: o
+    porco saía cortado pela metade. É a pendência E-11.
+40. **A tipografia de display é fluida e ancorada no quadro.** Os três
+    tamanhos de display do Figma (96 / 64 / 48) são **proporções do quadro de
+    1920**, e estão no `@theme` como `--text-nu-hero`, `--text-nu-display` e
+    `--text-nu-title`, com `clamp()` que trava no valor do Figma a partir de
+    1920.
+
+    O texto pequeno (16px) **não** é fluido — é a menor coisa legível, e
+    encolher 16px para 13,3px a 1280 só produziria uma página que ninguém
+    consegue ler. E os **intervalos** da Hero (`--spacing-nu-hero-*`) também
+    são proporcionais, porque é deles que dependia o respiro entre o CTA e o
+    leque de cartões.
+41. **O vocabulário de movimento da página inteira é `transform` e `opacity`
+    — sem exceção.** A Solutions Section era a única com `filter: blur` (a
+    arte que saía desfocava 14px, o texto que entrava nascia desfocado), e o
+    usuário apontou em 2026-10-22 que *"as animações estão um pouco diferentes
+    do que o habitual"*.
+
+    A troca de cena da Solutions passou a ser **exatamente** a troca de paleta
+    da Cards Section (`BG_SWAP`, que era `CARD_BG`): a camada que sai
+    desaparece, a que entra assenta de 1,02 para 1. E o texto do painel: a
+    entrada é o `revealUp` de sempre (sobe e aparece) e a saída é um *fade*,
+    sem deslocamento — porque sob movimento reduzido o Motion pula o
+    transform e o texto **saltaria** 8px.
+
+    O `filter` era caro (uma camada de tela cheia por quadro, em cima de uma
+    arte de 2048px) e o `MotionConfig reducedMotion="user"` não o cobre: ele
+    desliga *animações*, e o desfoque continuava rodando.
+42. **Todo data URI de fundo declara `background-size` e `background-repeat`.**
+    O gradiente de fundo da Cards Section era o **único** do projeto sem a
+    receita — e é o que produziu o "vários backgrounds" reportado em
+    2026-10-22.
+
+    A regra: um SVG com `viewBox` e **sem** `width`/`height` não tem tamanho
+    intrínseco, só proporção, e cada motor decide o que fazer com isso — o
+    Chrome e o Firefox esticam, o **Safari usa o *default object size*
+    (300×150) e repete o ladrilho**. Com `background-repeat: repeat` (o
+    padrão), a seção aparece com o mesmo gradiente seis vezes lado a lado.
+
+    A receita já estava escrita no README (*"um asset com tamanho intrínseco
+    ausente é uma divergência entre motores esperando para acontecer"*) e em
+    três outros lugares do código (`.eco-card__grad`, `.cc-face`,
+    `.cc-bg-entra`) — a seção é que ficou de fora.
+
+    **Reproduzido** emulando o motor (forçando `background-size: 300px auto`):
+    a seção aparece com o gradiente repetido em faixas verticais, exatamente a
+    imagem do bug. Com `background-size: 100% 100%` + `no-repeat` o ladrilho
+    **é** a caixa da seção em qualquer motor.
+
+    **No Chrome a correção é pixel a pixel idêntica** (0 pixels diferentes de
+    2.073.600), porque ele já esticava — a divergência era só dos outros
+    motores.
 
 ---
 
@@ -496,6 +603,57 @@ Section nova (`178:205` Piggybank, `178:262` Account e `178:281` Advance) e o
 Cards Section também. Na Solutions Section nova **três frames estão liberados**;
 o último (`178:296` More) está oculto por decisão de processo. Não há design
 das seções seguintes — por isso os itens 2 e 3 bloqueiam o resto.
+
+### Pendências da auditoria de 2026-10-20
+
+IDs próprios (`E-` estrutural, `P-` pontual), para não se confundirem com a
+numeração 1–21 acima. A auditoria foi feita **sem alterar nenhum arquivo**;
+os números vêm de medição no DOM (Chrome headless via CDP) em 2560×1440,
+1920×1080, 1920×800, 1440×900, 1024×768, 768×1024 e 360×740.
+
+**Estruturais — viram regra global.** Cada uma tem três ou mais pontos de
+falha independentes no código; nenhuma se resolve corrigindo um componente.
+
+| # | Pendência | Onde | Estado |
+|---|---|---|---|
+| E-01 | Um único gutter de página — hoje há quatro expressões diferentes do mesmo conceito | todas as seções | ~~aberta~~ — **resolvido 2026-10-22**: a moldura (`.nu-frame`), decisão 38 |
+| E-02 | Escala tipográfica fluida, no padrão que a Hero já usa | seções 2–4 | ~~aberta~~ — **resolvido 2026-10-22** para o tipo de **display** (decisão 40). O texto pequeno (16px) continua fixo, por decisão: é a menor coisa legível |
+| E-03 | Anel de foco bimétrico, legível sobre qualquer superfície | `globals.css` | ~~aberta~~ — **resolvido 2026-10-20** (FASE 1, item 1) |
+| E-04 | Alvo de toque mínimo de 44×44 px, como regra transversal | `PillTab`, `CtaLink`, header | aberta |
+| E-05 | Estado desabilitado é inerte — sem hover nem active | `PillTab`, header | **FASE 1, item 2** |
+| E-06 | Vocabulário de movimento com fonte única (hoje 16 durações e 8 curvas) | `motion.ts` + `globals.css` | aberta |
+| E-07 | Regra "só transform e opacity", com lista de exceções nomeadas | lint/CI | **parcial** — a única exceção (o `blur` da Solutions) saiu em 2026-10-22 (decisão 41). Falta a regra em lint/CI |
+| E-08 | Contrato único de movimento reduzido, com a lista do que tem de ser cortado | `motion-provider`, `globals.css` | aberta |
+| E-09 | Medida de linha e teto de coluna para corpo de texto | Ecossystem, Solutions | **parcial** — a descrição do card da Ecossystem tem teto (`max-w-[30.5cqw]`), medido pelo canal alfa da arte |
+| E-10 | Altura de seção derivada, não fixa | Ecossystem, Solutions | **parcial** — a Solutions é 16:9 (decisão 39); a Ecossystem ainda tem os 595px fixos (P-03) |
+| E-11 | A arte de fundo não pode depender da proporção da viewport | Solutions | ~~aberta~~ — **resolvido 2026-10-22**: a seção é o quadro 16:9, decisão 39 |
+| E-12 | A composição da Hero em altura relativa, e não em largura | `hero-cards.ts` | **parcial** — o `cqw` passou a medir a moldura de 1920 (e não a viewport), e o ritmo vertical da Hero é proporcional. A altura da Hero ainda é `100svh`, e a composição é ancorada no topo |
+| E-13 | Header: largura mínima, histerese no limiar e transição completa | `SiteHeader.tsx` | **parcial** — a largura mínima é resolvida pela moldura + as regras de 1280/1536. Falta a histerese (P-06) |
+| E-14 | Um único componente de tablist: setas, tabindex roving, `aria-controls` real | `PillTab` + Cards + Solutions | **FASE 1, item 3** |
+| E-15 | Anúncio de mudança de conteúdo | Ecossystem, Cards, Solutions | aberta |
+
+**Pontuais — correção local.**
+
+| # | Pendência | Onde | Estado |
+|---|---|---|---|
+| P-01 | Largura do vidro da Solutions com teto por viewport (a 1024, a de 820 px começa em x = −11) | `SolutionsSection` | ~~aberta~~ — **resolvido 2026-10-22**: o vidro é `min(<largura>, 100%)` e o texto `min(<largura do texto>, 100%)` |
+| P-02 | Row parágrafo + CTA do Ecossystem: envolver e dar piso ao texto | `EcosystemSection` | aberta |
+| P-03 | Altura fixa de 595 px do bloco principal do Ecossystem → mínimo + clamp | `EcosystemSection` | aberta |
+| P-04 | Ponto do indicador de rolagem: cortar o loop sob movimento reduzido | `HeroSection` | **FASE 1, item 4** |
+| P-05 | Deslocamento de 160 px da arte do card: relativo à altura do próprio card | `CardsShowcase` | aberta — e agora é **relativamente maior** abaixo de 1920, porque a composição encolhe e o `mt-40` não. Decisão do usuário (7b) |
+| P-06 | Histerese no limiar de condensar o header (hoje liga e desliga em 40 px) | `SiteHeader` | aberta |
+| P-07 | **`:focus-visible` também no card ativo do Ecossystem** — a documentação afirmava o contrário | `globals.css` | **aberta** |
+| P-08 | `backdrop-filter` do header dentro da transição; transição no logo | `SiteHeader` | aberta |
+| P-09 | `aria-controls` das pílulas apontando para painel que exista | Cards, Solutions | FASE 1, item 3 |
+| P-10 | Feedback quando o clique é ignorado durante uma troca | Cards, Solutions | aberta |
+| P-11 | Salto de 1 px na caixa da pílula ativa | `globals.css` | aberta |
+| P-12 | Exports mortos no vocabulário de motion | `motion.ts` | **resolvido 2026-10-22**: `SOLUTIONS_ART` saiu (o `blur` foi); `CARD_BG` virou `BG_SWAP` e passou a servir as duas seções |
+| P-13 | Busca global no DOM no lugar de uma ref | `use-card-tilt.ts` | aberta |
+| P-14 | `aria-label` em elemento sem papel | `CardsShowcase` | aberta |
+| P-15 | Comentário desatualizado do subtítulo da Hero | `HeroSection` | aberta (é a pendência nº 7) |
+| P-16 | `will-change` permanente na camada de fundo | `globals.css` | aberta |
+| P-17 | **O logo da header não desenha anel de foco.** O `<a>` é `inline` e tem um filho `block` (a imagem): o navegador fragmenta o inline e o `outline` sai em dois fragmentos escuros no canto, em vez de um anel em volta do logo. Capturado em imagem. **Pré-existente** — o anel branco antigo sofria do mesmo. Não corrigido aqui porque mexer no `display` do `<a>` mexe na linha de base do logo, que é calibrada em meio pixel | `SiteHeader.tsx` | aberta |
+| P-18 | **A pessoa da Ecossystem cobre a borda do primeiro card recolhido abaixo de ~1100px.** Os cards recolhidos são 107px **fixos** (é o tamanho do Figma, e a regra é não esticar), mas a pessoa é uma fração da coluna — então ela encolhe e os cards não. A 1024 o corpo cobre ~78px do card "Croma"; a 1280 são ~9px, e a 1920 nada. **Não corrigido**: escalar os cards recolhidos com a coluna quebraria a regra de "não esticar" e exigiria escalar o rótulo de 48px junto. | `EcosystemSection` | aberta |
 
 ### Antes de sugerir código
 
@@ -1381,7 +1539,9 @@ mexe: nenhum dos dois muda altura, o que manteria a composição alinhada.
 Os valores são pequenos de propósito: 2,4% no card ativo (que tem mais de 1000px
 — 2% seria imperceptível, 5% pareceria um clique) e 13% no pilar recolhido (107px
 são poucos, e menos que isso não se veria). `:focus-visible` entra junto do
-`:hover` nos dois botões, senão quem navega por teclado fica sem o feedback.
+`:hover` **nos cards recolhidos**, senão quem navega por teclado fica sem o
+feedback. **No card ativo a regra é só `:hover`** — o `:focus-visible` não está
+lá. A correção é a pendência P-07 da auditoria de 2026-10-20.
 
 **A listra escura no Firefox foi `background-size` implícito.** O gradiente é um
 SVG em data URI com `viewBox` e **sem** `width`/`height`, e aí os motores
@@ -3793,3 +3953,320 @@ o `transform` é pulado e o elemento nasce no lugar.
 
 Contraste do Advance: título 5,11:1 ✅, pílula inativa 5,80:1 ✅, CTA 7,21:1 ✅,
 **descrição 4,28:1** ⚠️ — a pendência nº 18, agora com três pontos de dados.
+
+### 2026-10-20 — auditoria das seções 1 a 4 (responsividade, motion, interação)
+
+Auditoria completa da landing, **sem alterar nenhum arquivo**. O pedido foi
+analisar as seções 1 a 4 — Hero, Ecossystem, Cards e Solutions — em três
+blocos (responsividade, animação/motion e interação) e fechar separando o que
+é **estrutural** (vira regra global) do que é **pontual** (correção local).
+
+#### Método
+
+O que não é medido no navegador é chute, e este projeto já tem um histórico de
+chutes que custaram commits. A auditoria leu `README.md`, `CONTEXTO.md` e o
+design system (`globals.css`) antes de medir; depois mediu o DOM real com
+Chrome headless dirigido por CDP, em 2560×1440, 1920×1080, 1920×800,
+1440×900, 1024×768, 768×1024 e 360×740. As caixas vieram de
+`getBoundingClientRect`, e o recorte da arte de fundo, do `object-fit: cover`
+real.
+
+#### O que a medição encontrou — números, não impressões
+
+| | 2560 | 1920 | 1440 | 1024 | 768 | 360 |
+|---|---|---|---|---|---|---|
+| largura do documento / da viewport | 2545/2545 | 1905/1905 | 1425/1425 | 1009/1009 | 753/753 | **657/345** |
+| card ativo do Ecossystem | 1655×339 (4,89:1) | 1148×339 (3,39:1) | 668×339 (1,97:1) | **252×339 (0,74:1)** | **largura 0** | **largura 0** |
+| painel de vidro da Solutions | 680 (ok) | 680 (ok) | 680 e 820 (ok) | **x = 129 e −11** | **x = −127** | **x = −480** |
+| recorte da arte da Solutions | **vertical, 150,8 px** | lateral, 42,5 px | lateral, 283 px | lateral, 492 px | lateral, 618 px | lateral, 824 px |
+| header | ok | ok | ok | **estoura 105 px** | ok | ok |
+| largura do parágrafo do Ecossystem | 1182 px | 1182 px | 702 px | 286 px | 134 px | — |
+| altura da seção do Ecossystem | 899 | 919 | 959 | 1099 | 1419 | 1419 |
+
+O design de referência (1920) bate com o Figma: card ativo 1148×339, painel de
+vidro em x = 1025 com 680, tablist com 512,3, e a arte sangrando 42,5 px de
+cada lado. **Os problemas estão fora da largura de referência**, para os dois
+lados.
+
+E três achados que nenhuma caixa de bounding box revela:
+
+- **O anel de foco global é branco** e vale para a página inteira. Sobre o card
+  recolhido (#e5e7eb) ele dá **1,28:1**, sobre a seção branca do Ecossystem
+  **1,00:1**, sobre o vidro da Solutions ~1,05:1 e sobre o CTA do rodapé
+  (#f3e8ff) **1,18:1**. Ou seja: **em quase toda a página, o foco de teclado é
+  invisível.**
+- **A documentação do `:focus-visible` diverge do código.** O README afirmava
+  que ele "entra junto do `:hover` nos quatro cards"; no CSS ele só está na
+  regra do card **recolhido**. O card ativo não tem. → **P-07**.
+- **O indicador de rolagem continua pulsando para sempre** sob
+  `prefers-reduced-motion: reduce` — medido: opacidade 0,946 → 0,446 ao longo
+  de 1,6 s. O Motion pula o `transform`, mas o `opacity` continua, e o loop
+  infinito não tem fim.
+
+#### A decisão que a auditoria produziu
+
+**A faixa de trabalho passa a ser 1024–2560 px** — decisão 37. Os problemas
+abaixo de 1024 px foram medidos e registrados, mas não são corrigidos agora:
+eles são a consequência direta da decisão 7, e corrigir layout estreito sem o
+desenho mobile no Figma seria inventar composição.
+
+#### FASE 1, item 1 — o anel de foco
+
+O anel branco global (`outline: 3px solid #ffffff`) era **invisível em quase
+toda a página**: 1,28:1 sobre o card recolhido da Ecossystem, 1,00:1 sobre a
+seção branca, ~1,05:1 sobre o vidro da Solutions, 1,18:1 sobre o CTA do
+rodapé. Virou **duas bandas concêntricas** —
+
+```
+0 → 2 px   box-shadow   separa o anel do elemento
+2 → 5 px   outline      contrasta com a página
+```
+
+— com as cores em custom property e **variáveis por superfície**
+(`data-surface="light|dark"`). A ausência do atributo é a superfície clara, que
+é o padrão da página; a escura **troca as duas cores de lugar**, porque a banda
+que precisa contrastar com a página é sempre a do outline.
+
+As superfícies marcados: Hero (escura), header (dinâmica — transparente é
+escuro, condensado é claro), Cards Section (dinâmica, pelo frame visível),
+Ecossystem, Solutions, rodapé e bloco pendente (claras), skip link (escura —
+ele fica por cima da Hero).
+
+O frame da Cards Section ganhou o campo `surface` no `chrome`, com o mesmo
+raciocínio do `titleInk`: a tinta que o Figma escolhe para o título só
+funciona sobre a superfície em que ele foi posto.
+
+**Contraste da banda do outline, medido em pixel** (anel focado, grão ligado,
+contra o fundo real ao lado dele):
+
+| superfície | fundo medido | anel medido | antes | agora |
+|---|---|---|---|---|
+| seção da Ecossystem | 254,254,254 | 36,36,38 | 1,00:1 | **15,36:1** |
+| card recolhido da Ecossystem | 229,231,235 | 36,36,38 | 1,28:1 | **12,10:1** |
+| CTA do rodapé | 241,242,244 | 38,38,40 | 1,18:1 | **13,48:1** |
+| vidro da Solutions | 247,246,246 | 33,33,35 | ~1,05:1 | **14,90:1** |
+| pílula da Cards Section | 222,194,243 | 36,36,38 | — | **9,68:1** |
+| Hero, no meio | 161,63,232 | 249,249,249 | 5,29:1 | **4,54:1** |
+| skip link sobre a Hero | 135,24,209 | 255,255,255 | — | **6,81:1** |
+
+**Modo de cores forçadas:** verificado com `Emulation.setEmulatedMedia`. O
+navegador remove o `box-shadow` e força a cor do `outline` — medido
+`outline: rgb(55, 0, 110) solid 3px`, `box-shadow: none`. O anel continua
+visível, e é o `outline` que sobrevive.
+
+**Dois achados que a implementação turned up:**
+
+- O Tailwind **remove** uma regra escrita em `@layer utilities` que não é uma
+  utilitária dele. A regra do skip link foi parar **fora de qualquer camada** —
+  e é o que faz ela ganhar da utilitária de elevação (`shadow-lg`), que vive
+  na camada utilities e viria depois.
+- **O logo da header não desenha anel** — o `<a>` é inline e tem um filho
+  block, e o navegador fragmenta o inline. Capturado em imagem: o anel sai em
+  dois fragmentos escuros no canto. **Pré-existente** (o anel branco antigo
+  sofria do mesmo) e **não corrigido**: mexer no `display` do `<a>` mexe na
+  linha de base do logo, que é calibrada em meio pixel. → **P-17**.
+
+#### Pendências registradas
+
+As duas tabelas (`E-01`…`E-15` e `P-01`…`P-16`) estão na seção **Em aberto**.
+Quatro entram nesta mesma sessão, na FASE 1: o anel de foco (E-03), o estado
+desabilitado inerte (E-05), o tablist (E-14) e o indicador de rolagem (P-04).
+
+### 2026-10-22 — a moldura da página, a Solutions sem desfoque, e a varredura de 1024 a 3840
+
+Sessão iniciada por um pedido de quatro coisas, com duas imagens: a primeira
+é um exemplo (um portfólio com tudo em coluna centralizada) e a segunda é o
+estado atual, que o usuário achou **esticado**. As quatro:
+
+1. os componentes das seções devem ficar **no meio, na estrutura original, e
+   não se esticar**;
+2. **livre acesso ao navegador** para ver o que está acontecendo;
+3. testar em ** outras resoluções**, de 720p a 2160p, e não só a 1920 do Figma;
+4. as animações da **Solutions Section** estavam *"um pouco diferentes do que o
+   habitual, por exemplo com blur"* — e não é o que as outras seções fazem.
+
+#### O navegador: driver CDP, e o que ele mediu
+
+O acesso ao navegador é um **driver CDP** em Node (o `node` 22 já tem
+`WebSocket` e `fetch` nativos), em `%TEMP%\opencode`: abre o Chrome headless
+com `--remote-debugging-port`, conecta na aba, e expõe `goto`, `eval`,
+`setViewport`, `screenshot` e `Emulation.setEmulatedMedia`. Sem dependência
+nova — o mesmo caminho que o `CONTEXTO` já descreve para medir transições.
+
+Foi ele que mediu **antes** de qualquer código. O inventário do que estava
+quebrado:
+
+| | 1920 (Figma) | 2560 | 3840 | 1280 (720p) |
+|---|---|---|---|---|
+| coluna de conteúdo | 1520 | 2028 | 3200 | 880 |
+| card ativo da Ecossystem | 1163 | 1671 | 2843 | 523 |
+| arte da Solutions | 16:9 | **cortada** | **cortada** | **painel fora** |
+| título da Hero | 96px, 2 linhas | ok | ok | **3 linhas, colide com os cards** |
+| header | ok | ok | ok | **nav embrulha e invade o CTA** |
+
+#### A moldura (decisões 38 e 39)
+
+`.nu-frame` em `globals.css`: `max-width: 1920px`, centralizada,
+`padding-inline: min(200px, 10.4167%)`. Uma classe, um conceito — e ela
+resolve a pendência **E-01**, que era o que produzia o estiramento: havia
+**quatro** expressões de gutter na página (200px, `clamp(200px, 10.4vw,
+320px)`, 20/40px e nenhuma).
+
+O que a moldura **não** engloba: os fundos. O gradiente da Hero é vertical, e
+o da Cards Section é radial e feito para acompanhar a seção — os dois
+continuam sangrando. A **arte** da Solutions é a seção, e por isso a seção
+ganhou `aspect-[16/9]`: assim o enquadramento da arte nunca muda (o corte
+relativo é o mesmo em qualquer resolução), e a 2560 o porco não sai mais
+cortado pela metade.
+
+**A pessoa da Ecossystem quebrou quando a moldura entrou no lugar errado.** A
+pessoa é posicionada em porcentagem, e porcentagem resolve contra a **caixa
+de padding** do ancestral posicionado. Com a moldura no `Main Content`, essa
+caixa passou a ser a moldura inteira (1920) em vez da coluna (1520), e a
+pessoa saiu 26% maior e 55px à esquerda. A correção foi mover a moldura para
+a **seção** — o `Main Content` volta a ser a coluna, e a geometria da pessoa
+volta a ser a do Figma (x 410, 1129×843 ✓).
+
+**O `aspect-ratio` com `min-height` é uma armadilha.** A Solutions tem
+`aspect-[16/9] min-h-[700px]`, e sem `w-full` o navegador calcula a
+**largura** pela proporção a partir da altura mínima: a 1024 a seção saía
+com 1244px de largura — 220px além da tela, com scroll horizontal junto.
+Achado por varredura de overflow, não a olho.
+
+#### A tipografia e o ritmo da Hero (decisão 40)
+
+Os três tamanhos de display viraram tokens no `@theme` (`--text-nu-hero`,
+`--text-nu-display`, `--text-nu-title`), com `clamp()` travando no valor do
+Figma a partir de 1920. O texto pequeno (16px) ficou fixo, por decisão: é a
+menor coisa legível.
+
+**Os intervalos da Hero também precisaram ficar proporcionais.** O `mt-16` de
+64px não encolhia, e a 1280 o CTA subia bem menos do que os cards desciam: o
+"Explore o Universo Nu" ficava **atrás do leque de cartões**. Os quatro
+intervalos estão no `@theme` como `--spacing-nu-hero-*`.
+
+E a **descrição do card da Ecossystem** sumia atrás da pessoa a 1280. A
+solução saiu de uma medição do **canal alfa** da arte (com `sharp`), nas
+linhas em que a descrição aparece: o corpo da pessoa do Nubank começa em
+x = 531,8 do `Main Content`, e o texto começa em 24 — sobram 507,8px, dos
+quais o Figma usa 445 (o nó `52:156`). A largura máxima passou a ser a
+**própria caixa do Figma escalada com a coluna** (30,5%): a 1920 ela não
+aperta nada (as duas linhas do Figma ficam idênticas), e a 1280 ela segura o
+texto antes da pessoa.
+
+#### A Solutions sem desfoque (decisão 41)
+
+A troca de cena passou a ser **exatamente** a troca de paleta da Cards
+Section: `CARD_BG` virou `BG_SWAP` e serve as duas. A camada que sai
+desaparece, a que entra assenta de 1,02 para 1, com a curva enfática.
+`SOLUTIONS_ART` saiu inteiro — e com ele o `filter: blur` de 14px da arte e o
+de 6px do texto. O `filter` computado é `none` em todos os quadros.
+
+O texto do painel: a entrada é o `revealUp` de sempre (sobe 18px e aparece) e
+a saída é um **fade** — sem deslocamento, porque sob movimento reduzido o
+Motion pula o transform e o texto saltaria 8px.
+
+**Medido** (a cada ~100ms, no navegador):
+
+| momento | que sai | que entra | texto |
+|---|---|---|---|
+| +117 ms | op 0,472 | op 0,528 · scale 1,0094 | o velho, op 0,511 |
+| +227 ms | op 0,143 | op 0,857 · scale 1,0029 | o novo, op 0,304 · y +12,5 |
+| +446 ms | op 0,021 | op 0,979 · scale 1,0004 | o novo, op 0,958 · y +0,76 |
+| +775 ms | (desmontada) | op 1 · `transform: none` | o novo, op 1 |
+
+Sob movimento reduzido a arte troca na hora (uma camada só, op 1) e o texto
+aparece sem deslocamento (o `transform` fica no valor inicial e só a
+opacidade corre). A trava da troca continua funcionando: dois cliques com
+100ms de intervalo deixam a seção no **primeiro** destino, e o terceiro
+(depois que a trava libera) troca.
+
+#### O header em telas estreitas
+
+A coluna tem 79,17% da tela, e a 1280 ela tem 1013px. A nav (650) + os dois
+CTAs (369) + o logo (64) passam de 1080 — e o último item da nav invadia o
+CTA. As regras: a nav aparece a partir de **1280** (`xl:block`) e o "Login
+Empresas" a partir de **1536** (`max-2xl:hidden`). Entre 1024 e 1279 fica o
+logo e o CTA principal.
+
+#### O que ficou medido (Chrome headless, DOM, sem scrollbar)
+
+| | 1024 | 1280 | 1440 | 1600 | 1920 | 2560 | 3840 |
+|---|---|---|---|---|---|---|---|
+| coluna | 810,7 | 1013,3 | 1140 | 1266,7 | **1520** | 1520 | 1520 |
+| card ativo Ecossystem | 453,7 | 656,3 | 783 | 909,7 | **1163** | **1163** | **1163** |
+| pessoa (x) | — | 273,3 | 307,5 | 341,7 | **410** | 730 | 1370 |
+| título Hero | 51,2px | 64px | 72px | 80px | **96px** | 96px | 96px |
+| painel Solutions (x) | 434,8 | 466,7 | 610 | 753,3 | **1040** | 1360 | 2000 |
+| seção Solutions | 1024×700 | 1280×720 | 1440×810 | 1600×900 | **1920×1080** | 2560×1440 | 3840×2160 |
+| scroll horizontal | **0** | 0 | 0 | 0 | 0 | 0 | 0 |
+
+A 1920 os números são os do Figma, um a um. Acima de 1920 a coluna não muda
+de tamanho e a página só centraliza.
+
+#### A armadilha do CSS velho, pela quinta vez
+
+Depois de editar o `globals.css`, o dev server continuou servindo a versão
+antiga: as regras novas (`--spacing-nu-hero-*`) não estavam no CSS servido,
+embora a **build de produção** já as tivesse. O sintoma é o de sempre — a
+classe está no fonte e não no CSS. O procedimento do projeto funcionou
+(matar os três processos e remover o `.next`), e o dev server foi
+reiniciado em seguida.
+
+**Noutro dia eu passei um `Set-Content` por cima de dois arquivos** (para
+renomear `CARD_BG` → `BG_SWAP`) e ele **acrescentou um BOM** nos dois. A
+regra do `CONTEXTO` ("nunca usar `Set-Content`") existe por causa do mojibake,
+e o BOM é o primo disso. Removido com bytes crus em `node`, e conferido: os
+dois arquivos sem BOM, com LF, e sem nenhum caractere corrompido.
+
+#### O "vários backgrounds" da Cards Section (depois do "ficou perfeito")
+
+O usuário mandou um print da Cards Section com o fundo em faixas verticais, e
+comentou *"parece que tem vários backgrounds"*.
+
+A investigação levou a um defeito real e **de motor**: o gradiente de fundo da
+seção é um SVG com `viewBox` e sem `width`/`height`, e era o **único** data URI
+do projeto sem `background-size` explícito. Sem isso, cada motor escolhe o
+tamanho do ladrilho — o Chrome e o Firefox esticam, o Safari usa o *default
+object size* (300×150) e **repete**, e com `background-repeat: repeat` a seção
+aparece com o mesmo gradiente seis vezes lado a lado.
+
+Reproduzido emulando o motor (forçando `background-size: 300px auto`): as
+faixas aparecem, exatamente como no print. A correção é a receita que o
+projeto já usava nos outros três gradientes — `background-size: 100% 100%` +
+`background-repeat: no-repeat` na regra `#cartoes`.
+
+**No Chrome a correção é pixel a pixel idêntica** (0 pixels diferentes de
+2.073.600): ele já esticava. A divergência era só dos outros motores, e por
+isso ela só apareceu para quem viu no Safari.
+
+> **Limitação da verificação:** não há Safari nesta máquina, então o
+> comportamento do Safari não foi medido diretamente — a reprodução é
+> **emulada** (o ladrilho de 300px é o *default object size* da spec). O que
+> está medido é que, com a regra, o ladrilho **é** a caixa da seção em
+> qualquer motor, e repetir deixa de ser possível.
+
+**A armadilha do CSS velho, pela sexta vez.** Depois de editar o
+`globals.css` de novo, o dev server continuou servindo a versão antiga: a
+regra nova não estava no CSS servido (e o Firefox media `background-size:
+auto`, o valor antigo). O sintoma é o de sempre — a classe está no fonte e não
+no CSS. Procedimento do projeto: matar os processos, remover o `.next`,
+reiniciar.
+
+#### Verificação
+
+`tsc --noEmit`, `eslint` e `next build` limpos. A troca da Solutions foi
+medida quadro a quadro nos dois caminhos (normal e movimento reduzido), e a
+varredura de overflow rodou em 1024, 1280 e 1920.
+
+**O que ficou pendente e não corrigido, e por quê:** a pessoa da Ecossystem
+cobre a borda do primeiro card recolhido abaixo de ~1100px — os cards
+recolhidos são 107px **fixos** (é o tamanho do Figma, e a regra é não esticar),
+mas a pessoa é uma fração da coluna. Escalar os cards recolhidos com a coluna
+quebraria a regra de não esticar e exigiria escalar o rótulo de 48px junto →
+**P-18**.
+
+**Próximo passo:** as seções "Porque a Nu" e "Diferenciais" continuam sem
+desenho no Figma (pendência nº 3), e é por isso que o resto da página está
+parado. O design mobile também continua adiado (decisão 7).
+
