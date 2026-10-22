@@ -3,31 +3,31 @@
  *
  * ## O quadro do Figma
  *
- * A seção tem **quatro frames**, e **dois** estão liberados:
+ * A seção tem **quatro frames**, e **os quatro** estão liberados:
  *
  * | opção        | frame                            | nó        | estado   |
  * |--------------|----------------------------------|-----------|----------|
  * | Caixinhas    | `Solutions Section - Piggybank`  | `178:205` | liberado |
  * | Conta        | `Solutions Section - Account`    | `178:262` | liberado |
- * | Empréstimos  | `Solutions Section - Advance`    | `178:281` | oculto  |
- * | E muito mais | `Solutions Section - More`        | `178:296` | oculto  |
+ * | Empréstimos  | `Solutions Section - Advance`    | `178:281` | liberado |
+ * | E muito mais | `Solutions Section - More`        | `178:296` | liberado |
  *
- * Os dois ocultos **existem** no arquivo — com a arte, o título e a descrição
- * deles — e as artes já estão no repositório. O que não entra no código é o
- * **conteúdo** deles: um frame que o processo não liberou não vira texto
- * publicado. A ausência de `showcase` é o que torna a pílula não-clicável, e
- * é o mesmo mecanismo de `card-showcase.ts` — o que impede a próxima adição de
- * virar conteúdo inventado por omissão.
+ * A ausência de `showcase` é o que torna a pílula não-clicável, e é o mesmo
+ * mecanismo de `card-showcase.ts` — o que impede a próxima adição de virar
+ * conteúdo inventado por omissão. Com os quatro liberados, nenhuma pílula fica
+ * `aria-disabled`: a regra do botão que não faz nada continua no código, e
+ * não há mais nenhum caso.
  *
- * ## Os dois frames liberados são idênticos fora da arte e do texto
+ * ## Os frames liberados são idênticos fora da arte e do texto
  *
  * Conferido no `178:262`: a navegação, o vidro, o raio, a sombra, o padding, o
  * título em 48 px, a descrição em 16 px e o CTA são **os mesmos** do
  * `178:205`. A única variable nova do quadro é `Text/text-secondary`
  * (#4b5563), e ela é a tinta da descrição nos **dois** frames.
  *
- * O que muda entre eles é a arte de fundo e o texto do painel — e é por isso
- * que a troca de opção é uma troca de *cena*, e não de layout.
+ * O que muda entre eles é a arte de fundo, o texto do painel e a **largura do
+ * vidro** (820 no Empréstimos, 680 nos outros) — e é por isso que a troca de
+ * opção é uma troca de *cena*, e não de layout.
  *
  * ## A paleta do seletor é a mesma nos quatro frames
  *
@@ -146,6 +146,20 @@ export const SOLUTIONS: SolutionOption[] = [
     id: "more",
     label: "E muito mais",
     background: "/images/backgrounds/more-bg.webp",
+    showcase: {
+      /**
+       * O texto é **exatamente** o do Figma (nós `178:302` e `178:304`) —
+       * inclusive a descrição, que é a **mesma** da opção "Conta" (`178:257`).
+       *
+       * Não é um erro de digitação aqui: os dois frames do arquivo têm esse
+       * texto. É o desenho que está repetido, e a correção é no Figma — o
+       * código segue o que está lá. Ver a pendência nº 22 no `CONTEXTO.md`.
+       */
+      title: "Tem muito mais do seu jeito no Nu.",
+      desc: "Pague, transfira, receba e acompanhe suas movimentações em uma conta digital feita para simplificar o seu dia a dia.",
+      cta: "Conheça mais sobre",
+      largura: 680,
+    },
   },
 ];
 

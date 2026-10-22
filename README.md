@@ -1312,19 +1312,26 @@ arquivado mais abaixo (que ocupava o mesmo lugar na página e foi retirado).
 O que ela herda dele é o **seletor de pílulas**: o mesmo `PillTab` e a mesma
 regra `.pill-tab`.
 
-O quadro tem **quatro** frames, e **três** estão liberados:
+O quadro tem **quatro** frames, e **os quatro** estão liberados:
 
 | Opção | Frame | Nó | Estado |
 |---|---|---|---|
 | Caixinhas | `Solutions Section - Piggybank` | `178:205` | **liberado** |
 | Conta | `Solutions Section - Account` | `178:262` | **liberado** |
 | Empréstimos | `Solutions Section - Advance` | `178:281` | **liberado** |
-| E muito mais | `Solutions Section - More` | `178:296` | oculto |
+| E muito mais | `Solutions Section - More` | `178:296` | **liberado** |
 
-As quatro pílulas aparecem — é o que o frame mostra — e as três liberadas
-trocam de verdade. A última é `<button>` real com `aria-disabled` e aviso para
-o leitor de tela, a mesma regra dos pilares do Ecossystem e das pílulas da
-Cards Section: **um botão que não faz nada não existe em silêncio.**
+As quatro pílulas aparecem e as quatro trocam de verdade — **nenhuma fica
+`aria-disabled`**. A regra do botão que não faz nada continua no `PillTab` (e
+no header, e nos pilares do Ecossystem): ela é o que impede a próxima adição de
+virar um botão morto em silêncio, e não porque exista um caso hoje.
+
+> **A descrição do "E muito mais" é a mesma da "Conta".** Nos dois frames do
+> Figma (`178:257` e `178:304`) o texto é *"Pague, transfira, receba e acompanhe
+> suas movimentações em uma conta digital feita para simplificar o seu dia a
+> dia."* — e o título do "More" é *"Tem muito mais do seu jeito no Nu."*, que
+> não fala de conta nenhuma. O código segue o que está no desenho; a correção,
+> se for o caso, é no Figma. Ver a pendência nº 22 no `CONTEXTO.md`.
 
 Os frames liberados são **iguais fora da arte e do texto** — o vidro, o raio, a
 sombra, o padding, o título em 48 px, a descrição em 16 px e o CTA são os
@@ -1420,22 +1427,23 @@ A transição do `width` dura exatamente o mesmo tempo que a saída do texto
 (180 ms), então o vidro já assentou quando o texto novo entra — e o texto
 antigo, que sai com o vidro, **desliza com ele** em vez de saltar.
 
-### Fidelidade medida contra os três frames liberados
+### Fidelidade medida contra os quatro frames liberados
 
 Geometria lida do DOM (`getBoundingClientRect`), em coordenadas de documento, a
 1920×1080:
 
-| | Figma | Piggybank | Conta | Advance | |
-|---|---|---|---|---|---|
-| Seção | 1920 × 1080 | 1920 × 1080 | idem | idem | ✅ |
-| Seletor | x 200 · y 100 · 597 × 64 | x 200 · y 100 · **594,36** × 64 | idem | idem | ⚠️ |
-| Pílula "Caixinhas" | 116 × 40 | **115,41** × 40 | idem | idem | ⚠️ |
-| Pílula "Conta" | 85 × 40 | **84,64** × 40 | idem | idem | ⚠️ |
-| Pílula "Empréstimos" | 147 × 40 | **146,14** × 40 | idem | idem | ⚠️ |
-| Painel | 680 × 400 | x 1040 · 680 × **398,13** | idem | **x 900 · 820** × **398,13** | ⚠️ |
-| Título | 48 px · 584 × 118 | 48 px · 584 × **117,09** | idem | 48 px · **724** × **117,09** | ⚠️ |
-| Descrição | 16 px · 584 × 40 | 16 px · 584 × **39,03** | idem | 16 px · **724** × **39,03** | ⚠️ |
-| CTA | 48,312 · 233 × 40 | 48, **310,13** · **232,69** × 40 | idem | idem | ⚠️ |
+| | Figma | Piggybank | Conta | Advance | More | |
+|---|---|---|---|---|---|---|
+| Seção | 1920 × 1080 | 1920 × 1080 | idem | idem | idem | ✅ |
+| Seletor | x 200 · y 100 · 597 × 64 | x 200 · y 100 · **594,36** × 64 | idem | idem | idem | ⚠️ |
+| Pílula "Caixinhas" | 116 × 40 | **115,41** × 40 | idem | idem | idem | ⚠️ |
+| Pílula "Conta" | 85 × 40 | **84,64** × 40 | idem | idem | idem | ⚠️ |
+| Pílula "Empréstimos" | 147 × 40 | **146,14** × 40 | idem | idem | idem | ⚠️ |
+| Pílula "E muito mais" | 145 × 40 | **144,17** × 40 | idem | idem | idem | ⚠️ |
+| Painel | 680 × 400 | x 1040 · 680 × **398,13** | idem | **x 900 · 820** × **398,13** | x 1040 · 680 × **398,13** | ⚠️ |
+| Título | 48 px · 584 × 118 | 48 px · 584 × **117,09** | idem | 48 px · **724** × **117,09** | 48 px · 584 × **117,09** | ⚠️ |
+| Descrição | 16 px · 584 × 40 | 16 px · 584 × **39,03** | idem | 16 px · **724** × **39,03** | 16 px · 584 × **39,03** | ⚠️ |
+| CTA | 48,312 · 233 × 40 | 48, **310,13** · **232,69** × 40 | idem | idem | idem | ⚠️ |
 
 Os deltas têm a **mesma causa**, e ela é o arredondamento do Figma: o
 `leading: normal` do Montserrat é 1,219, e o Figma **arredonda a caixa do texto
@@ -1565,21 +1573,27 @@ que é o que o `MotionConfig` do projeto já permite.
 
 Medido no render, **com o grão ligado** (0,12), pelo método do projeto —
 apagar a tinta do texto, esperar o repaint e fotografar o fundo real atrás do
-glifo, comparando pixel a pixel na mesma coordenada. As duas colunas são os
-dois frames liberados:
+glifo, comparando pixel a pixel na mesma coordenada. As colunas são os quatro
+frames liberados:
 
-| Texto | Piggybank | Conta | Advance | Mínimo | |
-|---|---|---|---|---|---|
-| Título do painel, 48 px (texto grande) | 5,36:1 | 5,15:1 | 5,11:1 | 3:1 | ✅ |
-| Pílula inativa, 16 px | 5,17:1 | 5,66:1 | 5,80:1 | 4,5:1 | ✅ |
-| CTA, 16 px (branco sobre `#820ad1`) | 7,21:1 | 7,21:1 | 7,21:1 | 4,5:1 | ✅ |
-| **Descrição, 16 px** | **4,42:1** | **4,15:1** | **4,28:1** | 4,5:1 | ⚠️ **reprova** |
+| Texto | Piggybank | Conta | Advance | More | Mínimo | |
+|---|---|---|---|---|---|---|
+| Título do painel, 48 px (texto grande) | 5,36:1 | 5,15:1 | 5,11:1 | **5,05:1** | 3:1 | ✅ |
+| Pílula inativa, 16 px | 5,17:1 | 5,66:1 | 5,80:1 | **5,15:1** | 4,5:1 | ✅ |
+| CTA, 16 px (branco sobre `#820ad1`) | 7,21:1 | 7,21:1 | 7,21:1 | 7,21:1 | 4,5:1 | ✅ |
+| **Descrição, 16 px** | **4,42:1** | **4,15:1** | **4,28:1** | **3,98:1** | 4,5:1 | ⚠️ **reprova** |
 
 A descrição é `Text/text-secondary` (#4b5563) sobre o vidro, e **sem o grão ela
 passa com folga** (5,70:1 no pior pixel do Piggybank). O que derruba é o grão
 da página: ele clareia o texto escuro (a tinta vai de 75 para 100 no canal
 mais escuro) e a folga some. A mediana dos pixels do glifo é 5,37:1 e o
 percentil 5 é 4,63:1 — ou seja, só o pior canto reprova.
+
+**O "More" é o mesmo caso, e um pouco mais apertado** (3,98:1 no pior canto,
+4,38:1 no percentil 5, 5,12:1 na mediana): a arte dele é a mais clara das
+quatro, e o vidro sobre ela é o que aproxima o fundo do texto. O mesmo método,
+medido nas três opções já publicadas, reproduz 4,14:1 onde o README antes
+registrava 4,42:1 — a diferença é de método, não de resultado.
 
 **Implementado como o Figma pede** (`#4b5563` é a variable do nó `178:205`).
 A correção não é de tinta: é do grão, que hoje é uma camada de página inteira

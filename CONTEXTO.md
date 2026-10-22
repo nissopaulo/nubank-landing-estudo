@@ -60,6 +60,11 @@ foco. 60 fps cravados, com o desfoque de tela cheia e tudo.
 **sua** opção, para a largura do vidro crescendo não re-quebrar as linhas do
 texto antigo no meio do fade.
 
+**Quatro frames liberados** (2026-10-22): o `178:296` ("E muito mais") entrou,
+e a **Solutions Section está completa** — as quatro pílulas respondem e
+**nenhuma fica `aria-disabled`**. A troca de cena deixou de ter `filter: blur`
+(decisão 41) e agora é o mesmo mecanismo da Cards Section.
+
 A composição: a imagem principal em janela arredondada, o badge e o painel de
 texto sobre ela, e as **prévias das vizinhas sangrando pelas bordas** — 135 px
 à esquerda e 135 px à direita. E o seletor de pílulas no pé, com o parallax do
@@ -592,17 +597,18 @@ Escrever a mensagem num arquivo e usar `git commit -F <arquivo>`.
 | 19 | **O bloco `Steps Progress` do quadro `178:205` (nó `180:322`) está oculto no Figma e não foi implementado.** Quatro passos de 162,5 px, em x = 840, y = 860, com 10 de gap — 620 de largura, alinhado com o painel. Fica registrado para quando ele aparecer | `src/components/solutions/SolutionsSection.tsx` |
 | 20 | ~~A troca de opção da Solutions Section está escrita e nunca executou~~ — **resolvido 2026-10-20**, com a liberação do frame `178:262` (Conta). A troca foi medida quadro a quadro: o *pull* de foco da arte, a emergência do texto, a trava do clique duplicado e o caminho de movimento reduzido | `src/components/solutions/SolutionsSection.tsx` |
 | 21 | ~~A largura do painel é POR FRAME~~ — **resolvido 2026-10-20**, com a liberação do frame `178:281` (Empréstimos). A largura passou a ser campo do `showcase` (680/680/820), e o texto do painel passou a ter a largura da SUA opção — senão o vidro crescendo re-quebraria as linhas do texto antigo no meio do fade | `src/lib/solutions.ts` |
+| 22 | **A descrição do frame "E muito mais" é a MESMA da "Conta".** Nos dois frames do Figma (`178:257` e `178:304`) o texto é *"Pague, transfira, receba e acompanhe suas movimentações em uma conta digital feita para simplificar o seu dia a dia."* — e o título do "More" é *"Tem muito mais do seu jeito no Nu."*, que não fala de conta nenhuma. O código segue o Figma (regra 1: nada de conteúdo inventado); a correção, se for o caso, é **no desenho** | `src/lib/solutions.ts` |
 
 **No Figma hoje existem dezesseis frames visíveis** — `Hero Section` (`14:446`),
 os **quatro** da Ecossystem (`52:3` Nubank, `76:3` Croma, `77:40` Ultravioleta,
 `80:77` Business), os **quatro** da Cards Section (`97:2` Nubank, `103:248`
-Croma, `103:318` Ultravioleta, `103:383` Business), os **três** da Solutions
-Section nova (`178:205` Piggybank, `178:262` Account e `178:281` Advance) e o
-`144:2` Solutions Section - Safe (o carrossel antigo, que continua no arquivo)
-— mais os 4 frames soltos de arte dos cartões. A Ecossystem está completa, e a
-Cards Section também. Na Solutions Section nova **três frames estão liberados**;
-o último (`178:296` More) está oculto por decisão de processo. Não há design
-das seções seguintes — por isso os itens 2 e 3 bloqueiam o resto.
+Croma, `103:318` Ultravioleta, `103:383` Business), os **quatro** da Solutions
+Section nova (`178:205` Piggybank, `178:262` Account, `178:281` Advance e
+`178:296` More) e o `144:2` Solutions Section - Safe (o carrossel antigo, que
+continua no arquivo) — mais os 4 frames soltos de arte dos cartões. A
+Ecossystem está completa, a Cards Section também, e a **Solutions Section nova
+também** (as quatro pílulas respondem). Não há design das seções seguintes —
+por isso os itens 2 e 3 bloqueiam o resto.
 
 ### Pendências da auditoria de 2026-10-20
 
@@ -4252,6 +4258,54 @@ regra nova não estava no CSS servido (e o Firefox media `background-size:
 auto`, o valor antigo). O sintoma é o de sempre — a classe está no fonte e não
 no CSS. Procedimento do projeto: matar os processos, remover o `.next`,
 reiniciar.
+
+#### O frame "More" liberado — a Solutions Section ficou completa
+
+O usuário liberou o último frame da Solutions Section, o `178:296` (*E muito
+mais*). O conteúdo veio do Figma (nós `178:302` e `178:304`), e **as quatro
+pílulas respondem agora** — nenhuma fica `aria-disabled`.
+
+O que o Figma mostra, medido contra o render:
+
+| | Figma | nosso |
+|---|---|---|
+| Pílula "E muito mais" | 145 × 40 | **144,17** × 40 |
+| Painel | 680 × 400 | x 1040 · 680 × **398,13** |
+| Título | 48 px · 584 × 118 | 48 px · 584 × **117,09** (2 linhas) |
+| Descrição | 16 px · 584 × 40 | 16 px · 584 × **39,03** (2 linhas) |
+| Vidro | 680 (como Caixinhas e Conta) | 680 ✓ |
+
+**Contraste medido** (o método do projeto: apagar a tinta, esperar o repaint e
+fotografar o fundo real atrás do glifo; o grão ligado):
+
+| Texto | Piggybank | Conta | Advance | **More** | Mínimo | |
+|---|---|---|---|---|---|---|
+| Título do painel, 48 px | 5,36:1 | 5,15:1 | 5,11:1 | **5,05:1** | 3:1 | ✅ |
+| Pílula inativa, 16 px | 5,17:1 | 5,66:1 | 5,80:1 | **5,15:1** | 4,5:1 | ✅ |
+| CTA, 16 px | 7,21:1 | 7,21:1 | 7,21:1 | 7,21:1 | 4,5:1 | ✅ |
+| **Descrição, 16 px** | 4,42:1 | 4,15:1 | 4,28:1 | **3,98:1** | 4,5:1 | ⚠️ **reprova** |
+
+A descrição do "More" reprova pelo mesmo motivo das outras três: o **grão**,
+que clareia a tinta escura. É a pendência nº 18 (decisão 14) — a correção é
+mover o grão para baixo do texto, e é do grão, não da tinta.
+
+**O método foi validado contra o número já publicado:** medindo o Piggybank
+com o mesmo script, o pior canto da descrição deu 4,14:1 onde o README
+registrava 4,42:1 — a diferença é de método, e o resultado é o mesmo caso.
+
+> **Duas coisas que a medição do fundo ensinou:** o `clip` do CDP em
+> coordenadas de **documento** pinta o **header fixo** por cima da região
+> capturada (ele rola junto com a captura) — e o pixel escuro do texto do
+> header entrava na medição como se fosse o fundo do vidro. E o
+> `visibility: hidden` no elemento apaga o fundo **dele** também, o que não
+> serve para um texto que está sobre o vidro: a medição da pílula é por
+> fórmula, sobre o vidro capturado sem o texto.
+
+**Uma coisa que o Figma repetiu e que ficou registrada:** a descrição do
+"More" é **a mesma** da "Conta" (`178:257` e `178:304`), e o título do "More"
+("Tem muito mais do seu jeito no Nu.") não fala de conta nenhuma. O código
+segue o desenho (regra 1) e a duplicação ficou registrada como **pendência
+nº 22** — se for engano, a correção é no Figma.
 
 #### Verificação
 

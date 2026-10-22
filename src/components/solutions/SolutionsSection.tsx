@@ -12,8 +12,9 @@ import { ACTIVE_SOLUTION, PAINEL_GEOMETRIA, SOLUTIONS } from "@/lib/solutions";
 import { revealUp, BG_SWAP, SOLUTIONS_TEXT, staggerContainer } from "@/lib/motion";
 
 /**
- * Solutions Section — Figma `Solutions Section - Piggybank` (nó `178:205`) e
- * `Solutions Section - Account` (nó `178:262`), 1920×1080.
+ * Solutions Section — Figma `Solutions Section - Piggybank` (nó `178:205`),
+ * `Solutions Section - Account` (nó `178:262`), `Solutions Section - Advance`
+ * (nó `178:281`) e `Solutions Section - More` (nó `178:296`), 1920×1080.
  *
  * ## A seção é um quadro só, e o quadro é a arte
  *
@@ -22,12 +23,13 @@ import { revealUp, BG_SWAP, SOLUTIONS_TEXT, staggerContainer } from "@/lib/motio
  * forma de pensar a seção: ela não tem "cartão de imagem" — ela tem um fundo e
  * duas peças de vidro.
  *
- * ## A geometria vem do `padding` e do `justify-between`, e não de coordenadas
+ * ## A geometria vem da moldura e do `justify-between`, e não de coordenadas
  *
  * O Figma dá a navegação em (200, 100) e o painel em (1040, 580), ambos dentro
  * de um `Main Content` de 1520×880. A traduzido para fluxo, isso é:
  *
- *   - `px-[200px] py-[100px]` — a borda do conteúdo;
+ *   - a moldura (`.nu-frame`) — a coluna de 1520, centralizada;
+ *   - `py-[5.2083%]` — o padding vertical em % da largura da seção;
  *   - `justify-between` — o seletor em cima, o painel embaixo;
  *   - `items-end` — o painel encosta na borda direita (840 + 680 = 1520).
  *
@@ -53,20 +55,19 @@ import { revealUp, BG_SWAP, SOLUTIONS_TEXT, staggerContainer } from "@/lib/motio
  *
  * ## A troca de opção é uma troca de cena
  *
- * Os dois frames liberados são idênticos fora da arte e do texto: o vidro, o
+ * Os quatro frames liberados são idênticos fora da arte e do texto: o vidro, o
  * raio, a sombra, o padding e os tipos são os mesmos. O que muda é a **cena**
- * de fundo e o **texto** do painel — e por isso a troca é animada em duas
- * partes independentes: a arte faz um *pull* de foco (a que sai desfoca, a que
- * entra assenta) e o texto emerge de novo, desfocado, enquanto sobe.
+ * de fundo, o **texto** do painel e a **largura do vidro** (820 nos
+ * Empréstimos, 680 nos outros) — e por isso a troca é animada em duas partes
+ * independentes: a arte sai e a que entra assenta, e o texto emerge de novo
+ * enquanto sobe.
  *
- * ## Só dois frames estão liberados
+ * ## Os quatro frames estão liberados
  *
- * Os quatro frames da seção existem no arquivo, e **dois** foram liberados
- * (`178:205` e `178:262`). As outras duas pílulas aparecem — o design mostra
- * as quatro — e não respondem: são botões de verdade, com `aria-disabled` e
- * aviso para o leitor de tela. A mesma regra dos pilares do Ecossystem e das
- * pílulas da Cards Section: **um botão que não faz nada não existe em
- * silêncio.**
+ * As quatro pílulas respondem, e nenhuma fica `aria-disabled`. A regra do
+ * botão que não faz nada continua no `PillTab` (e no header, e nos pilares do
+ * Ecossystem) — ela é o que impede a próxima adição de virar um botão morto
+ * em silêncio, e não porque exista um caso hoje.
  */
 
 /**
