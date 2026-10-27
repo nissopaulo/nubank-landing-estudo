@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { useRef, useState } from "react";
+import { AnimatePresence, motion, useInView } from "motion/react";
 import { CaretRight } from "@phosphor-icons/react/dist/ssr/CaretRight";
 
 import { CtaLink } from "@/components/ui/CtaLink";
@@ -10,7 +10,7 @@ import {
   PILLARS,
   type Pillar,
 } from "@/lib/ecosystem-pillars";
-import { personRise } from "@/lib/motion";
+import { personRise, revealUp, staggerContainer } from "@/lib/motion";
 
 /**
  * Ecossystem Section — Figma `Ecossystem Section - Nubank` (nó `52:3`) e
@@ -58,10 +58,28 @@ import { personRise } from "@/lib/motion";
  *    própria altura abaixo, fora da janela de recorte) enquanto a antiga desce
  *    e some. A posição e a largura são por pilar porque o design não usa as
  *    mesmas — ver `personLeft` / `personWidth` nos dados.
+ *
+ * 6. **A seção entra na chegada, como as outras.** O título, a linha de cards
+ *    e o bloco de texto usam o `revealUp` de sempre com `whileInView` e
+ *    `once` — os mesmos `viewport` da Cards e da Solutions. A pessoa sobe
+ *    junto, mas **não** pode ser o próprio gatilho: ela nasce traduzida 100%
+ *    da própria altura, e o `IntersectionObserver` mede a caixa **visual** —
+ *    a imagem deslocada não intersecta nada até já estar no meio da subida. O
+ *    gatilho é a janela de 595 px (`useInView`), que fica no lugar o tempo
+ *    todo; a imagem sobe quando ela aparece.
  */
 export function EcosystemSection() {
   const [active, setActive] = useState(ACTIVE_INDEX);
   const pillar = PILLARS[active];
+
+  /*
+   * O gatilho da pessoa é a **janela**, e não a imagem — ver o item 6 acima.
+   * `once` porque a subida é a entrada da seção: quem já viu não precisa ver
+   * de novo. As trocas de pilar continuam animando, porque cada pessoa nova
+   * monta em `hidden` e é o `animate` que a leva a `visible`.
+   */
+  const janelaRef = useRef<HTMLDivElement>(null);
+  const chegou = useInView(janelaRef, { once: true, amount: 0.25 });
 
   return (
     <section
@@ -93,17 +111,28 @@ export function EcosystemSection() {
         container comeria o crescimento do hover. A janela de recorte da pessoa
         é a mesma caixa, só que num wrapper próprio, logo abaixo.
       */}
-      <div className="relative flex h-[595px] flex-col gap-[100px] [container-type:inline-size]">
-        <h2
+      <motion.div
+        ref={janelaRef}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.25 }}
+        variants={staggerContainer(0.12)}
+        className="relative flex h-[595px] flex-col gap-[100px] [container-type:inline-size]"
+      >
+        <motion.h2
           id="ecossistema-titulo"
+          variants={revealUp}
           className="font-display text-nu-display font-bold leading-[1.22] text-nu-brand"
         >
           Um Nu para
           <br />
           cada momento.
-        </h2>
+        </motion.h2>
 
-        <div className="relative flex min-h-0 flex-1 flex-col">
+        <motion.div
+          variants={revealUp}
+          className="relative flex min-h-0 flex-1 flex-col"
+        >
           <div className="flex w-full flex-1 items-stretch justify-start gap-[12px]">
             {PILLARS.map((p, i) => (
               <PillarCard
@@ -114,7 +143,7 @@ export function EcosystemSection() {
               />
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* Janela de recorte da pessoa: a mesma caixa do `Main Content`
             (`inset-0`), com `pointer-events-none` para não roubar o hover dos
@@ -129,7 +158,7 @@ export function EcosystemSection() {
               draggable={false}
               variants={personRise}
               initial="hidden"
-              animate="visible"
+              animate={chegou ? "visible" : "hidden"}
               exit="exit"
               className="pointer-events-none absolute top-0 select-none object-cover"
               style={{
@@ -140,7 +169,7 @@ export function EcosystemSection() {
             />
           </AnimatePresence>
         </div>
-      </div>
+      </motion.div>
 
       {/*
         O parágrafo e o CTA trocam junto com o card. `mode="wait"` faz a saída
@@ -150,7 +179,12 @@ export function EcosystemSection() {
         A coluna de texto é a mesma fração da tela que a linha de cards: as duas
         são o `Main Content` de 1520 do Figma.
       */}
-      <div>
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.25 }}
+        variants={revealUp}
+      >
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={active}
@@ -170,7 +204,7 @@ export function EcosystemSection() {
             </CtaLink>
           </motion.div>
         </AnimatePresence>
-      </div>
+      </motion.div>
     </section>
   );
 }

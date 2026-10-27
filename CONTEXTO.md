@@ -11,8 +11,10 @@
 - **Figma:** https://www.figma.com/design/16kp2jwaILwDfp44uYuNkP
 - **Frames implementados:** `Hero Section` (node `14:446`, 1920×1080),
   `Ecossystem Section` (nós `52:3`, `76:3`, `77:40`, `80:77`, 1920×919),
-  `Cards Section` (nós `97:2`, `103:248`, `103:318`, `103:383`, 1920×1086)
-  e `Solutions Section - Piggybank` (nó `178:205`, 1920×1080)
+  `Cards Section` (nós `97:2`, `103:248`, `103:318`, `103:383`, 1920×1086),
+  `Solutions Section` (nós `178:205`, `178:262`, `178:281`, `178:296`,
+  1920×1080) e `Blog Section` (nós `212:3`, `222:79`, `223:105`, `223:137`,
+  1920×1184)
 - **Produção:** https://nubank-landing-estudo.vercel.app
 - **Repositório:** https://github.com/nissopaulo/nubank-landing-estudo
 
@@ -26,7 +28,7 @@ conteúdo vive numa coluna de 1520 centralizada, que não cresce acima de
 os **componentes** não se esticam. As seções foram medidas de 1024 a 3840 e
 não têm mais scroll horizontal em nenhuma delas.
 
-**Quatro** telas implementadas e funcionando. A **Hero**, com header fixo, cards
+**Cinco** telas implementadas e funcionando. A **Hero**, com header fixo, cards
 em parallax e rodapé. Abaixo dela a **Ecossystem Section**, carrossel de pilares
 — **completa: os quatro desenhados**, os quatro clicáveis, e nenhum `PROVISÓRIO`
 sobrando. Clicar num pilar reequilibra a linha de cards inteira, com transição.
@@ -71,6 +73,15 @@ texto sobre ela, e as **prévias das vizinhas sangrando pelas bordas** — 135 p
 ponteiro na arte. **(Esse parágrafo descreve a seção ARQUIVADA — ver
 decisão 25.)**
 
+Depois da Solutions vem a **Blog Section** — **completa** desde 2026-10-23
+(nós `212:3`, `222:79`, `223:105`, `223:137`; 1920×1184). É um **anel de quatro
+matérias com três slots visíveis**: a principal à esquerda (768 px) e as duas
+seguintes (352 + 352, com 24 de intervalo). As setas andam um passo; clicar no
+primeiro tópico ao lado anda um passo e clicar no segundo anda **dois,
+encadeados** — o clicado precisa passar pelo slot do meio. A descrição troca
+com `mode="wait"`, e a seção inteira entra por scroll em cascata. As quatro
+matérias estão liberadas e nenhuma seta fica desabilitada.
+
 Entre as seções e o rodapé existe um bloco **"Em construção"** que é
 provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
 
@@ -79,7 +90,7 @@ provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
 | Stack | Next.js 16.4 (App Router, Turbopack), React 19.3, TS, Tailwind v4, Motion 14, Phosphor Icons |
 | Tipografia | Montserrat (única fonte), `next/font` self-hosted |
 | Ícones | Phosphor Icons; logo da marca e peças do cartão são SVG do Figma |
-| Qualidade | `tsc --noEmit`, `eslint` e `next build` passam limpos (verificado 2026-10-20) |
+| Qualidade | `tsc --noEmit`, `eslint` e `next build` passam limpos (verificado 2026-10-23) |
 
 ---
 
@@ -463,6 +474,48 @@ provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
     2.073.600), porque ele já esticava — a divergência era só dos outros
     motores.
 
+43. **A Blog Section é um anel de quatro com três slots — e o card que sai não
+    encolhe.** Os quatro frames do Figma (`212:3`, `222:79`, `223:105`,
+    `223:137`) não são quatro telas: são a mesma fileira vista de quatro
+    posições. A principal ocupa 768 px; as duas seguintes, 352 + 352, com 24 de
+    intervalo; a quarta fica fora da janela.
+
+    "Próxima" anda um passo: a principal sai pela esquerda **mantendo os 768** e
+    andando 792 até sair inteira (`exitLeft = −792`, não −768, que a deixaria
+    meio dentro). Encolher a principal até −376 seria outro gesto. "Anterior" é
+    o espelho, e como é um anel as setas nunca ficam desabilitadas.
+
+    Clicar no **segundo** tópico ao lado anda **dois passos encadeados** pelo
+    `onExitComplete` do `AnimatePresence`, nunca um salto de dois: um salto
+    obrigaria a principal a reaparecer à direita no meio do movimento (a volta
+    do anel). Enquanto um passo está em curso, um clique novo só atualiza o
+    destino; não abre uma segunda saída.
+
+    A arte é medida em `cqw` da fileira, e não em `%` do card: o card muda de
+    largura na troca, a arte não. O que muda entre os slots é só o recorte —
+    como uma câmera deslizando sobre a mesma imagem. O enquadramento é idêntico
+    de 1280 a 3840 (ver decisão 38).
+
+    A fileira é um `tablist` de verdade: cada card é uma aba, o principal tem
+    `aria-selected`, e o bloco de texto é o `tabpanel` com `aria-labelledby`.
+    O `AnimatePresence` mantém o card que sai no DOM com as props congeladas,
+    inclusive `aria-selected`; o `useIsPresent` o torna inerte na saída
+    (`aria-selected` some, `aria-hidden`, `tabIndex={-1}`,
+    `pointer-events: none`) — senão o tablist teria duas abas selecionadas
+    durante os 700 ms da troca.
+44. **A entrada da Ecossystem é por scroll, e a pessoa não pode ser o próprio
+    gatilho.** O título, a linha de cards e o bloco de texto usam o `revealUp`
+    de sempre; título e cards ficam no mesmo `staggerContainer(0.12)`, e o texto
+    é um segundo `whileInView` porque está fora da janela de 595 px.
+
+    A pessoa nasce traduzida 100% da própria altura e é recortada pela janela.
+    O `IntersectionObserver` mede a caixa **visual**: a imagem deslocada só
+    intersectaria o viewport já no meio da subida. Por isso o gatilho é a janela
+    de 595 px (`useInView`, `amount: 0.25`), que fica no lugar o tempo todo;
+    quando ela aparece, a imagem sobe. Medido: título em 51 ms, cards em 154 ms
+    (Δ 103 ms, o stagger de 0,12 s) e a pessoa com `y > 0` por 1,31 s (a
+    animação declarada é 1,5 s).
+
 ---
 
 ## Mapeamento Figma → código
@@ -597,23 +650,28 @@ Escrever a mensagem num arquivo e usar `git commit -F <arquivo>`.
 | 19 | **O bloco `Steps Progress` do quadro `178:205` (nó `180:322`) está oculto no Figma e não foi implementado.** Quatro passos de 162,5 px, em x = 840, y = 860, com 10 de gap — 620 de largura, alinhado com o painel. Fica registrado para quando ele aparecer | `src/components/solutions/SolutionsSection.tsx` |
 | 20 | ~~A troca de opção da Solutions Section está escrita e nunca executou~~ — **resolvido 2026-10-20**, com a liberação do frame `178:262` (Conta). A troca foi medida quadro a quadro: o *pull* de foco da arte, a emergência do texto, a trava do clique duplicado e o caminho de movimento reduzido | `src/components/solutions/SolutionsSection.tsx` |
 | 21 | ~~A largura do painel é POR FRAME~~ — **resolvido 2026-10-20**, com a liberação do frame `178:281` (Empréstimos). A largura passou a ser campo do `showcase` (680/680/820), e o texto do painel passou a ter a largura da SUA opção — senão o vidro crescendo re-quebraria as linhas do texto antigo no meio do fade | `src/lib/solutions.ts` |
-| 22 | **A descrição do frame "E muito mais" é a MESMA da "Conta".** Nos dois frames do Figma (`178:257` e `178:304`) o texto é *"Pague, transfira, receba e acompanhe suas movimentações em uma conta digital feita para simplificar o seu dia a dia."* — e o título do "More" é *"Tem muito mais do seu jeito no Nu."*, que não fala de conta nenhuma. O código segue o Figma (regra 1: nada de conteúdo inventado); a correção, se for o caso, é **no desenho** | `src/lib/solutions.ts` |
+| 22 | ~~A descrição do frame "E muito mais" é a MESMA da "Conta"~~ — **resolvido 2026-10-23**: o usuário corrigiu o Figma e a descrição do "More" passou a ser *"Explore soluções para diferentes momentos da sua vida financeira e descubra novas possibilidades para cuidar do seu dinheiro."* O código acompanhou (`src/lib/solutions.ts`) | — |
+| 23 | **A descrição da matéria 1 da Blog Section não descreve a arte.** No frame `212:3` o texto fala de conta de alto rendimento, transferências globais sem taxas e cartão premium para quem mora no exterior, mas a arte mostra só um cartão metálico com o logo Nu sobre um fundo roxo, com o título "O Nu está dando o seu próximo passo". Não há conta, transferência nem "exterior" na imagem. O código segue o Figma (regra 1); a correção é no desenho | `src/lib/blog-topics.ts` |
+| 24 | **A descrição da Blog Section reprova AA por causa do grão** — 4,19:1 na mediana, 3,63:1 no percentil 5 e 3,24:1 no pior pixel. A tinta é a do Figma (`Text/text-tertiary`, #6b7280) e **sem grão** dá 4,83:1 sobre o branco; o que derruba é o grão da página, que clareia o texto escuro. O mesmo método mede **4,20:1 / 3,65:1 / 3,16:1** no parágrafo do Ecossystem, que usa a mesma tinta sobre o mesmo branco — **não é regressão da Blog Section**. A correção é a mesma da nº 18: grão por seção, abaixo do texto (decisão 14) | `src/lib/blog-topics.ts` / `globals.css` |
 
-**No Figma hoje existem dezesseis frames visíveis** — `Hero Section` (`14:446`),
+**No Figma hoje existem vinte frames visíveis** — `Hero Section` (`14:446`),
 os **quatro** da Ecossystem (`52:3` Nubank, `76:3` Croma, `77:40` Ultravioleta,
 `80:77` Business), os **quatro** da Cards Section (`97:2` Nubank, `103:248`
 Croma, `103:318` Ultravioleta, `103:383` Business), os **quatro** da Solutions
 Section nova (`178:205` Piggybank, `178:262` Account, `178:281` Advance e
-`178:296` More) e o `144:2` Solutions Section - Safe (o carrossel antigo, que
-continua no arquivo) — mais os 4 frames soltos de arte dos cartões. A
-Ecossystem está completa, a Cards Section também, e a **Solutions Section nova
-também** (as quatro pílulas respondem). Não há design das seções seguintes —
-por isso os itens 2 e 3 bloqueiam o resto.
+`178:296` More), os **quatro** da Blog Section (`212:3` Próximo Passo, `222:79`
+Brand Refresh, `223:105` Proteção, `223:137` Inter Miami) e o `144:2` Solutions
+Section - Safe (o carrossel antigo, que continua no arquivo) — mais os 4 frames
+soltos de arte dos cartões. A Ecossystem está completa, a Cards Section também,
+a **Solutions Section nova também** (as quatro pílulas respondem) e a **Blog
+Section também** (as quatro matérias percorrem o anel e as duas setas nunca
+ficam desabilitadas). Não há design das seções seguintes — por isso os itens 2
+e 3 bloqueiam o resto.
 
 ### Pendências da auditoria de 2026-10-20
 
 IDs próprios (`E-` estrutural, `P-` pontual), para não se confundirem com a
-numeração 1–21 acima. A auditoria foi feita **sem alterar nenhum arquivo**;
+numeração 1–24 acima. A auditoria foi feita **sem alterar nenhum arquivo**;
 os números vêm de medição no DOM (Chrome headless via CDP) em 2560×1440,
 1920×1080, 1920×800, 1440×900, 1024×768, 768×1024 e 360×740.
 
@@ -635,8 +693,8 @@ falha independentes no código; nenhuma se resolve corrigindo um componente.
 | E-11 | A arte de fundo não pode depender da proporção da viewport | Solutions | ~~aberta~~ — **resolvido 2026-10-22**: a seção é o quadro 16:9, decisão 39 |
 | E-12 | A composição da Hero em altura relativa, e não em largura | `hero-cards.ts` | **parcial** — o `cqw` passou a medir a moldura de 1920 (e não a viewport), e o ritmo vertical da Hero é proporcional. A altura da Hero ainda é `100svh`, e a composição é ancorada no topo |
 | E-13 | Header: largura mínima, histerese no limiar e transição completa | `SiteHeader.tsx` | **parcial** — a largura mínima é resolvida pela moldura + as regras de 1280/1536. Falta a histerese (P-06) |
-| E-14 | Um único componente de tablist: setas, tabindex roving, `aria-controls` real | `PillTab` + Cards + Solutions | **FASE 1, item 3** |
-| E-15 | Anúncio de mudança de conteúdo | Ecossystem, Cards, Solutions | aberta |
+| E-14 | Um único componente de tablist: setas, tabindex roving, `aria-controls` real | `PillTab` + Cards + Solutions + Blog | **FASE 1, item 3** — a Blog Section já tem `aria-controls` real (`blog-painel`), mas ainda não tem tabindex roving |
+| E-15 | Anúncio de mudança de conteúdo | Ecossystem, Cards, Solutions, Blog | aberta |
 
 **Pontuais — correção local.**
 
@@ -4323,4 +4381,130 @@ quebraria a regra de não esticar e exigiria escalar o rótulo de 48px junto →
 **Próximo passo:** as seções "Porque a Nu" e "Diferenciais" continuam sem
 desenho no Figma (pendência nº 3), e é por isso que o resto da página está
 parado. O design mobile também continua adiado (decisão 7).
+
+### 2026-10-23 — Blog Section: o anel de quatro, a câmera sobre a arte e a entrada da Ecossystem
+
+Sessão de implementação da **Blog Section** (`212:3`, `222:79`, `223:105`,
+`223:137`, 1920×1184), a última seção desenhada do arquivo. Junto com ela entrou
+a **entrada por scroll da Ecossystem** (decisão 44), que faltava desde a
+auditoria de 2026-10-20.
+
+#### O desenho não são quatro telas: é uma fileira vista de quatro posições
+
+Os quatro frames mostram a mesma fileira: a matéria principal em 768 px e as
+duas seguintes em 352 + 352, com 24 px de intervalo. A quarta fica fora da
+janela. Por isso a seção é um **anel de quatro com três slots** (decisão 43):
+
+- "Próxima" anda um passo — a principal sai pela esquerda **mantendo os 768** e
+  andando 792 até sair inteira. O `exitLeft` é −792, e não −768: com −768 ela
+  ficaria meio dentro da janela. Desaparecer por fade seria outro gesto.
+- "Anterior" é o espelho, e como é um anel as duas setas percorrem todas as
+  matérias e **nunca ficam desabilitadas**.
+- Clicar no **segundo** tópico ao lado anda **dois passos encadeados** pelo
+  `onExitComplete` do `AnimatePresence` — nunca um salto de dois, que obrigaria
+  a principal a reaparecer à direita no meio do movimento (a volta do anel).
+  Enquanto um passo está em curso, um clique novo só atualiza o destino.
+
+A descrição troca junto, com `PANEL_TEXT` e `mode="wait"`; o "Veja Mais" fica
+**fora** do `AnimatePresence`, porque não muda com a matéria e pularia de
+posição a cada troca.
+
+#### A arte é uma câmera sobre a imagem, não uma imagem por card
+
+No Figma cada arte tem um tamanho fixo (840×420, 800×450, 1000×437,5) e um
+recorte diferente como principal e como tópico ao lado. O dado é, portanto, o
+tamanho da arte **mais o deslocamento em cada slot**. A fileira é
+`container-type: inline-size` e a arte é medida em `cqw`: o card muda de largura
+na troca, a arte não — o que muda é só o recorte, como uma câmera deslizando
+sobre a mesma imagem. O enquadramento é idêntico de 1280 a 3840.
+
+#### A fileira é um tablist, e o card que sai fica inerte
+
+Cada card é `role="tab"` com `aria-selected` no principal, e o bloco de texto é
+`role="tabpanel"` com `aria-labelledby` da aba ativa. O nome acessível de cada
+aba é a **primeira linha da descrição** da matéria: o título está dentro da
+imagem e o Figma não tem esse texto em nó separado — inventar um seria conteúdo
+fora do desenho. As setas ficam **fora** do tablist: não são abas, são o
+seletor.
+
+O `AnimatePresence` mantém o card que sai no DOM durante os 700 ms, com as props
+congeladas — inclusive `aria-selected`. O `useIsPresent` avisa o card de que
+está saindo: ele perde `aria-selected`, ganha `aria-hidden`, `tabIndex={-1}` e
+`pointer-events: none` até desmontar. Sem isso o tablist teria **duas abas
+selecionadas** durante a troca, e o card em movimento ainda aceitaria clique e
+foco.
+
+#### Fidelidade e interações medidas
+
+A 1920 o DOM bate com o Figma: seção 1920×**1185,16**, título y 100, fileira
+1520×420 em y **356,15**, principal 768×420 em x 200, lado 2 em x **1367,98**,
+painel em y **840,15**, separador em y **944,15**, CTA centrado e **zero** de
+scroll horizontal. A varredura de 1280 a 3840 mantém a proporção da fileira
+(1520/420 = 3,6190) e a moldura para em 1920.
+
+Um teste de CDP com **17 verificações** passou inteiro: próxima, anterior dando
+a volta no primeiro frame, clique no lado 1 (um passo), clique no lado 2 (dois
+passos, com **um card inerte** no meio e quatro no DOM), três cliques rápidos
+com estado final coerente, e movimento reduzido com troca instantânea. O
+console não teve erro nem aviso de hidratação.
+
+**Contraste:** com o grão ligado (0,12), a descrição de 16 px mede **3,24:1** no
+pior caso e 4,19:1 na mediana — reprova. Sem grão ela daria 4,83:1 sobre o
+branco. O parágrafo da Ecossystem, mesma tinta e mesmo branco, mede 4,20:1 na
+mediana pelo mesmo método. Não é um problema da Blog: é o grão sobre a tinta
+escura, e a correção é movê-lo para baixo do texto — **pendências nº 18 e 24**.
+
+#### Assets e links
+
+Os quatro PNGs viraram WebP com o `sharp`, com queda de 91,6% a 96,2% no peso.
+O Figma não define destino para nenhum dos dois links: ambos usam o placeholder
+do projeto, e o "Veja Mais" abre em nova aba como todo link externo.
+
+#### A entrada da Ecossystem (decisão 44)
+
+Título, linha de cards e bloco de texto usam o `revealUp` com `whileInView`;
+título e cards no mesmo `staggerContainer(0.12)`, e o texto num segundo
+`whileInView` porque está fora da janela de 595 px. A pessoa nasce traduzida
+100% da própria altura, e o `IntersectionObserver` mede a caixa visual — por
+isso o gatilho é a **janela de 595 px** (`useInView`, `amount: 0.25`), que fica
+no lugar o tempo todo, e não a imagem deslocada. Medido: título em 51 ms, cards
+em 154 ms (Δ 103 ms, o stagger de 0,12 s) e a pessoa com `y > 0` por 1,31 s.
+
+#### Verificação
+
+`tsc --noEmit`, `eslint` e `next build` limpos. A sessão terminou com a Blog
+Section completa no working tree; o commit ficou para a sessão seguinte.
+
+### 2026-10-26 — revisão de estado (sem alteração de código)
+
+Pedido do usuário: analisar onde o projeto parou e o que está pendente. Nenhum
+arquivo de código foi alterado nesta sessão.
+
+**O estado real:** a **Blog Section está completa no working tree, mas não foi
+commitada.** `main` e `origin/main` continuam em `f5ae825` (Solutions Section
+completa), então a produção ainda **não tem** a Blog Section. Ficaram fora do
+commit: `src/components/blog/BlogSection.tsx` e `src/lib/blog-topics.ts` (novos),
+as quatro artes em `public/images/blog/`, a entrada da seção em `page.tsx`, a
+entrada por scroll da Ecossystem (decisão 44), a renomeação
+`SOLUTIONS_TEXT` → `PANEL_TEXT` (agora serve as duas seções), a descrição
+corrigida do "More" (pendência nº 22) e as atualizações de README/CONTEXTO.
+
+**Verificação nesta data:** `npx tsc --noEmit`, `npm run lint` e
+`npm run build` passam limpos. O build gera a rota `/` estática.
+
+**Lacuna de memória:** a sessão de **2026-10-23** (Blog Section) atualizou o
+resumo, as decisões 43/44 e as pendências 23/24, mas **não escreveu o registro
+em "Registro de sessões"**. O registro detalhado ainda está só no README, na
+seção "Blog Section" — vale reconstruí-lo no próximo commit.
+
+**Divergências de documentação encontradas:** o `README.md` ainda diz, na seção
+da Cards Section, que "só o frame do Nubank está liberado" (contradiz os quatro
+frames liberados na mesma seção), e a seção "Acessibilidade" ainda descreve o
+"anel branco de 3 px" (anterior à correção E-03, das duas bandas concêntricas).
+
+**Próximo passo:** commitar a Blog Section pelo fluxo "pode commitar" — os três
+gates já estão verdes — e, no mesmo commit, reconstruir o registro de
+2026-10-23 e corrigir as duas frases defasadas do README. Depois disso, o que
+não depende do Figma é o grão por seção abaixo do texto (pendências 18 e 24) e a
+FASE 1 de acessibilidade (E-05, E-14, P-04, P-09, P-10).
 

@@ -148,15 +148,16 @@ export const SOLUTIONS: SolutionOption[] = [
     background: "/images/backgrounds/more-bg.webp",
     showcase: {
       /**
-       * O texto é **exatamente** o do Figma (nós `178:302` e `178:304`) —
-       * inclusive a descrição, que é a **mesma** da opção "Conta" (`178:257`).
+       * O texto é **exatamente** o do Figma (nós `178:302` e `178:304`).
        *
-       * Não é um erro de digitação aqui: os dois frames do arquivo têm esse
-       * texto. É o desenho que está repetido, e a correção é no Figma — o
-       * código segue o que está lá. Ver a pendência nº 22 no `CONTEXTO.md`.
+       * A descrição era a mesma da opção "Conta" até 2026-10-22 — o desenho
+       * repetia o texto, e a pendência nº 22 registrava isso. O Figma foi
+       * corrigido para *"Explore soluções para diferentes momentos da sua vida
+       * financeira e descubra novas possibilidades para cuidar do seu
+       * dinheiro."*, que é o que está aqui.
        */
       title: "Tem muito mais do seu jeito no Nu.",
-      desc: "Pague, transfira, receba e acompanhe suas movimentações em uma conta digital feita para simplificar o seu dia a dia.",
+      desc: "Explore soluções para diferentes momentos da sua vida financeira e descubra novas possibilidades para cuidar do seu dinheiro.",
       cta: "Conheça mais sobre",
       largura: 680,
     },

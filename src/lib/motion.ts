@@ -334,7 +334,11 @@ export const CARD_FLIP = {
 } as const;
 
 /**
- * O texto do painel da Solutions Section, a cada troca de opção.
+ * O texto de um painel que troca com a opção — **duas seções**.
+ *
+ * Nasceu com a Solutions Section e passou a servir também a Blog Section, que
+ * troca a descrição junto com a matéria principal. Os números são os mesmos
+ * porque o gesto é o mesmo; o que muda é só o conteúdo de cada painel.
  *
  * ## Ele **repete** a cada troca
  *
@@ -364,7 +368,7 @@ export const CARD_FLIP = {
  * isso os dois textos ficam sobrepostos no mesmo quadro de 584 × 200 — que é
  * exatamente o defeito que a Cards Section já teve.
  */
-export const SOLUTIONS_TEXT = {
+export const PANEL_TEXT = {
   /** Duração da entrada do texto, em segundos. */
   enter: 0.55,
   /** Duração da saída do texto, em segundos. */
@@ -373,6 +377,34 @@ export const SOLUTIONS_TEXT = {
   ease: EASE_OUT_EXPO,
   /** Deslocamento de entrada, em px. */
   y: 18,
+} as const;
+
+/**
+ * O passo da Blog Section — a fileira anda 792 px por clique.
+ *
+ * ## A duração e a curva
+ *
+ * `DURATION.base` (0,7 s) com `EASE_EMPHASIZED`, a mesma escolha do
+ * rebalanceamento do Ecossystem: o percurso é longo e o `EASE_OUT_EXPO`
+ * despejaria 82% dele no primeiro terço, deixando o resto arrastando sem que
+ * nada visível aconteça. Ver o comentário de `EASE_EMPHASIZED`.
+ *
+ * ## Por que o card que sai mantém a largura
+ *
+ * O card que vira principal cresce de 352 para 768 **enquanto** anda 792 px, e
+ * o que sai anda os mesmos 792 px sem encolher (ver `exitLeft` em
+ * `blog-topics.ts`). É o que faz a troca inteira ler como uma fileira sendo
+ * empurrada: as três peças partem e chegam no mesmo instante.
+ *
+ * ## Movimento reduzido
+ *
+ * A duração vai a zero no componente (ver `BlogSection`). O `MotionConfig` do
+ * projeto desliga transform e layout, e aqui o que anda é `left`/`width` —
+ * exatamente o caso que ele não cobre, o mesmo que a Solutions resolve à mão.
+ */
+export const BLOG_STRIP = {
+  duration: DURATION.base,
+  ease: EASE_EMPHASIZED,
 } as const;
 
 /**

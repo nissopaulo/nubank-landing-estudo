@@ -9,7 +9,7 @@ import { CtaLink } from "@/components/ui/CtaLink";
 import { PillTab } from "@/components/ui/PillTab";
 import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 import { ACTIVE_SOLUTION, PAINEL_GEOMETRIA, SOLUTIONS } from "@/lib/solutions";
-import { revealUp, BG_SWAP, SOLUTIONS_TEXT, staggerContainer } from "@/lib/motion";
+import { revealUp, BG_SWAP, PANEL_TEXT, staggerContainer } from "@/lib/motion";
 
 /**
  * Solutions Section — Figma `Solutions Section - Piggybank` (nó `178:205`),
@@ -87,12 +87,12 @@ import { revealUp, BG_SWAP, SOLUTIONS_TEXT, staggerContainer } from "@/lib/motio
 const texto: Variants = {
   hidden: {
     opacity: 0,
-    y: SOLUTIONS_TEXT.y,
+    y: PANEL_TEXT.y,
   },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: SOLUTIONS_TEXT.enter, ease: SOLUTIONS_TEXT.ease },
+    transition: { duration: PANEL_TEXT.enter, ease: PANEL_TEXT.ease },
   },
   exit: {
     opacity: 0,
@@ -104,7 +104,7 @@ const texto: Variants = {
      * elemento **salta** para o valor final, e quem pediu menos movimento veria
      * o texto dar um pulo antes de sumir. Um fade não desloca nada.
      */
-    transition: { duration: SOLUTIONS_TEXT.exit, ease: "easeIn" },
+    transition: { duration: PANEL_TEXT.exit, ease: "easeIn" },
   },
 };
 

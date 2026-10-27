@@ -1,3 +1,4 @@
+import { BlogSection } from "@/components/blog/BlogSection";
 import { CardsSection } from "@/components/cards/CardsSection";
 import { EcosystemSection } from "@/components/ecosystem/EcosystemSection";
 import { HeroSection } from "@/components/hero/HeroSection";
@@ -33,6 +34,7 @@ export default function Home() {
         <EcosystemSection />
         <CardsSection />
         <SolutionsSection />
+        <BlogSection />
         <PendingSections />
       </main>
       <SiteFooter />
