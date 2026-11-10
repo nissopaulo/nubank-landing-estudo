@@ -5,6 +5,7 @@ import Image from "next/image";
 import { AnimatePresence, motion, type Variants } from "motion/react";
 import { CaretRight } from "@phosphor-icons/react/dist/ssr/CaretRight";
 
+import { SectionGrain } from "@/components/site/SectionGrain";
 import { CtaLink } from "@/components/ui/CtaLink";
 import { PillTab } from "@/components/ui/PillTab";
 import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
@@ -345,6 +346,8 @@ export function SolutionsSection() {
           </CtaLink>
         </motion.div>
       </motion.div>
+
+      <SectionGrain />
     </section>
   );
 }

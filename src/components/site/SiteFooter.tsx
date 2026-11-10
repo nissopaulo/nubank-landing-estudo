@@ -1,3 +1,4 @@
+import { SectionGrain } from "@/components/site/SectionGrain";
 import { CtaLink } from "@/components/ui/CtaLink";
 
 /**
@@ -14,30 +15,34 @@ export function PendingSections() {
       id="proximas-secoes"
       aria-labelledby="proximas-secoes-titulo"
       data-surface="light"
-      className="nu-frame py-24 lg:py-32"
+      className="relative isolate py-24 lg:py-32"
     >
-      <h2
-        id="proximas-secoes-titulo"
-        className="font-display text-3xl font-bold text-nu-neutral-800 md:text-4xl"
-      >
-        Em construção
-      </h2>
+      <div className="nu-frame">
+        <h2
+          id="proximas-secoes-titulo"
+          className="font-display text-3xl font-bold text-nu-neutral-800 md:text-4xl"
+        >
+          Em construção
+        </h2>
 
-      <p className="mt-4 max-w-[60ch] font-body text-lg leading-relaxed text-nu-neutral-800/70">
-        As próximas seções da landing page ainda estão sendo desenhadas no
-        Figma. Este espaço será substituído pelo conteúdo definitivo.
-      </p>
+        <p className="mt-4 max-w-[60ch] font-body text-lg leading-relaxed text-nu-neutral-800/70">
+          As próximas seções da landing page ainda estão sendo desenhadas no
+          Figma. Este espaço será substituído pelo conteúdo definitivo.
+        </p>
 
-      <ul className="mt-10 flex flex-wrap gap-3">
-        {pending.map((name) => (
-          <li
-            key={name}
-            className="rounded-full border border-dashed border-nu-neutral-300 px-5 py-2.5 font-display text-sm text-nu-neutral-400"
-          >
-            {name}
-          </li>
-        ))}
-      </ul>
+        <ul className="mt-10 flex flex-wrap gap-3">
+          {pending.map((name) => (
+            <li
+              key={name}
+              className="rounded-full border border-dashed border-nu-neutral-300 px-5 py-2.5 font-display text-sm text-nu-neutral-400"
+            >
+              {name}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <SectionGrain />
     </section>
   );
 }
@@ -46,7 +51,7 @@ export function SiteFooter() {
   return (
     <footer
       data-surface="light"
-      className="border-t border-nu-neutral-200 bg-nu-neutral-100"
+      className="relative isolate border-t border-nu-neutral-200 bg-nu-neutral-100"
     >
       <div className="nu-frame py-14">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
@@ -75,6 +80,8 @@ export function SiteFooter() {
           Motion.
         </p>
       </div>
+
+      <SectionGrain />
     </footer>
   );
 }

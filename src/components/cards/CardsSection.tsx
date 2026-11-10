@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 
 import { CreditCard } from "@/components/cards/CreditCard";
 import { useCardTilt } from "@/components/cards/use-card-tilt";
+import { SectionGrain } from "@/components/site/SectionGrain";
 import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 import { CtaLink } from "@/components/ui/CtaLink";
 import { PillTab } from "@/components/ui/PillTab";
@@ -550,6 +551,8 @@ export function CardsSection() {
           </motion.div>
         </AnimatePresence>
       </motion.div>
+
+      <SectionGrain />
     </section>
   );
 }

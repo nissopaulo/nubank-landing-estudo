@@ -3,7 +3,6 @@ import { CardsSection } from "@/components/cards/CardsSection";
 import { EcosystemSection } from "@/components/ecosystem/EcosystemSection";
 import { HeroSection } from "@/components/hero/HeroSection";
 import { SolutionsSection } from "@/components/solutions/SolutionsSection";
-import { NoiseOverlay } from "@/components/site/NoiseOverlay";
 import { PendingSections, SiteFooter } from "@/components/site/SiteFooter";
 import { SiteHeader } from "@/components/site/SiteHeader";
 
@@ -23,10 +22,6 @@ export default function Home() {
       >
         Pular para o conteúdo
       </a>
-
-      {/* Textura da página inteira. Fica antes do header no DOM e abaixo dele
-          em z-index (40 contra 50), então o header nunca recebe grão. */}
-      <NoiseOverlay />
 
       <SiteHeader />
       <main>

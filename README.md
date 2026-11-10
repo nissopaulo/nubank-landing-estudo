@@ -81,7 +81,7 @@ src/
     site/
       SiteHeader.tsx   cabeçalho fixo, condensa ao rolar
       SiteFooter.tsx   rodapé + aviso legal + seções pendentes
-      NoiseOverlay.tsx grão de textura sobre a página inteira
+      SectionGrain.tsx grão de textura de uma seção, abaixo do conteúdo
     ui/
       CtaLink.tsx      botão/link de CTA
       PillTab.tsx      pílula de seletor (Cards e Solutions Sections)
@@ -2460,13 +2460,39 @@ usa `useSyncExternalStore` para ler a preferência sem divergência.
 
 ### Textura (grão)
 
-Uma camada de ruído sutil cobre a página inteira, para dar textura e
-profundidade. **É um desvio autoral:** o `bg` da Hero no Figma (nó `14:460`) é
-gradiente puro — sem camada de ruído, sem blend mode, sem filtro. O que parece
-grão no Figma é o dithering do próprio viewer ao renderizar um gradiente tão
-suave. A partir daqui a textura é convenção da landing page.
+Uma camada de ruído sutil cobre **cada seção**, abaixo do conteúdo, para dar
+textura e profundidade. **É um desvio autoral:** o `bg` da Hero no Figma (nó
+`14:460`) é gradiente puro — sem camada de ruído, sem blend mode, sem filtro.
+O que parece grão no Figma é o dithering do próprio viewer ao renderizar um
+gradiente tão suave. A partir daqui a textura é convenção da landing page.
 
-Três decisões:
+**Por seção, e abaixo do conteúdo** (mudança de 2026-11-03). Até então o grão
+era uma camada `position: fixed` de página inteira, em `z-index: 40`, desenhada
+**por cima** do texto. Era isso que derrubava o contraste das tintas escuras: o
+grão clareava o glifo, e a descrição do Blog media 3,24:1 no pior pixel
+(pendências nº 18 e 24). Agora o glifo volta à tinta cheia; o que resta é o grão
+escurecendo o branco **atrás** dele — e é por isso que a opacidade também caiu
+(ver a tabela abaixo).
+
+Uma camada única em `main` com `z-index: -1` não serve: ela pinta atrás do
+`background` das seções, que são descendentes em fluxo, e o grão desaparece. A
+receita é uma camada por seção:
+
+- a seção precisa de `position: relative` **e** `isolation: isolate` — sem o
+  isolamento o `z-index: -1` atravessa o contexto e vai para trás do fundo da
+  própria seção;
+- a camada entra como **último filho**, para pintar acima de outras camadas
+  negativas (o fundo que entra na Cards Section, a arte da Solutions em
+  `-z-10`) e abaixo de todo o texto e dos controles;
+- o header fica fora das seções, e por isso continua sem grão — o requisito
+  original, inclusive ao rolar.
+
+Dois detalhes de implementação que parecem excesso mas são necessários: a Cards
+Section já tem `isolation: isolate` na regra `#cartoes` (por causa da camada de
+fundo que entra), e a Ecossystem usa um wrapper porque a seção é a moldura de
+1920 — o grão precisa cobrir a largura inteira, inclusive acima de 1920.
+
+As escolhas que não mudaram:
 
 - **`feTurbulence` inline, não um PNG.** Zero requisições, zero bytes no
   repositório, escala sem perda. O tile é de 180 px e se repete, então o
@@ -2474,17 +2500,24 @@ Três decisões:
 - **Sem `mix-blend-mode`.** Os modos usuais (`overlay`, `soft-light`) são
   neutros em cinza-médio: sobre branco não fariam nada, e boa parte da página é
   branca. Sem blend, o mesmo tile escurece o branco e clareia o roxo.
-- **Abaixo do header.** Fica em `z-index: 40` contra os `z-50` do header, que
-  por isso nunca recebe grão — inclusive ao rolar.
+- **Opacidade 0,06.** O valor antigo, 0,12, era o teto com o grão por cima do
+  texto. Com a camada abaixo, o teto passou a ser o escurecimento do fundo
+  atrás do glifo. Medido na descrição de 16 px (`#6b7280`):
 
-A opacidade é 3%: move os canais em ±1,5%, o que aparece como textura sem
-competir com o texto. Para alterar só num trecho, use a custom property em vez
-de editar a classe:
+  | Opacidade | Pior pixel | p5 | Mediana | |
+  |---|---|---|---|---|
+  | 0,12 | 4,44:1 | 4,46:1 | 4,58:1 | ⚠️ reprova |
+  | 0,075 | 4,50:1 | 4,58:1 | 4,67:1 | ✅ no limite, sem margem |
+  | **0,06** | **4,54:1** | **4,58:1** | **4,68:1** | ✅ |
+  | 0 | 4,83:1 | 4,83:1 | 4,83:1 | (sem grão) |
 
-```tsx
-<NoiseOverlay />                              {/* página inteira */}
-<div style={{ "--nu-grain-opacity": 0.05 }} /> {/* mais presente */}
-```
+  O 0,03 inicial era invisível em área chapada. Para alterar só num trecho, use
+  a custom property em vez de editar a classe:
+
+  ```tsx
+  <SectionGrain />                              {/* seção inteira */}
+  <div style={{ "--nu-grain-opacity": 0.03 }} /> {/* mais discreto */}
+  ```
 
 ---
 

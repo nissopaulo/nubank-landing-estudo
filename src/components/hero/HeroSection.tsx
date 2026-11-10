@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { CaretRight } from "@phosphor-icons/react/dist/ssr/CaretRight";
 
 import { CardsShowcase } from "@/components/hero/CardsShowcase";
+import { SectionGrain } from "@/components/site/SectionGrain";
 import { CtaLink } from "@/components/ui/CtaLink";
 import { DURATION, EASE_OUT_EXPO, revealUp, staggerContainer } from "@/lib/motion";
 
@@ -110,6 +111,8 @@ export function HeroSection() {
           />
         </span>
       </motion.div>
+
+      <SectionGrain />
     </section>
   );
 }

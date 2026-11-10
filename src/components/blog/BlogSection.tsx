@@ -12,6 +12,7 @@ import { ArrowLeft } from "@phosphor-icons/react/dist/ssr/ArrowLeft";
 import { ArrowRight } from "@phosphor-icons/react/dist/ssr/ArrowRight";
 import { CaretRight } from "@phosphor-icons/react/dist/ssr/CaretRight";
 
+import { SectionGrain } from "@/components/site/SectionGrain";
 import { CtaLink } from "@/components/ui/CtaLink";
 import {
   BLOG_ROW,
@@ -257,9 +258,9 @@ export function BlogSection() {
       /* Superfície clara: a seção é branca e o que recebe foco (as setas, as
          abas e o link) está sobre ela. */
       data-surface="light"
-      className="nu-frame bg-white py-[100px]"
+      className="relative isolate bg-white"
     >
-      <div className="flex flex-col gap-[100px]">
+      <div className="nu-frame flex flex-col gap-[100px] py-[100px]">
         <div className="flex flex-col gap-[100px]">
           {/*
             `items-end`: as setas alinham pela base do título, que é o que o
@@ -430,6 +431,8 @@ export function BlogSection() {
           </CtaLink>
         </motion.div>
       </div>
+
+      <SectionGrain />
     </section>
   );
 }

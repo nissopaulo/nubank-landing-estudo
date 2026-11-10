@@ -316,7 +316,7 @@
   }
 
   /*
-   * Grão de textura sobre toda a página.
+   * Grão de textura de UMA seção, abaixo do conteúdo.
    *
    * DESVIO AUTORAL — não existe no Figma. O `bg` da Hero (nó 14:460) é
    * gradiente puro, sem camada de ruído, sem blend mode e sem filtro; o que
@@ -324,7 +324,27 @@
    * tão suave. A textura foi adicionada por decisão do usuário para dar
    * profundidade, e a partir daqui vale como convenção da landing page.
    *
-   * Três escolhas:
+   * ## Por que por seção, e não mais na página inteira
+   *
+   * Até 2026-10-26 o grão era uma camada `position: fixed` de página inteira,
+   * em `z-index: 40`, desenhada **por cima** do texto. Era isso que derrubava
+   * o contraste das tintas escuras: o grão clareia o glifo, e a descrição do
+   * Blog media 3,24:1 (pendências nº 18 e 24). A correção é a camada ficar
+   * **atrás** do conteúdo.
+   *
+   * Uma camada única em `main` com `z-index: -1` não serve: ela pinta atrás do
+   * `background` das seções (que são descendentes em fluxo), e o grão sumiria.
+   * Por isso cada seção tem a sua, com `position: relative` e
+   * `isolation: isolate`, e a camada é o **último filho** — assim ela fica
+   * acima de outras camadas negativas da seção (o fundo que entra na Cards, a
+   * arte da Solutions em `-z-10`) e abaixo de todo o conteúdo.
+   *
+   * `isolation: isolate` é o que prende o `z-index: -1` à seção: sem ele a
+   * camada atravessaria o contexto e iria para trás do fundo da própria seção.
+   * O header fica fora das seções, então continua sem grão — o requisito
+   * original.
+   *
+   * ## As escolhas que não mudaram
    *
    * 1. `feTurbulence` em data URI, não um PNG. Zero requisições, zero bytes no
    *    repositório e escala sem perda. O tile é pequeno (180px) e repetido, então
@@ -332,38 +352,30 @@
    * 2. Sem `mix-blend-mode`. Os modos usuais (`overlay`, `soft-light`) são
    *    neutros em cinza-médio: sobre branco não fariam nada, e metade da página
    *    é branca. Sem blend, o mesmo tile escurece o branco e clareia o roxo.
-   * 3. `z-index: 40`, abaixo do header (`z-50`). O header pinta por cima e nunca
-   *    recebe grão — era um requisito explícito. Ao condensar, o `backdrop-blur`
-   *    ainda borra o que estiver atrás, mas o branco a 85% já dissolve o resto.
+   * 3. O valor desceu de 0.12 para **0.06**, e a razão é a mesma da mudança
+   *    de arquitetura: o grão não toca mais o glifo, mas ainda escurece o
+   *    branco **atrás** dele — e contraste é glifo contra o fundo imediato.
+   *    Medido com o grão ligado, na descrição de 16 px (tinta #6b7280):
    *
-   * A opacidade NÃO é livre: 0.12 é o teto. O grão é desenhado por cima do texto,
-   então ele escurece os glifos. Medindo o tile real em canvas (180x180) ele vai
-   de 116 a 236 — ±60 níveis, bem mais forte do que parece. Aplicando isso sobre o
-   texto branco da Hero e comparando com o gradiente na altura de cada texto:
-*
-   *   grão   título(3:1)  subtítulo(4,5:1)  CTA fantasma(4,5:1)  menu(4,5:1)
-   *   ----   -----------   ---------------   -------------------   ----------
-   *   0.00      6.43 ✅        5.56 ✅           5.25 ✅            7.04 ✅
-   *   0.08      5.84 ✅        5.05 ✅           4.77 ✅            6.39 ✅
-   *   0.12      5.56 ✅        4.80 ✅           4.54 ✅            6.08 ✅   <-- teto
-   *   0.18      5.15 ✅        4.45 ✗            4.20 ✗            5.64 ✅
-   *   0.25      4.70 ✅        4.06 ✗            3.84 ✗            5.14 ✅
+   *      opacidade   pior    p5      mediana
+   *      0,12       4,44    4,46     4,58    ✗ (o teto antigo, agora reprova)
+   *      0,075      4,50    4,58     4,67    ✓ no limite, sem margem
+   *      0,06       4,54    4,58     4,68    ✓   <-- escolhido
    *
-   * Acima de 0.12 os dois textos de 16 px reprovam em AA. Para passar disso sem
-   * baixar a opacidade, o grão teria de ficar DEBAIXO do texto (por seção, e não
-   * como camada de página inteira) — aí ele texturiza a superfície sem tocar
-   * nos glifos. Pendência conhecida, não feita.
+   *    0,06 é o teto com margem mensurável; 0,075 empata no pior pixel e
+   *    qualquer rasterização diferente pode derrubar. Sem grão, a mesma tinta
+   *    sobre branco dá 4,83:1.
    *
-   * 0.03 era invisível em área chapada e foi a primeira tentativa. Ajuste por
-   * componente sem tocar no resto:
+   * O 0.03 inicial era invisível em área chapada. Ajuste por seção sem tocar
+   * no resto:
    *   style={{ "--nu-grain-opacity": 0.25 }}
    */
   .nu-grain {
-    position: fixed;
+    position: absolute;
     inset: 0;
     pointer-events: none;
-    z-index: 40;
-    opacity: var(--nu-grain-opacity, 0.12);
+    z-index: -1;
+    opacity: var(--nu-grain-opacity, 0.06);
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E");
     background-repeat: repeat;
   }

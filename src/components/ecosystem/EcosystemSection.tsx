@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { AnimatePresence, motion, useInView } from "motion/react";
 import { CaretRight } from "@phosphor-icons/react/dist/ssr/CaretRight";
 
+import { SectionGrain } from "@/components/site/SectionGrain";
 import { CtaLink } from "@/components/ui/CtaLink";
 import {
   ACTIVE_INDEX,
@@ -82,130 +83,135 @@ export function EcosystemSection() {
   const chegou = useInView(janelaRef, { once: true, amount: 0.25 });
 
   return (
-    <section
-      id="ecossistema"
-      aria-labelledby="ecossistema-titulo"
-      /* Superfície clara: a seção é branca, e era aqui que o anel branco
-          sumia por completo (1,00:1). */
-      data-surface="light"
-      /*
-       * A moldura (`.nu-frame`) fica **na seção**, e não no `Main Content`.
-       *
-       * A pessoa é posicionada em porcentagem — e porcentagem resolve contra a
-       * **caixa de padding** do ancestral posicionado. Com a moldura no
-       * `Main Content`, a caixa de padding dele passaria a ser a moldura
-       * inteira (1920) em vez da coluna de conteúdo (1520), e a pessoa saía
-       * 26% maior e 55px à esquerda. Na seção, o `Main Content` volta a ser a
-       * coluna de 1520, e a geometria da pessoa é a do Figma.
-       *
-       * A seção é branca, e o fundo da página também — limitar a seção a
-       * 1920px não aparece em lugar nenhum.
-       */
-      className="nu-frame flex flex-col gap-[64px] bg-white py-[100px]"
-    >
-      {/*
-        `relative` porque a pessoa é posicionada contra este elemento.
-
-        Aqui **não** tem `overflow-clip`, ao contrário do que o Figma pede. A
-        linha de cards preenche este elemento exatamente, então o clip do
-        container comeria o crescimento do hover. A janela de recorte da pessoa
-        é a mesma caixa, só que num wrapper próprio, logo abaixo.
-      */}
-      <motion.div
-        ref={janelaRef}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.25 }}
-        variants={staggerContainer(0.12)}
-        className="relative flex h-[595px] flex-col gap-[100px] [container-type:inline-size]"
+    <div className="relative isolate bg-white">
+      <section
+        id="ecossistema"
+        aria-labelledby="ecossistema-titulo"
+        /* Superfície clara: a seção é branca, e era aqui que o anel branco
+            sumia por completo (1,00:1). */
+        data-surface="light"
+        /*
+         * A moldura (`.nu-frame`) fica **na seção**, e não no `Main Content`.
+         *
+         * A pessoa é posicionada em porcentagem — e porcentagem resolve contra a
+         * **caixa de padding** do ancestral posicionado. Com a moldura no
+         * `Main Content`, a caixa de padding dele passaria a ser a moldura
+         * inteira (1920) em vez da coluna de conteúdo (1520), e a pessoa saía
+         * 26% maior e 55px à esquerda. Na seção, o `Main Content` volta a ser a
+         * coluna de 1520, e a geometria da pessoa é a do Figma.
+         *
+         * O grão precisa do contrário: cobrir a largura toda, inclusive acima
+         * de 1920. Por isso o `bg-white` e a camada ficam no wrapper, e a seção
+         * continua sendo a moldura — a geometria da pessoa não muda.
+         */
+        className="nu-frame flex flex-col gap-[64px] py-[100px]"
       >
-        <motion.h2
-          id="ecossistema-titulo"
-          variants={revealUp}
-          className="font-display text-nu-display font-bold leading-[1.22] text-nu-brand"
-        >
-          Um Nu para
-          <br />
-          cada momento.
-        </motion.h2>
+        {/*
+          `relative` porque a pessoa é posicionada contra este elemento.
 
+          Aqui **não** tem `overflow-clip`, ao contrário do que o Figma pede. A
+          linha de cards preenche este elemento exatamente, então o clip do
+          container comeria o crescimento do hover. A janela de recorte da pessoa
+          é a mesma caixa, só que num wrapper próprio, logo abaixo.
+        */}
         <motion.div
-          variants={revealUp}
-          className="relative flex min-h-0 flex-1 flex-col"
+          ref={janelaRef}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.25 }}
+          variants={staggerContainer(0.12)}
+          className="relative flex h-[595px] flex-col gap-[100px] [container-type:inline-size]"
         >
-          <div className="flex w-full flex-1 items-stretch justify-start gap-[12px]">
-            {PILLARS.map((p, i) => (
-              <PillarCard
-                key={p.id}
-                pillar={p}
-                active={i === active}
-                onSelect={() => setActive(i)}
+          <motion.h2
+            id="ecossistema-titulo"
+            variants={revealUp}
+            className="font-display text-nu-display font-bold leading-[1.22] text-nu-brand"
+          >
+            Um Nu para
+            <br />
+            cada momento.
+          </motion.h2>
+
+          <motion.div
+            variants={revealUp}
+            className="relative flex min-h-0 flex-1 flex-col"
+          >
+            <div className="flex w-full flex-1 items-stretch justify-start gap-[12px]">
+              {PILLARS.map((p, i) => (
+                <PillarCard
+                  key={p.id}
+                  pillar={p}
+                  active={i === active}
+                  onSelect={() => setActive(i)}
+                />
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Janela de recorte da pessoa: a mesma caixa do `Main Content`
+              (`inset-0`), com `pointer-events-none` para não roubar o hover dos
+              cards. */}
+          <div className="pointer-events-none absolute inset-0 overflow-clip">
+            <AnimatePresence>
+              <motion.img
+                key={pillar.id}
+                src={pillar.person}
+                alt=""
+                aria-hidden="true"
+                draggable={false}
+                variants={personRise}
+                initial="hidden"
+                animate={chegou ? "visible" : "hidden"}
+                exit="exit"
+                className="pointer-events-none absolute top-0 select-none object-cover"
+                style={{
+                  left: `${pillar.active?.personLeft ?? 0}%`,
+                  width: `${pillar.active?.personWidth ?? 0}%`,
+                  height: "auto",
+                }}
               />
-            ))}
+            </AnimatePresence>
           </div>
         </motion.div>
 
-        {/* Janela de recorte da pessoa: a mesma caixa do `Main Content`
-            (`inset-0`), com `pointer-events-none` para não roubar o hover dos
-            cards. */}
-        <div className="pointer-events-none absolute inset-0 overflow-clip">
-          <AnimatePresence>
-            <motion.img
-              key={pillar.id}
-              src={pillar.person}
-              alt=""
-              aria-hidden="true"
-              draggable={false}
-              variants={personRise}
-              initial="hidden"
-              animate={chegou ? "visible" : "hidden"}
-              exit="exit"
-              className="pointer-events-none absolute top-0 select-none object-cover"
-              style={{
-                left: `${pillar.active?.personLeft ?? 0}%`,
-                width: `${pillar.active?.personWidth ?? 0}%`,
-                height: "auto",
-              }}
-            />
+        {/*
+          O parágrafo e o CTA trocam junto com o card. `mode="wait"` faz a saída
+          terminar antes da entrada, para os dois textos nunca ficarem
+          sobrepostos — é a diferença entre "trocar" e "duplicar".
+
+          A coluna de texto é a mesma fração da tela que a linha de cards: as duas
+          são o `Main Content` de 1520 do Figma.
+        */}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.25 }}
+          variants={revealUp}
+        >
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={active}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.26, ease: "easeOut" }}
+              className="flex items-start gap-[100px]"
+            >
+              <p className="flex-1 font-display text-[16px] font-medium leading-[1.25] text-nu-text-tertiary">
+                {pillar.active?.body}
+              </p>
+
+              <CtaLink variant="brand" href="https://www.nubank.com.br/" className="shrink-0">
+                {pillar.active?.cta}
+                <CaretRight size={20} weight="regular" aria-hidden="true" />
+              </CtaLink>
+            </motion.div>
           </AnimatePresence>
-        </div>
-      </motion.div>
+        </motion.div>
+      </section>
 
-      {/*
-        O parágrafo e o CTA trocam junto com o card. `mode="wait"` faz a saída
-        terminar antes da entrada, para os dois textos nunca ficarem
-        sobrepostos — é a diferença entre "trocar" e "duplicar".
-
-        A coluna de texto é a mesma fração da tela que a linha de cards: as duas
-        são o `Main Content` de 1520 do Figma.
-      */}
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.25 }}
-        variants={revealUp}
-      >
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={active}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.26, ease: "easeOut" }}
-            className="flex items-start gap-[100px]"
-          >
-            <p className="flex-1 font-display text-[16px] font-medium leading-[1.25] text-nu-text-tertiary">
-              {pillar.active?.body}
-            </p>
-
-            <CtaLink variant="brand" href="https://www.nubank.com.br/" className="shrink-0">
-              {pillar.active?.cta}
-              <CaretRight size={20} weight="regular" aria-hidden="true" />
-            </CtaLink>
-          </motion.div>
-        </AnimatePresence>
-      </motion.div>
-    </section>
+      <SectionGrain />
+    </div>
   );
 }
 
