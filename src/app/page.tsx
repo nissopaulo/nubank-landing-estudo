@@ -5,7 +5,7 @@ import { CardsSection } from "@/components/cards/CardsSection";
 import { EcosystemSection } from "@/components/ecosystem/EcosystemSection";
 import { HeroSection } from "@/components/hero/HeroSection";
 import { SolutionsSection } from "@/components/solutions/SolutionsSection";
-import { PendingSections, SiteFooter } from "@/components/site/SiteFooter";
+import { SiteFooter } from "@/components/site/SiteFooter";
 import { SiteHeader } from "@/components/site/SiteHeader";
 
 export default function Home() {
@@ -34,7 +34,6 @@ export default function Home() {
         <BlogSection />
         <SecuritySection />
         <ConversionSection />
-        <PendingSections />
       </main>
       <SiteFooter />
     </>

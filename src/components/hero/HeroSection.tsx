@@ -83,10 +83,11 @@ export function HeroSection() {
             </CtaLink>
 
             {/*
-              PROVISÓRIO — aponta para a seção "em construção". Quando você
-              desenhar "Porque a Nu" no Figma, troque por `#porque-a-nu`.
+              Aponta para a Ecossystem, a seção logo abaixo — o "universo" que
+              o CTA anuncia. Antes ia para o bloco provisório "Em construção",
+              removido quando o Footer fechou a landing (2026-11-13).
             */}
-            <CtaLink variant="ghost" href="#proximas-secoes">
+            <CtaLink variant="ghost" href="#ecossistema">
               Explore o Universo Nu
               <CaretRight size={20} weight="regular" aria-hidden="true" />
             </CtaLink>

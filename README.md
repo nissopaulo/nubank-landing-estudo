@@ -10,8 +10,11 @@ no Figma, com foco em movimento e hierarquia visual no espírito Apple.
 - **Frames implementados:** `Hero Section` (node `14:446`, 1920×1080),
   `Ecossystem Section` (nós `52:3`–`80:77`, 1920×919), `Cards Section`
   (nós `97:2`–`103:383`, 1920×1086), `Solutions Section` (nós
-  `178:205`–`178:296`, 1920×1080) e **Blog Section** (nós `212:3`, `222:79`,
-  `223:105`, `223:137`, 1920×1184)
+  `178:205`–`178:296`, 1920×1080), **Blog Section** (nós `212:3`, `222:79`,
+  `223:105`, `223:137`, 1920×1184), **Security Section** (`274:2`, `280:77`,
+  1920×1840), **Conversion Section** (`301:2`, 1920×1080) e **Footer**
+  (`311:57`, 1920×609). **A landing está completa**: todo frame do Figma está
+  implementado.
 
 ---
 
@@ -255,7 +258,7 @@ Agora os dois são os do Figma, em qualquer resolução.
 
 **Entram** (tudo que é *conteúdo*): o header, o texto da Hero, a linha de
 cards da Ecossystem, o parágrafo e o CTA dela, o seletor e o painel da
-Solutions, o bloco "Em construção" e o rodapé.
+Solutions e o rodapé.
 
 **Não entram** (tudo que é *fundo*): o gradiente da Hero, o gradiente da
 Cards Section e a arte da Solutions Section. Os fundos **sangram** — e é
@@ -2692,8 +2695,6 @@ com `PROVISÓRIO`:
   Cada item é um `<button>` real, focável, com `aria-disabled` e um aviso para
   leitor de tela — em vez de um botão que "não faz nada" em silêncio.
 - **Menu mobile.** Ausente; depende dos painéis.
-- **Seções seguintes** (`Porque a Nu`, `Cartões`, `Diferenciais`) — hoje existe
-  um bloco "Em construção" só para o CTA "Explore o Universo Nu" ter destino.
 - **Nenhum pilar do Ecossystem está faltando** — os quatro frames da seção estão
   desenhados no Figma (`52:3`, `76:3`, `77:40`, `80:77`) e os quatro abrem.
   A regra do bloco `active` ausente continua no `ecosystem-pillars.ts` porque é
@@ -2718,6 +2719,29 @@ qualquer afirmação factual sobre a Nu. Se forem necessários, devem vir do
 Figma ou ser fornecidos por você.
 
 ---
+
+## Security, Conversion e Footer (2026-11-13)
+
+As três últimas peças do Figma. Detalhe de cada decisão no `CONTEXTO.md`
+(registros de 2026-11-13) e nos comentários dos componentes.
+
+- **Security Section** (`src/components/security/`, dados em
+  `src/lib/security-cards.ts`): seis cards; no hover a arte de repouso dá lugar
+  à "interactive" em registro, a camada cresce 3%, a borda vai para
+  `border-brand` e a seta escurece. Tudo em CSS (`group-hover`), sem estado.
+  Grade de 3 colunas a partir de 1280, 2 a partir de 768.
+- **Conversion Section** (`src/components/conversion/`): a arte sobe por baixo
+  ao chegar na seção (`personRise`) e o glow aparece depois. A arte é ancorada
+  no fim do texto (218 px escalados sob o CTA), não numa fração do quadro; o
+  glow é um `radial-gradient` com o perfil gaussiano do desfoque do Figma, não
+  um `filter: blur(500px)`.
+- **Footer** (`src/components/site/SiteFooter.tsx`): substitui o rodapé
+  provisório e o bloco "Em construção". **Desvio de cor por contraste,
+  decidido pelo usuário:** o gradiente do Figma (Purple/600 → 300) deixava o
+  texto pequeno branco entre 1,7 e 4,3:1; aqui ele é o mesmo desenho dois tons
+  abaixo (Purple/800 → 500), e o texto a 80% e 50% virou branco puro. Pior
+  pixel medido: 5,16:1. O CTA "Explore o Universo Nu" da Hero passou a levar
+  para a Ecossystem.
 
 ## Aviso legal
 
@@ -2808,7 +2832,7 @@ redirecionadores — esta página não tem função de cadastro.
    e com o **grão sobre o texto escuro**: o parágrafo do Ecossystem e a
    descrição do Blog medem ~4,20:1 na mediana com o grão ligado (pendências 18 e
    24). A correção é mover o grão para baixo do texto.
-4. Desenhar no Figma as seções `Porque a Nu` e `Diferenciais` (a de `Cartões` já
-   começou, na Cards Section).
-5. Revisar o texto do rodapé e a composição mobile dos cards.
+4. Definir os destinos reais dos links da Security, da Conversion e do Footer
+   (todos no placeholder do projeto) e os perfis das redes sociais.
+5. Revisar a composição mobile — o Figma só desenha 1920.
 6. Exportar o ícone do app definitivo do Figma.

@@ -16,7 +16,7 @@
   1920×1080), `Blog Section` (nós `212:3`, `222:79`, `223:105`, `223:137`,
   1920×1184), `Security Section` (nós `274:2` e `280:77`, 1920×1840, com a
   spec `288:262`) e `Conversion Section` (nó `301:2`, 1920×1080, spec
-  `308:50`)
+  `308:50`) e `Footer` (nó `311:57`, 1920×609)
 - **Produção:** https://nubank-landing-estudo.vercel.app
 - **Repositório:** https://github.com/nissopaulo/nubank-landing-estudo
 
@@ -97,8 +97,10 @@ Depois da Security vem a **Conversion Section** (`301:2`, 2026-11-13): título
 nas almofadas) **sobe por baixo** ao chegar na seção e o glow roxo aparece
 depois, ancorado no meio dos objetos.
 
-Entre as seções e o rodapé existe um bloco **"Em construção"** que é
-provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
+Por último o **Footer** (`311:57`, 2026-11-13), que substituiu o rodapé
+provisório e o bloco "Em construção". **A landing está completa** — todo frame
+do Figma está implementado. O CTA "Explore o Universo Nu" da Hero leva para a
+Ecossystem.
 
 | | |
 |---|---|
@@ -646,10 +648,10 @@ Escrever a mensagem num arquivo e usar `git commit -F <arquivo>`.
 |---|---|---|
 | 1 | ~~Desenhar no Figma o último pilar da Ecossystem~~ — **feito 2026-10-17**, os quatro frames (`52:3`, `76:3`, `77:40`, `80:77`) estão desenhados e os quatro abrem | — |
 | 2 | **Desenhar no Figma os painéis dos submenus da navegação.** É o bloqueio do restante da página | `SiteHeader.tsx` |
-| 3 | Desenhar no Figma as seções `Porque a Nu`, `Cartões`, `Diferenciais` — **a de `Cartões` começou** e virou a Cards Section (frame `97:2`); faltam `Porque a Nu` e `Diferenciais` | `SiteFooter.tsx` (`PendingSections`) |
+| 3 | ~~Desenhar as seções seguintes~~ — **resolvido 2026-11-13**: o Figma fechou a landing com Security, Conversion e Footer; o bloco "Em construção" foi removido | — |
 | 4 | Menu mobile (depende do nº 2) — **adiado**, só depois que o design mobile existir | `SiteHeader.tsx` |
 | 5 | Exportar do Figma o ícone do app definitivo (hoje é um quadrado placeholder) | `src/app/icon.svg` |
-| 6 | Revisar texto do rodapé com o usuário (a parte mobile dos cards saiu da lista) | — |
+| 6 | ~~Revisar texto do rodapé~~ — **resolvido 2026-11-13**: o rodapé é o do Figma (`311:57`) | — |
 | 7 | Limpar comentário desatualizado em `HeroSection.tsx` — ainda cita `Neutral/200`, 2,74:1 e "ainda não atinge 4.5:1". O estado real é branco puro a 5,52:1, passando AA | `src/components/hero/HeroSection.tsx` |
 | 8 | Regra de ESLint proibindo hex literal fora do `globals.css`. Motivo: o gradiente de `HeroSection.tsx:27` tem quatro hex hardcoded no JSX, três deles já existentes como token — e isso passou por lint e revisão. O gradiente da Ecossystem **também** traz literal, mas é o export do Figma em data URI e não tem como ser token. É a única trava de deriva que dá para instalar **antes** do design system existir. Prioridade baixa por decisão do usuário (ver Storybook) | `eslint.config.mjs` |
 | 9 | Montar o catálogo de componentes (Storybook ou equivalente) **depois** que o design system existir — ver decisão 11 | — |
@@ -4626,4 +4628,33 @@ subirem, reprova). `tsc`, `eslint`, `next build` limpos.
 **Próximo passo:** commit da Conversion depois do ok; depois o **Footer**
 (`311:57`), a última peça do Figma — ele substitui o `SiteFooter` e
 provavelmente o bloco provisório "Em construção".
+
+### 2026-11-13 — Footer (`311:57`): a landing está completa
+
+Conversion commitada e enviada (`a6a188b`). Depois, o **Footer** — o último
+frame do Figma, sem spec própria.
+
+- `SiteFooter.tsx` reescrito a partir do Figma; `PendingSections` ("Em
+  construção") removido de `page.tsx`. O CTA "Explore o Universo Nu" da Hero,
+  que existia apontando para o bloco provisório, agora vai para `#ecossistema`.
+- Logo: o `nu-logo.svg` do repositório (já branco) a 128 × 69,82. Ícones das
+  redes: Phosphor `fill` (as camadas do Figma têm os nomes do Phosphor). O
+  download dos SVGs pelo MCP devolveu 404 repetidamente — não foi preciso.
+- Novo token `--color-nu-purple-500` (#a855f7).
+- **Contraste — decisão do usuário.** Fiel ao Figma, o texto pequeno branco
+  media 3,5–4,3 (links das colunas), 2,9 ("Nubank pelo mundo digital.", 80%),
+  2,2 (links legais, 80%) e 1,7 (crédito, 50%). Perguntado, o usuário escolheu
+  o **gradiente dois tons abaixo** (Purple/800 → meio → 600 → 500, mesmas
+  paradas) e branco puro no texto. Medido: pior pixel 5,16:1, títulos 8,8.
+- Responsivo: colunas lado a lado a partir de 1280, intervalo entre colunas
+  `min(100px, 5.2083vw)` (a largura fixa de 813 espremia a marca a 1280); a
+  faixa de baixo usa `flex-wrap`. `li` em flex — o `a` inline herdava a linha
+  de 24 px do body e a coluna saía 18 px mais alta.
+- Medido a 1920: rodapé 1920 × 606,4 (Figma 609, arredondamento de altura de
+  linha), logo em (200, 100), colunas em x 908,5 (Figma 907). Sem scroll
+  horizontal a 1024/1280/1920, sem erro no console.
+
+**Próximo passo:** com a landing completa, o que sobra são as pendências de
+acessibilidade antigas (grão sobre texto escuro, nº 18/24; contrastes da Cards
+Section, nº 12/14/15/16), os destinos reais dos links e o mobile.
 
