@@ -13,8 +13,9 @@
   `Ecossystem Section` (nós `52:3`, `76:3`, `77:40`, `80:77`, 1920×919),
   `Cards Section` (nós `97:2`, `103:248`, `103:318`, `103:383`, 1920×1086),
   `Solutions Section` (nós `178:205`, `178:262`, `178:281`, `178:296`,
-  1920×1080) e `Blog Section` (nós `212:3`, `222:79`, `223:105`, `223:137`,
-  1920×1184)
+  1920×1080), `Blog Section` (nós `212:3`, `222:79`, `223:105`, `223:137`,
+  1920×1184) e `Security Section` (nós `274:2` e `280:77`, 1920×1840, com a
+  spec `288:262`)
 - **Produção:** https://nubank-landing-estudo.vercel.app
 - **Repositório:** https://github.com/nissopaulo/nubank-landing-estudo
 
@@ -81,6 +82,14 @@ primeiro tópico ao lado anda um passo e clicar no segundo anda **dois,
 encadeados** — o clicado precisa passar pelo slot do meio. A descrição troca
 com `mode="wait"`, e a seção inteira entra por scroll em cascata. As quatro
 matérias estão liberadas e nenhuma seta fica desabilitada.
+
+Depois da Blog vem a **Security Section** — **completa** desde 2026-11-13
+(`274:2` repouso, `280:77` hover; spec `288:262`). Seis cards em grade (3
+colunas a partir de 1280, 2 a partir de 768, 1 abaixo); no hover a arte faz
+*crossfade* em registro para a versão "interactive" enquanto a camada cresce
+3%, a borda vai para `border-brand` e a seta escurece como os action buttons.
+Tudo em CSS (`group-hover`), sem estado. Card e CTA usam o placeholder de
+link — o Figma não tem destino.
 
 Entre as seções e o rodapé existe um bloco **"Em construção"** que é
 provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
@@ -4507,4 +4516,46 @@ gates já estão verdes — e, no mesmo commit, reconstruir o registro de
 2026-10-23 e corrigir as duas frases defasadas do README. Depois disso, o que
 não depende do Figma é o grão por seção abaixo do texto (pendências 18 e 24) e a
 FASE 1 de acessibilidade (E-05, E-14, P-04, P-09, P-10).
+
+### 2026-11-13 — Security Section (`274:2` / `280:77`)
+
+Pedido: implementar a Security Section seguindo a spec do Figma (`288:262`)
+e o fluxo de animação da LP.
+
+**Assets.** A pasta `public/images/backgrounds/security-bg` não existia no
+início da sessão; o usuário avisou que um colega não tinha commitado, e o
+`git pull` (commit `1f9bb02`) trouxe os 12 JPEGs (2752×1536). Convertidos para
+WebP 2160 px com `sharp` (q82): −96,2% a −97,9%. Os JPEGs originais ficaram no
+repositório, como os PNGs da Solutions — os nomes seguem as camadas do Figma,
+inclusive o "innactive".
+
+**O mesmo pull moveu as artes da Solutions** para
+`public/images/backgrounds/solutions-bg/` sem atualizar o código: a Solutions
+ficaria sem fundo. Corrigidos os quatro caminhos em `src/lib/solutions.ts`.
+O pull também trouxe `conversion-bg/conversion-bg.jpg` (próxima seção, ainda
+não usada).
+
+**Implementação.** `src/lib/security-cards.ts` (dados, posições da arte em px
+do Figma menos a borda de 2 px, convertidas para `cqw` do card) e
+`src/components/security/SecuritySection.tsx`. O hover é CSS puro: as duas
+artes empilhadas, opacidade 0,5 s e escala da camada 1 → 1,03 em 0,7 s com
+`--ease-emphasized`; borda e seta 0,35 s. Escala só com `motion-safe`.
+Entrada: `revealUp` no cabeçalho e por card, com 90 ms de atraso pela coluna
+(variante com `custom` — a `transition` da variante vence a da prop).
+
+**Desvios do Figma, e por quê.** Título do card pode quebrar (abaixo de ~1400
+colidiria com a seta); quebras da descrição só a partir de 1536 (abaixo, a
+quebra forçada criava linha órfã); grade cai para 2 colunas abaixo de 1280
+(a 1024 o card tinha 254 px e a descrição invadia a arte).
+
+**Medido (CDP, Chrome headless).** A 1920: seção 1920×1840,16, título y 100,
+cards 490,67×680 em y 356,16 / 1060,16, arte em x −297 / y 80 do card — bate
+com o Figma. Hover no Cartão Virtual: borda `#820ad1`, seta `#6a08ad`, arte
+interactive 20 px à direita (−200). Zero scroll horizontal a 1024/1280/1920,
+nenhum aviso de hidratação. `tsc`, `eslint` e `next build` limpos.
+
+**Commitado** pelo fluxo "pode commitar" (gates verdes).
+
+**Próximo passo:** commit da Security Section; depois a **Conversion Section**
+(`301:2`, spec `308:50`) e o **Footer** (`311:57`), que já estão no Figma.
 

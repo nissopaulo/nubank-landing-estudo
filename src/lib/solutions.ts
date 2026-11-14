@@ -55,7 +55,7 @@ export type SolutionOption = {
   label: string;
 
   /**
-   * Arte de fundo da seção, em `public/images/backgrounds`.
+   * Arte de fundo da seção, em `public/images/backgrounds/solutions-bg`.
    *
    * Existe para as quatro porque as quatro artes estão no repositório — mas só
    * a da opção liberada é carregada: as outras três nunca entram no DOM.
@@ -112,7 +112,7 @@ export const SOLUTIONS: SolutionOption[] = [
   {
     id: "piggybank",
     label: "Caixinhas",
-    background: "/images/backgrounds/piggybank-bg.webp",
+    background: "/images/backgrounds/solutions-bg/piggybank-bg.webp",
     showcase: {
       title: "Seus planos merecem sair do papel.",
       desc: "Organize seu dinheiro por objetivos, guarde no seu ritmo e acompanhe cada passo até chegar onde você quer.",
@@ -123,7 +123,7 @@ export const SOLUTIONS: SolutionOption[] = [
   {
     id: "account",
     label: "Conta",
-    background: "/images/backgrounds/account-bg.webp",
+    background: "/images/backgrounds/solutions-bg/account-bg.webp",
     showcase: {
       title: "Seu dinheiro, no ritmo da sua vida.",
       desc: "Pague, transfira, receba e acompanhe suas movimentações em uma conta digital feita para simplificar o seu dia a dia.",
@@ -134,7 +134,7 @@ export const SOLUTIONS: SolutionOption[] = [
   {
     id: "advance",
     label: "Empréstimos",
-    background: "/images/backgrounds/advance-bg.webp",
+    background: "/images/backgrounds/solutions-bg/advance-bg.webp",
     showcase: {
       title: "Um próximo passo começa com boas escolhas.",
       desc: "Conheça opções de crédito, consulte as condições disponíveis para você e avalie o que faz sentido para os seus planos.",
@@ -145,7 +145,7 @@ export const SOLUTIONS: SolutionOption[] = [
   {
     id: "more",
     label: "E muito mais",
-    background: "/images/backgrounds/more-bg.webp",
+    background: "/images/backgrounds/solutions-bg/more-bg.webp",
     showcase: {
       /**
        * O texto é **exatamente** o do Figma (nós `178:302` e `178:304`).
