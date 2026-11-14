@@ -4559,3 +4559,25 @@ nenhum aviso de hidratação. `tsc`, `eslint` e `next build` limpos.
 **Próximo passo:** commit da Security Section; depois a **Conversion Section**
 (`301:2`, spec `308:50`) e o **Footer** (`311:57`), que já estão no Figma.
 
+
+### 2026-11-13 — Conversion Section: preparação (sem código ainda)
+
+Security Section commitada (`cdd5142`). Preparado o terreno da **Conversion
+Section** (`301:2`, 1920×1080, spec `308:50`):
+
+- Arte `conversion-bg.jpg` (5504×3072) convertida para
+  `conversion-bg.webp` 4048 px (−91,7%, 2256 → 187 KB). Slot no Figma:
+  2024×1129,6 em x −52 / y 263,66 — sangra 52 px de cada lado e é cortada
+  embaixo pelo quadro.
+- **Glow** (`308:49`): círculo `#C084FC` (= `nu-purple-400`), r 182, blur
+  gaussiano de 500, centro em (960, 859) do quadro — na arte, 50% / 52,7%.
+  Plano: ancorá-lo às coordenadas **da arte**, não da seção, para "ficar fixo
+  no mesmo lugar em qualquer proporção" como a spec pede.
+- Subtítulo é `Inter:Regular` no Figma; precedente da Hero: vira `font-body`
+  (Montserrat, fonte única do projeto).
+- Título 96 px `text-brand` centrado (`text-nu-hero`), CTA "Abra sua conta"
+  (`CtaLink` brand).
+
+**Próximo passo:** implementar — texto com `revealUp` em cascata, arte subindo
+por baixo (vocabulário do `personRise`: `EASE_EMPHASIZED`), glow aparecendo
+depois que a arte assenta.
