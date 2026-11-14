@@ -2738,9 +2738,9 @@ As três últimas peças do Figma. Detalhe de cada decisão no `CONTEXTO.md`
 - **Footer** (`src/components/site/SiteFooter.tsx`): substitui o rodapé
   provisório e o bloco "Em construção". **Desvio de cor por contraste,
   decidido pelo usuário:** o gradiente do Figma (Purple/600 → 300) deixava o
-  texto pequeno branco entre 1,7 e 4,3:1; aqui ele é o mesmo desenho dois tons
-  abaixo (Purple/800 → 500), e o texto a 80% e 50% virou branco puro. Pior
-  pixel medido: 5,16:1. O CTA "Explore o Universo Nu" da Hero passou a levar
+  texto pequeno branco entre 1,7 e 4,3:1; aqui ele é um degradê uniforme de
+  Purple/800 (topo) a Purple/600 (base), e o texto a 80% e 50% virou branco
+  puro. Pior pixel medido: 5,52:1. O CTA "Explore o Universo Nu" da Hero passou a levar
   para a Ecossystem.
 
 ## Aviso legal

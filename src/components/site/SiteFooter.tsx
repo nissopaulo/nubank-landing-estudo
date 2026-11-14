@@ -84,7 +84,7 @@ const LEGAIS = [
 ] as const;
 
 /**
- * O gradiente — **o desenho do Figma, dois tons abaixo**.
+ * O gradiente — **uniforme, do Purple/800 ao Purple/600**.
  *
  * O Figma pinta Purple/600 → 500 → 400 → 300 (paradas 22,9 / 32,5 / 87,9 /
  * 135,4%), e o texto pequeno branco fica justamente na parte clara. Medido no
@@ -92,15 +92,21 @@ const LEGAIS = [
  * 2,9, links legais (80%) 2,2, crédito (50%) 1,7. Branco puro sobre Purple/500
  * já dá 3,96 — tirar as opacidades sozinho não chegava a AA.
  *
- * Decisão do usuário (2026-11-13): mesmas paradas, mesmo formato, cada cor
- * descida dois tons — 800 → (meio de 800 e 600) → 600 → 500. O ponto mais claro
- * dentro do rodapé passa a ser perto do Purple/600, sobre o qual o branco dá
- * 5,28:1. O texto que era 80% e 50% virou branco puro pelo mesmo motivo.
+ * Decisões do usuário (2026-11-13):
  *
- * O ângulo é 180° (o Figma exporta 179,99999…, ruído de float).
+ * 1. Escurecer o gradiente para o texto branco passar AA.
+ * 2. Ele tem que ser **uniforme**. A primeira versão manteve as paradas do
+ *    Figma com as cores descidas dois tons, e as paradas apertadas no topo
+ *    (22,9% e 32,5%) faziam uma faixa: o terço de cima chapado e uma virada
+ *    brusca logo abaixo do logo. Duas paradas nas pontas espalham a transição
+ *    pela altura inteira.
+ *
+ * Todo ponto fica entre Purple/800 e Purple/600, e o mais claro dos dois dá
+ * 5,28:1 com branco — o texto passa AA em qualquer altura do rodapé, inclusive
+ * quando ele cresce no layout empilhado.
  */
 const FUNDO =
-  "linear-gradient(180deg, var(--color-nu-purple-800) 22.903%, color-mix(in srgb, var(--color-nu-purple-800), var(--color-nu-purple-600)) 32.504%, var(--color-nu-purple-600) 87.911%, var(--color-nu-purple-500) 135.4%)";
+  "linear-gradient(180deg, var(--color-nu-purple-800) 0%, var(--color-nu-purple-600) 100%)";
 
 /**
  * Links da faixa de baixo. No Figma: SemiBold 15,904 a 80% de opacidade; aqui

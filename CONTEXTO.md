@@ -4640,7 +4640,6 @@ frame do Figma, sem spec própria.
 - Logo: o `nu-logo.svg` do repositório (já branco) a 128 × 69,82. Ícones das
   redes: Phosphor `fill` (as camadas do Figma têm os nomes do Phosphor). O
   download dos SVGs pelo MCP devolveu 404 repetidamente — não foi preciso.
-- Novo token `--color-nu-purple-500` (#a855f7).
 - **Contraste — decisão do usuário.** Fiel ao Figma, o texto pequeno branco
   media 3,5–4,3 (links das colunas), 2,9 ("Nubank pelo mundo digital.", 80%),
   2,2 (links legais, 80%) e 1,7 (crédito, 50%). Perguntado, o usuário escolheu
@@ -4657,4 +4656,18 @@ frame do Figma, sem spec própria.
 **Próximo passo:** com a landing completa, o que sobra são as pendências de
 acessibilidade antigas (grão sobre texto escuro, nº 18/24; contrastes da Cards
 Section, nº 12/14/15/16), os destinos reais dos links e o mobile.
+
+### 2026-11-13 — Footer: gradiente uniforme
+
+O usuário viu o footer publicado: "o gradiente está muito pra cima, tem que
+ficar uniforme". A primeira versão mantinha as paradas do Figma (22,9 / 32,5 /
+87,9 / 135,4%) com as cores descidas dois tons, e as duas paradas apertadas no
+topo faziam uma faixa — o terço de cima chapado e uma virada brusca logo abaixo
+do logo.
+
+Agora são **duas paradas nas pontas**: Purple/800 em 0%, Purple/600 em 100%.
+Todo ponto fica entre as duas, e o branco sobre o mais claro dá 5,28:1 — AA em
+qualquer altura, inclusive no layout empilhado. Medido: pior pixel 5,52:1
+(crédito e links legais), 6,92 nos links das colunas, 7,84 nos títulos. O token
+`--color-nu-purple-500`, criado para a versão anterior, ficou sem uso e saiu.
 
