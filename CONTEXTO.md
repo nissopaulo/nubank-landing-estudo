@@ -14,8 +14,9 @@
   `Cards Section` (nós `97:2`, `103:248`, `103:318`, `103:383`, 1920×1086),
   `Solutions Section` (nós `178:205`, `178:262`, `178:281`, `178:296`,
   1920×1080), `Blog Section` (nós `212:3`, `222:79`, `223:105`, `223:137`,
-  1920×1184) e `Security Section` (nós `274:2` e `280:77`, 1920×1840, com a
-  spec `288:262`)
+  1920×1184), `Security Section` (nós `274:2` e `280:77`, 1920×1840, com a
+  spec `288:262`) e `Conversion Section` (nó `301:2`, 1920×1080, spec
+  `308:50`)
 - **Produção:** https://nubank-landing-estudo.vercel.app
 - **Repositório:** https://github.com/nissopaulo/nubank-landing-estudo
 
@@ -90,6 +91,11 @@ colunas a partir de 1280, 2 a partir de 768, 1 abaixo); no hover a arte faz
 3%, a borda vai para `border-brand` e a seta escurece como os action buttons.
 Tudo em CSS (`group-hover`), sem estado. Card e CTA usam o placeholder de
 link — o Figma não tem destino.
+
+Depois da Security vem a **Conversion Section** (`301:2`, 2026-11-13): título
+96 px centrado, subtítulo e CTA "Abra sua conta"; a arte (celular + cartão
+nas almofadas) **sobe por baixo** ao chegar na seção e o glow roxo aparece
+depois, ancorado no meio dos objetos.
 
 Entre as seções e o rodapé existe um bloco **"Em construção"** que é
 provisório e existe só para o CTA "Explore o Universo Nu" ter destino.
@@ -4581,3 +4587,43 @@ Section** (`301:2`, 1920×1080, spec `308:50`):
 **Próximo passo:** implementar — texto com `revealUp` em cascata, arte subindo
 por baixo (vocabulário do `personRise`: `EASE_EMPHASIZED`), glow aparecendo
 depois que a arte assenta.
+
+### 2026-11-13 — Conversion Section implementada (`301:2`)
+
+Push de `4d5f759` (Security + preparação) feito a pedido do usuário — a
+Vercel publica a Security Section. Depois, a implementação:
+`src/components/conversion/ConversionSection.tsx`, logo abaixo da Security.
+
+**A arte é ancorada no fim do texto, não no quadro.** Primeira versão: arte em
+`%` de um quadro 16:9. A 1024 o CTA encostava no celular — subtítulo (16 px)
+e CTA (40 px) não encolhem, o resto sim, e os ~28 px que faltavam eram
+exatamente essa diferença. Agora a janela da arte (o trecho visível, 1920 ×
+816,34) começa 218 px **acima do fim do CTA**, em `margin-top` percentual
+(resolve contra a largura, escala com o quadro). Respiro CTA → celular: 52 px
+a 1920, ~28 a 1024 — proporcional.
+
+**O glow é um `radial-gradient`, não `filter: blur(500px)`.** Círculo de raio
+182 com σ 500 vira um halo de ~6,4% de cobertura no centro, caindo como
+gaussiana; as paradas são essa curva a cada 250 px. Sem desfoque de tela cheia
+por quadro (E-07). Ele fica **fora** da camada com `overflow-y: clip` da arte:
+dentro dela o topo da janela o cortaria a ~3,4% de roxo, uma linha visível no
+meio do texto. Fora, quem corta é a seção — como o quadro no Figma.
+
+**Entrada:** texto em `revealUp` com `staggerContainer(0.12)`; arte com
+`personRise` (100% da altura, 1,5 s, curva enfática), gatilho na janela
+parada (a arte transladada nunca intersectaria); glow em opacidade 1,1 s com
+atraso de 1,1 s, quando a arte está quase pousada.
+
+**Medido (CDP):** a 1920 título y 100, subtítulo 358,2, CTA 441,7, arte
+−52 / 263,7 com 2024 × 1129,6, glow em (960, 859), seção 1080 — o Figma
+exato. Zero scroll horizontal a 1024/1280/1920, sem erro no console.
+Contraste do subtítulo sobre arte + glow + grão: **4,50:1 no pior pixel**,
+4,57 p5, 4,65 mediana — AA, no limite (sem margem: se o glow ou o grão
+subirem, reprova). `tsc`, `eslint`, `next build` limpos.
+
+**Commitado e enviado** pelo fluxo "pode commitar".
+
+**Próximo passo:** commit da Conversion depois do ok; depois o **Footer**
+(`311:57`), a última peça do Figma — ele substitui o `SiteFooter` e
+provavelmente o bloco provisório "Em construção".
+
