@@ -4671,3 +4671,12 @@ qualquer altura, inclusive no layout empilhado. Medido: pior pixel 5,52:1
 (crédito e links legais), 6,92 nos links das colunas, 7,84 nos títulos. O token
 `--color-nu-purple-500`, criado para a versão anterior, ficou sem uso e saiu.
 
+
+### 2026-11-13 — Conversion: arte nova, de melhor qualidade
+
+O usuário colocou um `conversion-bg.png` novo (2752 × 1536, mesma proporção
+1,7917 da anterior — o layout não muda) por ter qualidade melhor que o JPG de
+5504 × 3072. Convertido para `conversion-bg.webp` **sem ampliar**, com
+qualidade 90 em vez de 82 (o motivo da troca é qualidade) e sem o canal alfa,
+que era 255 em todo pixel: 3584 → 212 KB (−94,1%). O JPG antigo saiu do
+repositório; o PNG fica como fonte, como os PNGs da Solutions.

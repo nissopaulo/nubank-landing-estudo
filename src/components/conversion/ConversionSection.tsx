@@ -69,7 +69,7 @@ import {
 const ARTE = {
   left: (-52 / 1920) * 100,
   width: (2024 / 1920) * 100,
-  /** Proporção da arte (a mesma do arquivo de origem, 5504 × 3072). */
+  /** Proporção da arte (a mesma do arquivo de origem, 2752 × 1536). */
   ratio: 2024 / 1129.605,
   /**
    * Quanto a arte sobe por baixo do texto: o CTA termina em y 481,66 e a arte
